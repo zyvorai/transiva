@@ -247,7 +247,7 @@ jobs:
         echo "Customer install bundle, release binaries, and RPM packages (when available)." >> release-notes.md
 
     - name: Create Release
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@v3
       with:
         name: v${{ steps.get_version.outputs.VERSION }}
         body_path: release-notes.md
