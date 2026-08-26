@@ -64,7 +64,7 @@ jobs:
             --values deployments/helm/transiva/examples/aks-values.yaml > /tmp/aks-manifest.yaml
 
       - name: Upload manifests
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rendered-manifests
           path: /tmp/*-manifest.yaml
@@ -288,7 +288,7 @@ jobs:
             kubectl apply --dry-run=client --validate=false -f - || true
 
       - name: Upload ${{ matrix.cloud }} manifest
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.cloud }}-manifest
           path: /tmp/${{ matrix.cloud }}-manifest.yaml

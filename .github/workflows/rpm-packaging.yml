@@ -119,7 +119,7 @@ jobs:
           echo "Package installation verified successfully"
 
       - name: Upload RPM artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rpm-${{ matrix.dist }}-${{ steps.version.outputs.version }}-${{ steps.version.outputs.release }}
           path: |

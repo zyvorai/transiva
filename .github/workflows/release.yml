@@ -59,7 +59,7 @@ jobs:
         fi
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: binaries-${{ matrix.goos }}-${{ matrix.goarch }}
         path: |
@@ -99,7 +99,7 @@ jobs:
         ./scripts/package-binary-release.sh --build --out-dir dist
 
     - name: Upload customer bundle
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: customer-bundle-linux-amd64
         path: |
@@ -150,7 +150,7 @@ jobs:
         ls -lh *.rpm
 
     - name: Upload RPM artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: rpm-packages
         path: "*.rpm"
@@ -200,7 +200,7 @@ jobs:
         ls -lh rpms/
 
     - name: Upload daemon RPM artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: daemon-rpm-${{ matrix.dist }}
         path: rpms/*.rpm
