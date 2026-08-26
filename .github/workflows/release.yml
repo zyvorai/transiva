@@ -119,6 +119,15 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    # transiva.spec's %build invokes `go build` directly; Fedora's dnf-packaged
+    # golang can lag behind go.mod's `go` directive, so install a matching
+    # toolchain and put it first on PATH (actions/setup-go prepends its own
+    # bin dir via GITHUB_PATH, ahead of dnf's /usr/bin/go) before rpmbuild runs.
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.27'
+
     - name: Get version from tag
       id: get_version
       run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
