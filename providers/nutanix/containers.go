@@ -42,7 +42,7 @@ func (c *Client) ResolveContainerNames(ctx context.Context) (map[string]string, 
 
 		pageArg := page
 		limitArg := limit
-		resp, err := api.ListStorageContainers(&pageArg, &limitArg, nil, nil, nil)
+		resp, err := api.ListStorageContainers(&pageArg, &limitArg, nil, nil, nil, nil)
 		if err != nil {
 			return nil, fmt.Errorf("list storage containers page %d: %w", page, err)
 		}

@@ -176,7 +176,10 @@ func (d *Dashboard) Start(ctx context.Context) error {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
+	// ClientIPFromRemoteAddr (not the deprecated RealIP) since this server may
+	// not sit behind a trusted reverse proxy; it never trusts spoofable
+	// headers like X-Forwarded-For.
+	r.Use(middleware.ClientIPFromRemoteAddr)
 	r.Use(middleware.Compress(5))
 
 	// Serve embedded static files
