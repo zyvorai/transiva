@@ -20,7 +20,7 @@ func setupTestServer(t *testing.T) *EnhancedServer {
 	log := logger.New("error") // Use error level to reduce test output
 	detector := capabilities.NewDetector(log)
 	ctx := context.Background()
-	detector.Detect(ctx)
+	_ = detector.Detect(ctx)
 	manager := jobs.NewManager(log, detector)
 	config := &Config{}
 	config.Metrics.Enabled = false
@@ -47,7 +47,7 @@ func TestHandleListSchedules(t *testing.T) {
 			VMPath: "test/vm",
 		},
 	}
-	server.scheduler.AddScheduledJob(testSchedule)
+	_ = server.scheduler.AddScheduledJob(testSchedule)
 
 	// Test GET request
 	req := httptest.NewRequest(http.MethodGet, "/schedules", nil)
@@ -168,7 +168,7 @@ func TestHandleGetSchedule(t *testing.T) {
 		Schedule: "0 2 * * *",
 		Enabled:  true,
 	}
-	server.scheduler.AddScheduledJob(testSchedule)
+	_ = server.scheduler.AddScheduledJob(testSchedule)
 
 	req := httptest.NewRequest(http.MethodGet, "/schedules/get-test", nil)
 	w := httptest.NewRecorder()
@@ -214,7 +214,7 @@ func TestHandleUpdateSchedule(t *testing.T) {
 		Schedule: "0 2 * * *",
 		Enabled:  true,
 	}
-	server.scheduler.AddScheduledJob(testSchedule)
+	_ = server.scheduler.AddScheduledJob(testSchedule)
 
 	// Update schedule
 	updates := models.ScheduledJob{
@@ -254,7 +254,7 @@ func TestHandleDeleteSchedule(t *testing.T) {
 		Schedule: "0 2 * * *",
 		Enabled:  true,
 	}
-	server.scheduler.AddScheduledJob(testSchedule)
+	_ = server.scheduler.AddScheduledJob(testSchedule)
 
 	req := httptest.NewRequest(http.MethodDelete, "/schedules/delete-test", nil)
 	w := httptest.NewRecorder()
@@ -283,7 +283,7 @@ func TestHandleEnableSchedule(t *testing.T) {
 		Schedule: "0 2 * * *",
 		Enabled:  false,
 	}
-	server.scheduler.AddScheduledJob(testSchedule)
+	_ = server.scheduler.AddScheduledJob(testSchedule)
 
 	req := httptest.NewRequest(http.MethodPost, "/schedules/enable-test/enable", nil)
 	w := httptest.NewRecorder()
@@ -312,7 +312,7 @@ func TestHandleDisableSchedule(t *testing.T) {
 		Schedule: "0 2 * * *",
 		Enabled:  true,
 	}
-	server.scheduler.AddScheduledJob(testSchedule)
+	_ = server.scheduler.AddScheduledJob(testSchedule)
 
 	req := httptest.NewRequest(http.MethodPost, "/schedules/disable-test/disable", nil)
 	w := httptest.NewRecorder()
@@ -345,7 +345,7 @@ func TestHandleTriggerSchedule(t *testing.T) {
 			OutputPath: "/tmp/test",
 		},
 	}
-	server.scheduler.AddScheduledJob(testSchedule)
+	_ = server.scheduler.AddScheduledJob(testSchedule)
 
 	req := httptest.NewRequest(http.MethodPost, "/schedules/trigger-test/trigger", nil)
 	w := httptest.NewRecorder()
@@ -369,7 +369,7 @@ func TestHandleScheduleStats(t *testing.T) {
 			Schedule: "0 2 * * *",
 			Enabled:  i < 2, // 2 enabled, 1 disabled
 		}
-		server.scheduler.AddScheduledJob(schedule)
+		_ = server.scheduler.AddScheduledJob(schedule)
 	}
 
 	req := httptest.NewRequest(http.MethodGet, "/schedules/stats", nil)
@@ -396,7 +396,7 @@ func TestHandleScheduleWithNoScheduler(t *testing.T) {
 	log := logger.New("error")
 	detector := capabilities.NewDetector(log)
 	ctx := context.Background()
-	detector.Detect(ctx)
+	_ = detector.Detect(ctx)
 	manager := jobs.NewManager(log, detector)
 
 	// Create server without scheduler

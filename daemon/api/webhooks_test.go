@@ -20,7 +20,7 @@ func setupWebhookTestServer(t *testing.T, initialWebhooks []webhooks.Webhook) *E
 	log := logger.New("error")
 	detector := capabilities.NewDetector(log)
 	ctx := context.Background()
-	detector.Detect(ctx)
+	_ = detector.Detect(ctx)
 	manager := jobs.NewManager(log, detector)
 
 	config := &Config{
@@ -289,7 +289,7 @@ func TestHandleWebhooksNoManager(t *testing.T) {
 	log := logger.New("error")
 	detector := capabilities.NewDetector(log)
 	ctx := context.Background()
-	detector.Detect(ctx)
+	_ = detector.Detect(ctx)
 	manager := jobs.NewManager(log, detector)
 
 	// Create server without webhook manager

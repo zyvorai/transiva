@@ -90,7 +90,7 @@ func (s *Server) handleExportNutanixVM(w http.ResponseWriter, r *http.Request) {
 		s.errorResponse(w, http.StatusInternalServerError, "failed to create nutanix provider: %v", err)
 		return
 	}
-	defer provider.Disconnect()
+	defer func() { _ = provider.Disconnect() }()
 
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Minute)
 	defer cancel()

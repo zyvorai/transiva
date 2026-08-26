@@ -105,7 +105,7 @@ func (s *Server) ManifestSubmitHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Failed to read request: %v", err), http.StatusBadRequest)
 		return
 	}
-	defer r.Body.Close()
+	defer func() { _ = r.Body.Close() }()
 
 	var manifest map[string]interface{}
 	if err := json.Unmarshal(body, &manifest); err != nil {
@@ -148,7 +148,7 @@ func (s *Server) ManifestValidateHandler(w http.ResponseWriter, r *http.Request)
 		http.Error(w, fmt.Sprintf("Failed to read request: %v", err), http.StatusBadRequest)
 		return
 	}
-	defer r.Body.Close()
+	defer func() { _ = r.Body.Close() }()
 
 	var manifest map[string]interface{}
 	if err := json.Unmarshal(body, &manifest); err != nil {

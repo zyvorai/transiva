@@ -98,7 +98,7 @@ func setupTestClient(t *testing.T) (*VSphereClient, func()) {
 	}
 
 	cleanup := func() {
-		govmomiClient.Logout(ctx)
+		_ = govmomiClient.Logout(ctx)
 		s.Close()
 		model.Remove()
 	}

@@ -232,11 +232,7 @@ func (fl *FileLogger) shouldRotate() bool {
 
 	// Rotate if it's a new day
 	fileDate := time.Now().Format("2006-01-02")
-	if !contains(info.Name(), fileDate) {
-		return true
-	}
-
-	return false
+	return !contains(info.Name(), fileDate)
 }
 
 // rotate closes current file and opens a new one

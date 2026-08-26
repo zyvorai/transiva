@@ -32,13 +32,13 @@ type OpenStackSwiftStorage struct {
 func NewOpenStackSwiftStorage(cfg *CloudStorageConfig, log logger.Logger) (*OpenStackSwiftStorage, error) {
 	// Validate required config
 	if cfg.SwiftAuthURL == "" {
-		return nil, fmt.Errorf("Swift auth URL is required")
+		return nil, fmt.Errorf("swift auth URL is required")
 	}
 	if cfg.SwiftUsername == "" {
-		return nil, fmt.Errorf("Swift username is required")
+		return nil, fmt.Errorf("swift username is required")
 	}
 	if cfg.SwiftPassword == "" {
-		return nil, fmt.Errorf("Swift password is required")
+		return nil, fmt.Errorf("swift password is required")
 	}
 	if cfg.Bucket == "" {
 		return nil, fmt.Errorf("container name is required")
@@ -93,7 +93,7 @@ func (s *OpenStackSwiftStorage) Upload(ctx context.Context, localPath, remotePat
 		if err != nil {
 			return retry.IsNonRetryable(fmt.Errorf("open file: %w", err))
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 
 		fileInfo, err := file.Stat()
 		if err != nil {
@@ -210,7 +210,7 @@ func (s *OpenStackSwiftStorage) Download(ctx context.Context, remotePath, localP
 		if err != nil {
 			return retry.IsNonRetryable(fmt.Errorf("create file: %w", err))
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 
 		// Get size from headers
 		size := int64(len(content))

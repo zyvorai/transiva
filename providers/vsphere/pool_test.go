@@ -35,7 +35,7 @@ func TestConnectionPool_NewPool(t *testing.T) {
 		t.Errorf("Expected 0 initial connections, got %d", len(pool.connections))
 	}
 
-	pool.Close()
+	_ = pool.Close()
 }
 
 func TestConnectionPool_Stats(t *testing.T) {
@@ -48,7 +48,7 @@ func TestConnectionPool_Stats(t *testing.T) {
 	poolCfg := DefaultPoolConfig()
 	log := logger.New("debug")
 	pool := NewConnectionPool(cfg, poolCfg, log)
-	defer pool.Close()
+	defer func() { _ = pool.Close() }()
 
 	stats := pool.Stats()
 
@@ -99,7 +99,7 @@ func TestConnectionPool_ContextCancellation(t *testing.T) {
 	poolCfg := DefaultPoolConfig()
 	log := logger.New("debug")
 	pool := NewConnectionPool(cfg, poolCfg, log)
-	defer pool.Close()
+	defer func() { _ = pool.Close() }()
 
 	// Create a context that's immediately cancelled
 	ctx, cancel := context.WithCancel(context.Background())

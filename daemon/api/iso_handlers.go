@@ -111,7 +111,7 @@ func (s *Server) handleUploadISO(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "no ISO file provided", http.StatusBadRequest)
 		return
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	// Validate filename
 	filename := filepath.Base(header.Filename)
@@ -171,7 +171,7 @@ func (s *Server) handleUploadISO(w http.ResponseWriter, r *http.Request) {
 		s.errorResponse(w, http.StatusInternalServerError, "failed to create file: %v", err)
 		return
 	}
-	defer dest.Close()
+	defer func() { _ = dest.Close() }()
 
 	// Copy uploaded file
 	bytesWritten, err := io.Copy(dest, file)

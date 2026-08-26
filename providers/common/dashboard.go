@@ -105,7 +105,8 @@ func (dp *DashboardProvider) GetDashboardData() *DashboardData {
 	var recentFailures []*TaskSummary
 
 	for _, progress := range allProgress {
-		if progress.Status == StatusCompleted {
+		switch progress.Status {
+		case StatusCompleted:
 			recentCompletions = append(recentCompletions, &TaskSummary{
 				TaskID:    progress.TaskID,
 				VMName:    progress.VMName,
@@ -114,7 +115,7 @@ func (dp *DashboardProvider) GetDashboardData() *DashboardData {
 				Duration:  progress.EndTime.Sub(progress.StartTime),
 				Timestamp: progress.UpdatedTime,
 			})
-		} else if progress.Status == StatusFailed {
+		case StatusFailed:
 			recentFailures = append(recentFailures, &TaskSummary{
 				TaskID:    progress.TaskID,
 				VMName:    progress.VMName,
@@ -124,7 +125,7 @@ func (dp *DashboardProvider) GetDashboardData() *DashboardData {
 				Timestamp: progress.UpdatedTime,
 				Error:     progress.Error,
 			})
-		} else {
+		default:
 			activeTasks = append(activeTasks, progress)
 		}
 	}

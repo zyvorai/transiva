@@ -152,7 +152,7 @@ func (p *DownloadWorkerPool) downloadFile(workerID int, task DownloadTask) Downl
 		result.Duration = time.Since(startTime)
 		return result
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Check response status
 	if resp.StatusCode != http.StatusOK {

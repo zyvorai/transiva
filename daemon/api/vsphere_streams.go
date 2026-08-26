@@ -54,7 +54,7 @@ func (es *EnhancedServer) handleMetricsStream(w http.ResponseWriter, r *http.Req
 		es.logger.Error("failed to upgrade to WebSocket", "error", err)
 		return
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	es.logger.Info("metrics stream started",
 		"entity", entityName,
@@ -67,7 +67,7 @@ func (es *EnhancedServer) handleMetricsStream(w http.ResponseWriter, r *http.Req
 		es.sendWSError(conn, fmt.Sprintf("failed to create vSphere client: %v", err))
 		return
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Create context with cancellation
 	ctx, cancel := context.WithCancel(r.Context())
@@ -168,7 +168,7 @@ func (es *EnhancedServer) handleEventsStream(w http.ResponseWriter, r *http.Requ
 		es.logger.Error("failed to upgrade to WebSocket", "error", err)
 		return
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	es.logger.Info("event stream started",
 		"event_types", eventTypes,
@@ -180,7 +180,7 @@ func (es *EnhancedServer) handleEventsStream(w http.ResponseWriter, r *http.Requ
 		es.sendWSError(conn, fmt.Sprintf("failed to create vSphere client: %v", err))
 		return
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Create context with cancellation
 	ctx, cancel := context.WithCancel(r.Context())
@@ -266,7 +266,7 @@ func (es *EnhancedServer) handleTasksStream(w http.ResponseWriter, r *http.Reque
 		es.logger.Error("failed to upgrade to WebSocket", "error", err)
 		return
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	es.logger.Info("task stream started")
 
@@ -276,7 +276,7 @@ func (es *EnhancedServer) handleTasksStream(w http.ResponseWriter, r *http.Reque
 		es.sendWSError(conn, fmt.Sprintf("failed to create vSphere client: %v", err))
 		return
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Create context with cancellation
 	ctx, cancel := context.WithCancel(r.Context())

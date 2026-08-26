@@ -46,7 +46,7 @@ func (r *VMTemplateReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	// Handle deletion
-	if !template.ObjectMeta.DeletionTimestamp.IsZero() {
+	if !template.DeletionTimestamp.IsZero() {
 		return r.handleDeletion(ctx, template)
 	}
 

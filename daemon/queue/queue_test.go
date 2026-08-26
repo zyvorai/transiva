@@ -75,7 +75,7 @@ func TestNewQueue(t *testing.T) {
 	}
 
 	// Cleanup
-	queue.Shutdown(context.Background())
+	_ = queue.Shutdown(context.Background())
 }
 
 func TestNewQueueNilConfig(t *testing.T) {
@@ -93,7 +93,7 @@ func TestNewQueueNilConfig(t *testing.T) {
 		t.Error("expected default config to be set")
 	}
 
-	queue.Shutdown(context.Background())
+	_ = queue.Shutdown(context.Background())
 }
 
 func TestNewQueueNilHandler(t *testing.T) {
@@ -134,12 +134,12 @@ func TestEnqueue(t *testing.T) {
 	defer func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 		defer cancel()
-		queue.Shutdown(ctx)
+		_ = queue.Shutdown(ctx)
 	}()
 
 	// Make all workers busy
 	for i := 0; i < config.MaxWorkers; i++ {
-		queue.Enqueue(&Job{ID: fmt.Sprintf("blocker-%d", i), Priority: PriorityLow})
+		_ = queue.Enqueue(&Job{ID: fmt.Sprintf("blocker-%d", i), Priority: PriorityLow})
 	}
 	time.Sleep(100 * time.Millisecond) // Let workers pick up blocker jobs
 
@@ -170,14 +170,14 @@ func TestEnqueueDefaults(t *testing.T) {
 	}
 
 	queue, _ := NewQueue(DefaultConfig(), handler)
-	defer queue.Shutdown(context.Background())
+	defer func() { _ = queue.Shutdown(context.Background()) }()
 
 	job := &Job{
 		ID:       "test-1",
 		Priority: PriorityNormal,
 	}
 
-	queue.Enqueue(job)
+	_ = queue.Enqueue(job)
 
 	// Check defaults were set
 	if job.SubmittedAt.IsZero() {
@@ -208,14 +208,14 @@ func TestEnqueueFullQueue(t *testing.T) {
 			ID:       string(rune('a' + i)),
 			Priority: PriorityNormal,
 		}
-		queue.Enqueue(job)
+		_ = queue.Enqueue(job)
 	}
 
 	// Wait for worker to dequeue first job
 	time.Sleep(100 * time.Millisecond)
 
 	// Now add one more to fill the queue (5th in queue)
-	queue.Enqueue(&Job{ID: "fill", Priority: PriorityNormal})
+	_ = queue.Enqueue(&Job{ID: "fill", Priority: PriorityNormal})
 
 	// Now try to overflow
 	job := &Job{
@@ -231,7 +231,7 @@ func TestEnqueueFullQueue(t *testing.T) {
 	// Shutdown with short timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
-	queue.Shutdown(ctx)
+	_ = queue.Shutdown(ctx)
 }
 
 func TestDequeue(t *testing.T) {
@@ -246,12 +246,12 @@ func TestDequeue(t *testing.T) {
 	defer func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 		defer cancel()
-		queue.Shutdown(ctx)
+		_ = queue.Shutdown(ctx)
 	}()
 
 	// Make all workers busy
 	for i := 0; i < config.MaxWorkers; i++ {
-		queue.Enqueue(&Job{ID: fmt.Sprintf("blocker-%d", i), Priority: PriorityLow})
+		_ = queue.Enqueue(&Job{ID: fmt.Sprintf("blocker-%d", i), Priority: PriorityLow})
 	}
 	time.Sleep(100 * time.Millisecond) // Let workers pick up blocker jobs
 
@@ -260,7 +260,7 @@ func TestDequeue(t *testing.T) {
 		Priority: PriorityNormal,
 	}
 
-	queue.Enqueue(job)
+	_ = queue.Enqueue(job)
 
 	dequeued, err := queue.Dequeue()
 	if err != nil {
@@ -282,7 +282,7 @@ func TestDequeueEmpty(t *testing.T) {
 	}
 
 	queue, _ := NewQueue(DefaultConfig(), handler)
-	defer queue.Shutdown(context.Background())
+	defer func() { _ = queue.Shutdown(context.Background()) }()
 
 	_, err := queue.Dequeue()
 	if err == nil {
@@ -302,12 +302,12 @@ func TestPriorityOrdering(t *testing.T) {
 	defer func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 		defer cancel()
-		queue.Shutdown(ctx)
+		_ = queue.Shutdown(ctx)
 	}()
 
 	// First, make all workers busy
 	for i := 0; i < config.MaxWorkers; i++ {
-		queue.Enqueue(&Job{ID: fmt.Sprintf("blocker-%d", i), Priority: PriorityLow})
+		_ = queue.Enqueue(&Job{ID: fmt.Sprintf("blocker-%d", i), Priority: PriorityLow})
 	}
 	time.Sleep(200 * time.Millisecond) // Let workers pick up blocker jobs
 
@@ -320,7 +320,7 @@ func TestPriorityOrdering(t *testing.T) {
 	}
 
 	for _, job := range jobs {
-		queue.Enqueue(job)
+		_ = queue.Enqueue(job)
 	}
 
 	// Dequeue should return in priority order
@@ -352,12 +352,12 @@ func TestFIFOWithinPriority(t *testing.T) {
 	defer func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
-		queue.Shutdown(ctx)
+		_ = queue.Shutdown(ctx)
 	}()
 
 	// Make all workers busy
 	for i := 0; i < config.MaxWorkers; i++ {
-		queue.Enqueue(&Job{ID: fmt.Sprintf("blocker-%d", i), Priority: PriorityLow})
+		_ = queue.Enqueue(&Job{ID: fmt.Sprintf("blocker-%d", i), Priority: PriorityLow})
 	}
 	time.Sleep(200 * time.Millisecond) // Let workers pick up blocker jobs
 
@@ -367,7 +367,7 @@ func TestFIFOWithinPriority(t *testing.T) {
 			ID:       string(rune('a' + i)),
 			Priority: PriorityNormal,
 		}
-		queue.Enqueue(job)
+		_ = queue.Enqueue(job)
 		time.Sleep(1 * time.Millisecond) // Ensure different timestamps
 	}
 
@@ -399,7 +399,7 @@ func TestJobExecution(t *testing.T) {
 	config.MaxWorkers = 2
 
 	queue, _ := NewQueue(config, handler)
-	defer queue.Shutdown(context.Background())
+	defer func() { _ = queue.Shutdown(context.Background()) }()
 
 	// Enqueue jobs
 	for i := 0; i < 5; i++ {
@@ -407,7 +407,7 @@ func TestJobExecution(t *testing.T) {
 			ID:       string(rune('a' + i)),
 			Priority: PriorityNormal,
 		}
-		queue.Enqueue(job)
+		_ = queue.Enqueue(job)
 	}
 
 	// Wait for jobs to execute
@@ -446,14 +446,14 @@ func TestJobTimeout(t *testing.T) {
 	config.DefaultTimeout = 100 * time.Millisecond
 
 	queue, _ := NewQueue(config, handler)
-	defer queue.Shutdown(context.Background())
+	defer func() { _ = queue.Shutdown(context.Background()) }()
 
 	job := &Job{
 		ID:       "timeout-test",
 		Priority: PriorityNormal,
 	}
 
-	queue.Enqueue(job)
+	_ = queue.Enqueue(job)
 
 	// Wait for timeout
 	time.Sleep(500 * time.Millisecond)
@@ -481,7 +481,7 @@ func TestJobRetry(t *testing.T) {
 	}
 
 	queue, _ := NewQueue(DefaultConfig(), handler)
-	defer queue.Shutdown(context.Background())
+	defer func() { _ = queue.Shutdown(context.Background()) }()
 
 	job := &Job{
 		ID:         "retry-test",
@@ -489,7 +489,7 @@ func TestJobRetry(t *testing.T) {
 		MaxRetries: 3,
 	}
 
-	queue.Enqueue(job)
+	_ = queue.Enqueue(job)
 
 	// Wait for retries
 	time.Sleep(5 * time.Second)
@@ -515,7 +515,7 @@ func TestConcurrentEnqueue(t *testing.T) {
 	}
 
 	queue, _ := NewQueue(DefaultConfig(), handler)
-	defer queue.Shutdown(context.Background())
+	defer func() { _ = queue.Shutdown(context.Background()) }()
 
 	var wg sync.WaitGroup
 	jobCount := 100
@@ -529,7 +529,7 @@ func TestConcurrentEnqueue(t *testing.T) {
 				ID:       string(rune('a' + id%26)),
 				Priority: Priority(id % 4),
 			}
-			queue.Enqueue(job)
+			_ = queue.Enqueue(job)
 		}(i)
 	}
 
@@ -553,7 +553,7 @@ func TestIsEmpty(t *testing.T) {
 	defer func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 		defer cancel()
-		queue.Shutdown(ctx)
+		_ = queue.Shutdown(ctx)
 	}()
 
 	if !queue.IsEmpty() {
@@ -562,11 +562,11 @@ func TestIsEmpty(t *testing.T) {
 
 	// Make all workers busy
 	for i := 0; i < config.MaxWorkers; i++ {
-		queue.Enqueue(&Job{ID: fmt.Sprintf("blocker-%d", i), Priority: PriorityLow})
+		_ = queue.Enqueue(&Job{ID: fmt.Sprintf("blocker-%d", i), Priority: PriorityLow})
 	}
 	time.Sleep(100 * time.Millisecond) // Let workers pick up blocker jobs
 
-	queue.Enqueue(&Job{ID: "test", Priority: PriorityNormal})
+	_ = queue.Enqueue(&Job{ID: "test", Priority: PriorityNormal})
 
 	if queue.IsEmpty() {
 		t.Error("expected queue to not be empty")
@@ -587,7 +587,7 @@ func TestIsFull(t *testing.T) {
 	defer func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 		defer cancel()
-		queue.Shutdown(ctx)
+		_ = queue.Shutdown(ctx)
 	}()
 
 	if queue.IsFull() {
@@ -596,13 +596,13 @@ func TestIsFull(t *testing.T) {
 
 	// First, make all workers busy
 	for i := 0; i < config.MaxWorkers; i++ {
-		queue.Enqueue(&Job{ID: fmt.Sprintf("blocker-%d", i), Priority: PriorityLow})
+		_ = queue.Enqueue(&Job{ID: fmt.Sprintf("blocker-%d", i), Priority: PriorityLow})
 	}
 	time.Sleep(100 * time.Millisecond) // Let workers pick up blocker jobs
 
 	// Now fill the queue
 	for i := 0; i < 5; i++ {
-		queue.Enqueue(&Job{ID: string(rune('a' + i)), Priority: PriorityNormal})
+		_ = queue.Enqueue(&Job{ID: string(rune('a' + i)), Priority: PriorityNormal})
 	}
 
 	if !queue.IsFull() {
@@ -616,9 +616,9 @@ func TestGetMetrics(t *testing.T) {
 	}
 
 	queue, _ := NewQueue(DefaultConfig(), handler)
-	defer queue.Shutdown(context.Background())
+	defer func() { _ = queue.Shutdown(context.Background()) }()
 
-	queue.Enqueue(&Job{ID: "test", Priority: PriorityNormal})
+	_ = queue.Enqueue(&Job{ID: "test", Priority: PriorityNormal})
 
 	metrics := queue.GetMetrics()
 
@@ -641,7 +641,7 @@ func TestShutdown(t *testing.T) {
 
 	// Enqueue some jobs
 	for i := 0; i < 5; i++ {
-		queue.Enqueue(&Job{ID: string(rune('a' + i)), Priority: PriorityNormal})
+		_ = queue.Enqueue(&Job{ID: string(rune('a' + i)), Priority: PriorityNormal})
 	}
 
 	// Shutdown with timeout
@@ -669,7 +669,7 @@ func TestShutdownTimeout(t *testing.T) {
 	queue, _ := NewQueue(config, handler)
 
 	// Enqueue job
-	queue.Enqueue(&Job{ID: "long-job", Priority: PriorityNormal})
+	_ = queue.Enqueue(&Job{ID: "long-job", Priority: PriorityNormal})
 
 	// Wait for job to start
 	<-started

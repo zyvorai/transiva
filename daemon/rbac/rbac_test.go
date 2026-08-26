@@ -66,7 +66,7 @@ func TestAddUserEmptyUsername(t *testing.T) {
 func TestRemoveUser(t *testing.T) {
 	manager := NewRBACManager()
 
-	manager.AddUser("alice", RoleAdmin)
+	_ = manager.AddUser("alice", RoleAdmin)
 
 	err := manager.RemoveUser("alice")
 	if err != nil {
@@ -82,7 +82,7 @@ func TestRemoveUser(t *testing.T) {
 func TestGetUser(t *testing.T) {
 	manager := NewRBACManager()
 
-	manager.AddUser("alice", RoleAdmin, RoleOperator)
+	_ = manager.AddUser("alice", RoleAdmin, RoleOperator)
 
 	user, err := manager.GetUser("alice")
 	if err != nil {
@@ -101,7 +101,7 @@ func TestGetUser(t *testing.T) {
 func TestUpdateUserRoles(t *testing.T) {
 	manager := NewRBACManager()
 
-	manager.AddUser("alice", RoleViewer)
+	_ = manager.AddUser("alice", RoleViewer)
 
 	err := manager.UpdateUserRoles("alice", RoleAdmin)
 	if err != nil {
@@ -118,9 +118,9 @@ func TestCheckPermission(t *testing.T) {
 	manager := NewRBACManager()
 
 	// Add users with different roles
-	manager.AddUser("admin", RoleAdmin)
-	manager.AddUser("operator", RoleOperator)
-	manager.AddUser("viewer", RoleViewer)
+	_ = manager.AddUser("admin", RoleAdmin)
+	_ = manager.AddUser("operator", RoleOperator)
+	_ = manager.AddUser("viewer", RoleViewer)
 
 	tests := []struct {
 		username   string
@@ -167,7 +167,7 @@ func TestCheckPermission(t *testing.T) {
 func TestHasRole(t *testing.T) {
 	manager := NewRBACManager()
 
-	manager.AddUser("alice", RoleAdmin, RoleOperator)
+	_ = manager.AddUser("alice", RoleAdmin, RoleOperator)
 
 	if !manager.HasRole("alice", RoleAdmin) {
 		t.Error("expected alice to have admin role")
@@ -189,7 +189,7 @@ func TestHasRole(t *testing.T) {
 func TestGetUserPermissions(t *testing.T) {
 	manager := NewRBACManager()
 
-	manager.AddUser("alice", RoleAdmin)
+	_ = manager.AddUser("alice", RoleAdmin)
 
 	perms, err := manager.GetUserPermissions("alice")
 	if err != nil {
@@ -209,7 +209,7 @@ func TestGetUserPermissions(t *testing.T) {
 func TestGetUserResourcePermissions(t *testing.T) {
 	manager := NewRBACManager()
 
-	manager.AddUser("operator", RoleOperator)
+	_ = manager.AddUser("operator", RoleOperator)
 
 	rp, err := manager.GetUserResourcePermissions("operator", ResourceVM)
 	if err != nil {
@@ -298,7 +298,7 @@ func TestGetUserResourcePermissions_AllActions(t *testing.T) {
 	manager := NewRBACManager()
 
 	// Admin should have all permissions on VMs
-	manager.AddUser("admin", RoleAdmin)
+	_ = manager.AddUser("admin", RoleAdmin)
 
 	rpVM, err := manager.GetUserResourcePermissions("admin", ResourceVM)
 	if err != nil {

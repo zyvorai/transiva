@@ -36,7 +36,7 @@ func TestCreateExporter_WebMethod(t *testing.T) {
 	detector := capabilities.NewDetector(log)
 
 	// Mark web as available
-	detector.Detect(context.Background())
+	_ = detector.Detect(context.Background())
 
 	factory := NewExporterFactory(detector, log)
 
@@ -74,7 +74,7 @@ func TestCreateExporter_AllMethods(t *testing.T) {
 
 	// Run detection
 	ctx := context.Background()
-	detector.Detect(ctx)
+	_ = detector.Detect(ctx)
 
 	factory := NewExporterFactory(detector, log)
 
@@ -113,7 +113,7 @@ func TestCreateExporter_UnknownMethod(t *testing.T) {
 	detector := capabilities.NewDetector(log)
 
 	// Manually add a fake method as available
-	detector.Detect(context.Background())
+	_ = detector.Detect(context.Background())
 
 	factory := NewExporterFactory(detector, log)
 
@@ -129,7 +129,7 @@ func TestGetOrCreateDefault(t *testing.T) {
 	detector := capabilities.NewDetector(log)
 
 	ctx := context.Background()
-	detector.Detect(ctx)
+	_ = detector.Detect(ctx)
 
 	factory := NewExporterFactory(detector, log)
 
@@ -220,7 +220,7 @@ func TestExporterValidation(t *testing.T) {
 	detector := capabilities.NewDetector(log)
 
 	ctx := context.Background()
-	detector.Detect(ctx)
+	_ = detector.Detect(ctx)
 
 	factory := NewExporterFactory(detector, log)
 
@@ -296,7 +296,7 @@ func TestGetAvailableMethods(t *testing.T) {
 	detector := capabilities.NewDetector(log)
 
 	ctx := context.Background()
-	detector.Detect(ctx)
+	_ = detector.Detect(ctx)
 
 	factory := NewExporterFactory(detector, log)
 
@@ -333,7 +333,7 @@ func TestIsAvailable(t *testing.T) {
 	detector := capabilities.NewDetector(log)
 
 	ctx := context.Background()
-	detector.Detect(ctx)
+	_ = detector.Detect(ctx)
 
 	factory := NewExporterFactory(detector, log)
 
@@ -378,7 +378,7 @@ func TestGetDefaultMethod(t *testing.T) {
 	detector := capabilities.NewDetector(log)
 
 	ctx := context.Background()
-	detector.Detect(ctx)
+	_ = detector.Detect(ctx)
 
 	factory := NewExporterFactory(detector, log)
 

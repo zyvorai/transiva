@@ -21,7 +21,7 @@ func setupTestBasicServer(t *testing.T) *Server {
 	log := logger.New("error")
 	detector := capabilities.NewDetector(log)
 	ctx := context.Background()
-	detector.Detect(ctx)
+	_ = detector.Detect(ctx)
 	manager := jobs.NewManager(log, detector)
 
 	return NewServer(manager, detector, log, ":8080", nil, nil)
@@ -130,7 +130,7 @@ func TestHandleQueryJobs(t *testing.T) {
 		VMPath:     "/datacenter/vm/test",
 		OutputPath: "/tmp/output",
 	}
-	server.manager.SubmitJob(jobDef)
+	_, _ = server.manager.SubmitJob(jobDef)
 
 	// Query all jobs with GET
 	req := httptest.NewRequest(http.MethodGet, "/jobs?all=true", nil)
@@ -160,7 +160,7 @@ func TestHandleQueryJobsWithPOST(t *testing.T) {
 		VMPath:     "/datacenter/vm/test",
 		OutputPath: "/tmp/output",
 	}
-	server.manager.SubmitJob(jobDef)
+	_, _ = server.manager.SubmitJob(jobDef)
 
 	// Query with POST
 	queryReq := models.QueryRequest{
@@ -258,7 +258,7 @@ func TestHandleQueryJobsByStatus(t *testing.T) {
 		VMPath:     "/datacenter/vm/test",
 		OutputPath: "/tmp/output",
 	}
-	server.manager.SubmitJob(jobDef)
+	_, _ = server.manager.SubmitJob(jobDef)
 
 	// Wait for job to process
 	time.Sleep(500 * time.Millisecond)
@@ -493,7 +493,7 @@ func TestHandleStatus(t *testing.T) {
 		VMPath:     "/datacenter/vm/test",
 		OutputPath: "/tmp/output",
 	}
-	server.manager.SubmitJob(jobDef)
+	_, _ = server.manager.SubmitJob(jobDef)
 
 	req := httptest.NewRequest(http.MethodGet, "/status", nil)
 	w := httptest.NewRecorder()

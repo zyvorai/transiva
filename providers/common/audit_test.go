@@ -18,7 +18,7 @@ func TestNewAuditLogger(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create audit logger: %v", err)
 	}
-	defer logger.Close()
+	defer func() { _ = logger.Close() }()
 
 	if logger == nil {
 		t.Fatal("Expected logger to be created")
@@ -42,7 +42,7 @@ func TestAuditLogger_Log(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create audit logger: %v", err)
 	}
-	defer logger.Close()
+	defer func() { _ = logger.Close() }()
 
 	event := &AuditEvent{
 		EventType:   EventMigrationStart,
@@ -87,7 +87,7 @@ func TestAuditLogger_LogMigrationStart(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create audit logger: %v", err)
 	}
-	defer logger.Close()
+	defer func() { _ = logger.Close() }()
 
 	err = logger.LogMigrationStart("task-123", "test-vm", "vsphere", "testuser")
 	if err != nil {
@@ -113,7 +113,7 @@ func TestAuditLogger_LogMigrationComplete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create audit logger: %v", err)
 	}
-	defer logger.Close()
+	defer func() { _ = logger.Close() }()
 
 	duration := 5 * time.Minute
 	details := map[string]interface{}{
@@ -143,7 +143,7 @@ func TestAuditLogger_LogMigrationFailed(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create audit logger: %v", err)
 	}
-	defer logger.Close()
+	defer func() { _ = logger.Close() }()
 
 	migrationErr := fmt.Errorf("disk space error")
 	err = logger.LogMigrationFailed("task-123", "test-vm", "vsphere", "testuser", migrationErr)
@@ -169,7 +169,7 @@ func TestAuditLogger_LogExport(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create audit logger: %v", err)
 	}
-	defer logger.Close()
+	defer func() { _ = logger.Close() }()
 
 	// Test export start
 	err = logger.LogExportStart("task-123", "test-vm", "vsphere")
@@ -194,7 +194,7 @@ func TestAuditLogger_LogConversion(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create audit logger: %v", err)
 	}
-	defer logger.Close()
+	defer func() { _ = logger.Close() }()
 
 	// Test conversion start
 	err = logger.LogConversionStart("task-123", "test-vm")
@@ -218,7 +218,7 @@ func TestAuditLogger_LogUpload(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create audit logger: %v", err)
 	}
-	defer logger.Close()
+	defer func() { _ = logger.Close() }()
 
 	// Test upload start
 	err = logger.LogUploadStart("task-123", "test-vm", "s3://bucket/path")
@@ -243,7 +243,7 @@ func TestAuditLogger_LogConfigChange(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create audit logger: %v", err)
 	}
-	defer logger.Close()
+	defer func() { _ = logger.Close() }()
 
 	changes := map[string]interface{}{
 		"max_workers": map[string]interface{}{
@@ -266,7 +266,7 @@ func TestAuditLogger_LogAPIAccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create audit logger: %v", err)
 	}
-	defer logger.Close()
+	defer func() { _ = logger.Close() }()
 
 	err = logger.LogAPIAccess("api-user", "192.168.1.100", "curl/7.68.0", "POST", "/api/v1/jobs", 200)
 	if err != nil {
@@ -282,7 +282,7 @@ func TestAuditLogger_LogWarning(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create audit logger: %v", err)
 	}
-	defer logger.Close()
+	defer func() { _ = logger.Close() }()
 
 	err = logger.LogWarning("task-123", "test-vm", "Disk space below 10%")
 	if err != nil {
@@ -298,7 +298,7 @@ func TestAuditLogger_LogError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create audit logger: %v", err)
 	}
-	defer logger.Close()
+	defer func() { _ = logger.Close() }()
 
 	testErr := fmt.Errorf("connection timeout")
 	err = logger.LogError("task-123", "test-vm", testErr)
@@ -385,7 +385,7 @@ func TestQueryAuditLogs(t *testing.T) {
 		t.Fatalf("Failed to log error: %v", err)
 	}
 
-	logger.Close()
+	_ = logger.Close()
 
 	// Query all events
 	events, err := QueryAuditLogs(logPath, QueryOptions{})
@@ -472,7 +472,7 @@ func TestAuditLogger_Rotate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create audit logger: %v", err)
 	}
-	defer logger.Close()
+	defer func() { _ = logger.Close() }()
 
 	// Set small max file size and files to test rotation
 	logger.rotateSize = 100 // 100 bytes
@@ -501,7 +501,7 @@ func TestAuditLogger_Rotate(t *testing.T) {
 			Description: "This is a longer description to increase file size and trigger rotation mechanism",
 			Timestamp:   time.Now(),
 		}
-		logger.Log(event)
+		_ = logger.Log(event)
 	}
 
 	// Manually trigger rotation to test the function
@@ -549,7 +549,7 @@ func TestAuditLogger_MultipleRotations(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create audit logger: %v", err)
 	}
-	defer logger.Close()
+	defer func() { _ = logger.Close() }()
 
 	// Set small max file size and max 2 rotated files
 	logger.rotateSize = 50
@@ -566,7 +566,7 @@ func TestAuditLogger_MultipleRotations(t *testing.T) {
 				Description: "Test data for rotation",
 				Timestamp:   time.Now(),
 			}
-			logger.Log(event)
+			_ = logger.Log(event)
 		}
 
 		// Rotate

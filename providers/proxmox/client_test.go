@@ -19,7 +19,7 @@ func TestNewClient(t *testing.T) {
 			// Mock authentication response
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{
+			_, _ = w.Write([]byte(`{
 				"data": {
 					"ticket": "PVE:test@pam:12345678::abcdefgh",
 					"CSRFPreventionToken": "12345678:abcdefgh",
@@ -62,7 +62,7 @@ func TestListNodes(t *testing.T) {
 		case "/api2/json/access/ticket":
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{
+			_, _ = w.Write([]byte(`{
 				"data": {
 					"ticket": "PVE:test@pam:12345678::abcdefgh",
 					"CSRFPreventionToken": "12345678:abcdefgh",
@@ -73,7 +73,7 @@ func TestListNodes(t *testing.T) {
 		case "/api2/json/nodes":
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{
+			_, _ = w.Write([]byte(`{
 				"data": [
 					{
 						"node": "pve-node1",

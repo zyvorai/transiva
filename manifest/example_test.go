@@ -16,7 +16,7 @@ import (
 func ExampleBuilder() {
 	// Create output directory
 	outputDir := "/work/export-vsphere-vm-1234"
-	os.MkdirAll(outputDir, 0755)
+	_ = os.MkdirAll(outputDir, 0755)
 
 	// Create example disk files (in real usage, these would be exported disks)
 	bootDiskPath := filepath.Join(outputDir, "boot-disk.vmdk")
@@ -114,7 +114,7 @@ func ExampleBuilder() {
 // checksum verification enabled.
 func Example_builderWithChecksums() {
 	outputDir := "/work/export-vm-checksums"
-	os.MkdirAll(outputDir, 0755)
+	_ = os.MkdirAll(outputDir, 0755)
 
 	diskPath := filepath.Join(outputDir, "disk.vmdk")
 

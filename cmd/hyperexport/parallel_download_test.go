@@ -186,7 +186,7 @@ func TestDownloadWorkerPool_DownloadFile(t *testing.T) {
 	testData := strings.Repeat("x", 1024)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(testData))
+		_, _ = w.Write([]byte(testData))
 	}))
 	defer server.Close()
 
@@ -270,7 +270,7 @@ func TestDownloadWorkerPool_DownloadBatch(t *testing.T) {
 			size = 512
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(strings.Repeat("x", size)))
+		_, _ = w.Write([]byte(strings.Repeat("x", size)))
 	}))
 	defer server.Close()
 
@@ -336,7 +336,7 @@ func TestDownloadWorkerPool_ConcurrentDownloads(t *testing.T) {
 	testData := strings.Repeat("x", 1024)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(testData))
+		_, _ = w.Write([]byte(testData))
 	}))
 	defer server.Close()
 
@@ -497,7 +497,7 @@ func TestResumeableDownloader_DownloadWithResume(t *testing.T) {
 		} else {
 			w.WriteHeader(http.StatusOK)
 		}
-		w.Write([]byte(testData))
+		_, _ = w.Write([]byte(testData))
 	}))
 	defer server.Close()
 
@@ -628,7 +628,7 @@ func TestDownloadWorkerPool_MultipleClose(t *testing.T) {
 			t.Logf("Second close panicked as expected: %v", r)
 		}
 	}()
-	pool.Close()
+	_ = pool.Close()
 }
 
 func TestDownloadWorkerPool_WorkerCancellation(t *testing.T) {

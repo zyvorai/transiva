@@ -50,7 +50,7 @@ func (c *ElectricityMapClient) GetCurrentIntensity(zone string) (*CarbonIntensit
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch data: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("API returned status %d", resp.StatusCode)
@@ -85,7 +85,7 @@ func (c *ElectricityMapClient) GetForecast(zone string, hours int) ([]Forecast, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch forecast: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("API returned status %d", resp.StatusCode)
@@ -194,7 +194,7 @@ func (c *ElectricityMapClient) ListZones() ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch zones: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("API returned status %d", resp.StatusCode)

@@ -98,7 +98,7 @@ func (s *Server) handleListNutanixVMs(w http.ResponseWriter, r *http.Request) {
 		s.errorResponse(w, http.StatusInternalServerError, "failed to create nutanix provider: %v", err)
 		return
 	}
-	defer provider.Disconnect()
+	defer func() { _ = provider.Disconnect() }()
 
 	ctx, cancel := context.WithTimeout(r.Context(), 120*time.Second)
 	defer cancel()
@@ -226,7 +226,7 @@ func (s *Server) listVMsWithCredentials(server, username, password string, insec
 		s.logger.Error("failed to create vSphere client", "error", err, "server", server)
 		return nil, err
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	vms, err := client.ListVMs(ctx)
 	if err != nil {
@@ -246,7 +246,7 @@ func (s *Server) listVMsFromVSphere() ([]vsphere.VMInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	vms, err := client.ListVMs(ctx)
 	if err != nil {

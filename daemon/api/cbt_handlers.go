@@ -90,7 +90,7 @@ func (s *Server) handleEnableCBT(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Enable CBT
 	if err := client.EnableCBT(ctx, req.VMPath); err != nil {
@@ -142,7 +142,7 @@ func (s *Server) handleDisableCBT(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Disable CBT
 	if err := client.DisableCBT(ctx, req.VMPath); err != nil {
@@ -190,7 +190,7 @@ func (s *Server) handleCBTStatus(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Failed to connect to vSphere: %v", err), http.StatusInternalServerError)
 		return
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Check CBT status
 	cbtEnabled, err := client.IsCBTEnabled(ctx, req.VMPath)
@@ -269,7 +269,7 @@ func (s *Server) handleIncrementalAnalysis(w http.ResponseWriter, r *http.Reques
 		http.Error(w, fmt.Sprintf("Failed to connect to vSphere: %v", err), http.StatusInternalServerError)
 		return
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Get disk metadata
 	disks, err := client.GetDiskMetadata(ctx, req.VMPath)

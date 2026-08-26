@@ -51,7 +51,7 @@ func (s *Server) handleVMInfo(w http.ResponseWriter, r *http.Request) {
 		s.errorResponse(w, http.StatusInternalServerError, "failed to connect to vSphere: %v", err)
 		return
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := context.Background()
 	info, err := client.GetVMInfo(ctx, req.VMPath)
@@ -129,7 +129,7 @@ func (s *Server) handleNutanixVMInfo(w http.ResponseWriter, r *http.Request) {
 		s.errorResponse(w, http.StatusInternalServerError, "failed to create nutanix provider: %v", err)
 		return
 	}
-	defer provider.Disconnect()
+	defer func() { _ = provider.Disconnect() }()
 
 	ctx, cancel := context.WithTimeout(r.Context(), 120*time.Second)
 	defer cancel()

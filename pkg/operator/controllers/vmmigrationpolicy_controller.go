@@ -67,7 +67,7 @@ func (r *VMMigrationPolicyReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 
 	// Handle deletion
-	if !policy.ObjectMeta.DeletionTimestamp.IsZero() {
+	if !policy.DeletionTimestamp.IsZero() {
 		return r.handleDeletion(ctx, policy)
 	}
 
@@ -208,13 +208,13 @@ func (r *VMMigrationPolicyReconciler) evaluateNodePressure(ctx context.Context, 
 				targetNode := r.selectTargetNode(ctx, vm, nodeName, policy)
 
 				migrations = append(migrations, transiva.MigrationRecord{
-					VMName:     vm.Name,
-					FromNode:   nodeName,
-					ToNode:     targetNode,
+					VMName:      vm.Name,
+					FromNode:    nodeName,
+					ToNode:      targetNode,
 					TriggerType: trigger.Type,
-					StartTime:  metav1.Now(),
-					Status:     "pending",
-					Reason:     fmt.Sprintf("Node %s under pressure", nodeName),
+					StartTime:   metav1.Now(),
+					Status:      "pending",
+					Reason:      fmt.Sprintf("Node %s under pressure", nodeName),
 				})
 			}
 		}
@@ -235,13 +235,13 @@ func (r *VMMigrationPolicyReconciler) evaluateCarbonIntensity(ctx context.Contex
 				targetNode := r.selectTargetNode(ctx, vm, vm.Status.NodeName, policy)
 
 				migrations = append(migrations, transiva.MigrationRecord{
-					VMName:     vm.Name,
-					FromNode:   vm.Status.NodeName,
-					ToNode:     targetNode,
+					VMName:      vm.Name,
+					FromNode:    vm.Status.NodeName,
+					ToNode:      targetNode,
 					TriggerType: trigger.Type,
-					StartTime:  metav1.Now(),
-					Status:     "pending",
-					Reason:     fmt.Sprintf("High carbon intensity: %.1f gCO2/kWh", vm.Status.CarbonIntensity),
+					StartTime:   metav1.Now(),
+					Status:      "pending",
+					Reason:      fmt.Sprintf("High carbon intensity: %.1f gCO2/kWh", vm.Status.CarbonIntensity),
 				})
 			}
 		}
@@ -278,19 +278,19 @@ func (r *VMMigrationPolicyReconciler) evaluateLoadBalancing(ctx context.Context,
 	}
 
 	// If imbalance is significant, migrate VMs from max to min
-	if maxCount - minCount > 3 && maxNode != "" && minNode != "" {
+	if maxCount-minCount > 3 && maxNode != "" && minNode != "" {
 		vmsToMove := (maxCount - minCount) / 2
 		for i := 0; i < vmsToMove && i < len(nodeVMs[maxNode]); i++ {
 			vm := nodeVMs[maxNode][i]
 
 			migrations = append(migrations, transiva.MigrationRecord{
-				VMName:     vm.Name,
-				FromNode:   maxNode,
-				ToNode:     minNode,
+				VMName:      vm.Name,
+				FromNode:    maxNode,
+				ToNode:      minNode,
 				TriggerType: trigger.Type,
-				StartTime:  metav1.Now(),
-				Status:     "pending",
-				Reason:     fmt.Sprintf("Load balancing: %s (%d VMs) -> %s (%d VMs)", maxNode, maxCount, minNode, minCount),
+				StartTime:   metav1.Now(),
+				Status:      "pending",
+				Reason:      fmt.Sprintf("Load balancing: %s (%d VMs) -> %s (%d VMs)", maxNode, maxCount, minNode, minCount),
 			})
 		}
 	}
@@ -308,13 +308,13 @@ func (r *VMMigrationPolicyReconciler) evaluateMaintenance(ctx context.Context, v
 			targetNode := r.selectTargetNode(ctx, vm, vm.Status.NodeName, policy)
 
 			migrations = append(migrations, transiva.MigrationRecord{
-				VMName:     vm.Name,
-				FromNode:   vm.Status.NodeName,
-				ToNode:     targetNode,
+				VMName:      vm.Name,
+				FromNode:    vm.Status.NodeName,
+				ToNode:      targetNode,
 				TriggerType: trigger.Type,
-				StartTime:  metav1.Now(),
-				Status:     "pending",
-				Reason:     "Node under maintenance",
+				StartTime:   metav1.Now(),
+				Status:      "pending",
+				Reason:      "Node under maintenance",
 			})
 		}
 	}

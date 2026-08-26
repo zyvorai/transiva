@@ -160,7 +160,7 @@ func TestFindConvertedDisks(t *testing.T) {
 
 	for _, disk := range testDisks {
 		path := filepath.Join(tmpDir, disk)
-		os.WriteFile(path, []byte("test"), 0644)
+		_ = os.WriteFile(path, []byte("test"), 0644)
 	}
 
 	disks := converter.findConvertedDisks(tmpDir)

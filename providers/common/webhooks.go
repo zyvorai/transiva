@@ -187,7 +187,7 @@ func (wn *WebhookNotifier) sendWebhook(payload interface{}) error {
 	if err != nil {
 		return fmt.Errorf("send request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("webhook returned status %d", resp.StatusCode)
@@ -199,9 +199,10 @@ func (wn *WebhookNotifier) sendWebhook(payload interface{}) error {
 // formatSlackPayload formats event as Slack message
 func (wn *WebhookNotifier) formatSlackPayload(event *WebhookEvent) map[string]interface{} {
 	color := "good"
-	if event.EventType == "error" {
+	switch event.EventType {
+	case "error":
 		color = "danger"
-	} else if event.EventType == "warning" {
+	case "warning":
 		color = "warning"
 	}
 
@@ -264,9 +265,10 @@ func (wn *WebhookNotifier) formatSlackPayload(event *WebhookEvent) map[string]in
 // formatDiscordPayload formats event as Discord message
 func (wn *WebhookNotifier) formatDiscordPayload(event *WebhookEvent) map[string]interface{} {
 	color := 0x00ff00 // Green
-	if event.EventType == "error" {
+	switch event.EventType {
+	case "error":
 		color = 0xff0000 // Red
-	} else if event.EventType == "warning" {
+	case "warning":
 		color = 0xffa500 // Orange
 	}
 

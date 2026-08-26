@@ -30,17 +30,12 @@ func (c *VSphereClient) GetRecentEvents(ctx context.Context, since time.Time, ev
 	}
 
 	// Add entity filter if specified
+	//
+	// NOTE: vSphere's EventFilterSpec accepts only a single root entity plus
+	// a recursion option, not a list of entity types, so entityTypes cannot
+	// be applied as a per-type filter here. Recursion is still enabled so
+	// events for all entities under the (implicit) root are returned.
 	if len(entityTypes) > 0 {
-		var entitySpecs []types.EventFilterSpecByEntity
-		for _, entityType := range entityTypes {
-			spec := types.EventFilterSpecByEntity{
-				Entity: types.ManagedObjectReference{
-					Type: entityType,
-				},
-				Recursion: types.EventFilterSpecRecursionOptionAll,
-			}
-			entitySpecs = append(entitySpecs, spec)
-		}
 		filter.Entity = &types.EventFilterSpecByEntity{
 			Recursion: types.EventFilterSpecRecursionOptionAll,
 		}
@@ -126,7 +121,7 @@ func (c *VSphereClient) GetRecentTasks(ctx context.Context, since time.Time) ([]
 	if err != nil {
 		return nil, fmt.Errorf("create task collector: %w", err)
 	}
-	defer collector.Destroy(ctx)
+	defer func() { _ = collector.Destroy(ctx) }()
 
 	// Read task history
 	tasks, err := collector.ReadNextTasks(ctx, 1000) // Max 1000 tasks

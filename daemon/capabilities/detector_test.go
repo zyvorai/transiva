@@ -45,7 +45,7 @@ func TestDetectWithMockBinaries(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create mock binary %s: %v", path, err)
 		}
-		f.Close()
+		_ = f.Close()
 
 		if err := os.Chmod(path, 0755); err != nil {
 			t.Fatalf("failed to chmod mock binary %s: %v", path, err)
@@ -54,8 +54,8 @@ func TestDetectWithMockBinaries(t *testing.T) {
 
 	// Modify PATH to include our mock directory
 	oldPath := os.Getenv("PATH")
-	os.Setenv("PATH", tmpDir+":"+oldPath)
-	defer os.Setenv("PATH", oldPath)
+	_ = os.Setenv("PATH", tmpDir+":"+oldPath)
+	defer func() { _ = os.Setenv("PATH", oldPath) }()
 
 	// Create detector and run detection
 	log := logger.New("info")
@@ -453,8 +453,8 @@ func TestDetectCTLNotFound(t *testing.T) {
 
 	// Ensure hyperctl is not in PATH
 	oldPath := os.Getenv("PATH")
-	os.Setenv("PATH", "/nonexistent")
-	defer os.Setenv("PATH", oldPath)
+	_ = os.Setenv("PATH", "/nonexistent")
+	defer func() { _ = os.Setenv("PATH", oldPath) }()
 
 	cap := detector.detectCTL()
 
@@ -491,8 +491,8 @@ func TestDetectCTLVersionCheckFails(t *testing.T) {
 
 	// Modify PATH
 	oldPath := os.Getenv("PATH")
-	os.Setenv("PATH", tmpDir+":"+oldPath)
-	defer os.Setenv("PATH", oldPath)
+	_ = os.Setenv("PATH", tmpDir+":"+oldPath)
+	defer func() { _ = os.Setenv("PATH", oldPath) }()
 
 	cap := detector.detectCTL()
 

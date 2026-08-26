@@ -100,7 +100,7 @@ func TestBuilderAddDisk(t *testing.T) {
 func TestBuilderAddDiskInvalidID(t *testing.T) {
 	tmpDir := t.TempDir()
 	diskPath := filepath.Join(tmpDir, "test.vmdk")
-	os.WriteFile(diskPath, []byte("test"), 0644)
+	_ = os.WriteFile(diskPath, []byte("test"), 0644)
 
 	builder := NewBuilder()
 	builder.AddDisk("disk with spaces", "vmdk", diskPath, 1024, 0, "boot")
@@ -117,7 +117,7 @@ func TestBuilderAddDiskInvalidID(t *testing.T) {
 func TestBuilderAddDiskDuplicateID(t *testing.T) {
 	tmpDir := t.TempDir()
 	diskPath := filepath.Join(tmpDir, "test.vmdk")
-	os.WriteFile(diskPath, []byte("test"), 0644)
+	_ = os.WriteFile(diskPath, []byte("test"), 0644)
 
 	builder := NewBuilder()
 	builder.AddDisk("disk-0", "vmdk", diskPath, 1024, 0, "boot")
@@ -135,7 +135,7 @@ func TestBuilderAddDiskDuplicateID(t *testing.T) {
 func TestBuilderAddDiskInvalidFormat(t *testing.T) {
 	tmpDir := t.TempDir()
 	diskPath := filepath.Join(tmpDir, "test.vmdk")
-	os.WriteFile(diskPath, []byte("test"), 0644)
+	_ = os.WriteFile(diskPath, []byte("test"), 0644)
 
 	builder := NewBuilder()
 	builder.AddDisk("disk-0", "invalid", diskPath, 1024, 0, "boot")
@@ -277,7 +277,7 @@ func TestBuilderWithPipeline(t *testing.T) {
 func TestBuilderBuild(t *testing.T) {
 	tmpDir := t.TempDir()
 	diskPath := filepath.Join(tmpDir, "test.vmdk")
-	os.WriteFile(diskPath, []byte("test"), 0644)
+	_ = os.WriteFile(diskPath, []byte("test"), 0644)
 
 	builder := NewBuilder()
 	builder.WithSource("vsphere", "vm-1234", "test-vm", "DC1", "govc-export")
@@ -318,7 +318,7 @@ func TestBuilderBuildNoDisks(t *testing.T) {
 func TestBuilderBuildWithErrors(t *testing.T) {
 	tmpDir := t.TempDir()
 	diskPath := filepath.Join(tmpDir, "test.vmdk")
-	os.WriteFile(diskPath, []byte("test"), 0644)
+	_ = os.WriteFile(diskPath, []byte("test"), 0644)
 
 	builder := NewBuilder()
 	builder.AddDisk("invalid id with spaces", "vmdk", diskPath, 1024, 0, "boot")
@@ -336,7 +336,7 @@ func TestBuilderBuildWithErrors(t *testing.T) {
 func TestValidate(t *testing.T) {
 	tmpDir := t.TempDir()
 	diskPath := filepath.Join(tmpDir, "test.vmdk")
-	os.WriteFile(diskPath, []byte("test"), 0644)
+	_ = os.WriteFile(diskPath, []byte("test"), 0644)
 
 	builder := NewBuilder()
 	builder.AddDisk("disk-0", "vmdk", diskPath, 1024, 0, "boot")
@@ -354,7 +354,7 @@ func TestValidate(t *testing.T) {
 func TestValidateInvalidVersion(t *testing.T) {
 	tmpDir := t.TempDir()
 	diskPath := filepath.Join(tmpDir, "test.vmdk")
-	os.WriteFile(diskPath, []byte("test"), 0644)
+	_ = os.WriteFile(diskPath, []byte("test"), 0644)
 
 	builder := NewBuilder()
 	builder.AddDisk("disk-0", "vmdk", diskPath, 1024, 0, "boot")
@@ -402,7 +402,7 @@ func TestValidate_NoDisks(t *testing.T) {
 func TestValidate_WithVMMetadata(t *testing.T) {
 	tmpDir := t.TempDir()
 	diskPath := filepath.Join(tmpDir, "test.vmdk")
-	os.WriteFile(diskPath, []byte("test"), 0644)
+	_ = os.WriteFile(diskPath, []byte("test"), 0644)
 
 	builder := NewBuilder()
 	builder.AddDisk("disk-0", "vmdk", diskPath, 1024, 0, "boot")
@@ -419,7 +419,7 @@ func TestValidate_WithVMMetadata(t *testing.T) {
 func TestValidate_WithInvalidVMMetadata(t *testing.T) {
 	tmpDir := t.TempDir()
 	diskPath := filepath.Join(tmpDir, "test.vmdk")
-	os.WriteFile(diskPath, []byte("test"), 0644)
+	_ = os.WriteFile(diskPath, []byte("test"), 0644)
 
 	builder := NewBuilder()
 	builder.AddDisk("disk-0", "vmdk", diskPath, 1024, 0, "boot")
@@ -444,7 +444,7 @@ func TestValidate_WithInvalidVMMetadata(t *testing.T) {
 func TestValidate_WithNICs(t *testing.T) {
 	tmpDir := t.TempDir()
 	diskPath := filepath.Join(tmpDir, "test.vmdk")
-	os.WriteFile(diskPath, []byte("test"), 0644)
+	_ = os.WriteFile(diskPath, []byte("test"), 0644)
 
 	builder := NewBuilder()
 	builder.AddDisk("disk-0", "vmdk", diskPath, 1024, 0, "boot")
@@ -461,7 +461,7 @@ func TestValidate_WithNICs(t *testing.T) {
 func TestValidate_WithInvalidNIC(t *testing.T) {
 	tmpDir := t.TempDir()
 	diskPath := filepath.Join(tmpDir, "test.vmdk")
-	os.WriteFile(diskPath, []byte("test"), 0644)
+	_ = os.WriteFile(diskPath, []byte("test"), 0644)
 
 	builder := NewBuilder()
 	builder.AddDisk("disk-0", "vmdk", diskPath, 1024, 0, "boot")
@@ -487,7 +487,7 @@ func TestValidate_WithInvalidNIC(t *testing.T) {
 func TestSerializeJSON(t *testing.T) {
 	tmpDir := t.TempDir()
 	diskPath := filepath.Join(tmpDir, "test.vmdk")
-	os.WriteFile(diskPath, []byte("test"), 0644)
+	_ = os.WriteFile(diskPath, []byte("test"), 0644)
 
 	builder := NewBuilder()
 	builder.WithSource("vsphere", "vm-1234", "test-vm", "DC1", "govc-export")
@@ -513,7 +513,7 @@ func TestSerializeJSON(t *testing.T) {
 func TestWriteAndReadFile(t *testing.T) {
 	tmpDir := t.TempDir()
 	diskPath := filepath.Join(tmpDir, "test.vmdk")
-	os.WriteFile(diskPath, []byte("test"), 0644)
+	_ = os.WriteFile(diskPath, []byte("test"), 0644)
 
 	manifestPath := filepath.Join(tmpDir, "manifest.json")
 
@@ -547,7 +547,7 @@ func TestComputeSHA256(t *testing.T) {
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "test.txt")
 	testData := []byte("test data for checksum")
-	os.WriteFile(filePath, testData, 0644)
+	_ = os.WriteFile(filePath, testData, 0644)
 
 	checksum, err := ComputeSHA256(filePath)
 	if err != nil {
@@ -560,7 +560,7 @@ func TestComputeSHA256(t *testing.T) {
 
 	// Verify it's hexadecimal
 	for _, c := range checksum {
-		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
+		if (c < '0' || c > '9') && (c < 'a' || c > 'f') {
 			t.Errorf("Checksum contains invalid character: %c", c)
 		}
 	}
@@ -590,7 +590,7 @@ func TestBuilderMetadata(t *testing.T) {
 func TestBuilderChaining(t *testing.T) {
 	tmpDir := t.TempDir()
 	diskPath := filepath.Join(tmpDir, "test.vmdk")
-	os.WriteFile(diskPath, []byte("test"), 0644)
+	_ = os.WriteFile(diskPath, []byte("test"), 0644)
 
 	// Test method chaining
 	manifest, err := NewBuilder().
@@ -940,7 +940,7 @@ func TestValidateNIC_EmptyMAC(t *testing.T) {
 func TestValidateDisk_EmptyID(t *testing.T) {
 	tmpDir := t.TempDir()
 	diskPath := filepath.Join(tmpDir, "test.vmdk")
-	os.WriteFile(diskPath, []byte("test"), 0644)
+	_ = os.WriteFile(diskPath, []byte("test"), 0644)
 
 	disk := DiskArtifact{
 		ID:           "",
@@ -963,7 +963,7 @@ func TestValidateDisk_EmptyID(t *testing.T) {
 func TestValidateDisk_InvalidIDPattern(t *testing.T) {
 	tmpDir := t.TempDir()
 	diskPath := filepath.Join(tmpDir, "test.vmdk")
-	os.WriteFile(diskPath, []byte("test"), 0644)
+	_ = os.WriteFile(diskPath, []byte("test"), 0644)
 
 	disk := DiskArtifact{
 		ID:           "disk@invalid#chars",
@@ -986,7 +986,7 @@ func TestValidateDisk_InvalidIDPattern(t *testing.T) {
 func TestValidateDisk_DuplicateID(t *testing.T) {
 	tmpDir := t.TempDir()
 	diskPath := filepath.Join(tmpDir, "test.vmdk")
-	os.WriteFile(diskPath, []byte("test"), 0644)
+	_ = os.WriteFile(diskPath, []byte("test"), 0644)
 
 	disk := DiskArtifact{
 		ID:           "disk-0",
@@ -1009,7 +1009,7 @@ func TestValidateDisk_DuplicateID(t *testing.T) {
 func TestValidateDisk_InvalidSourceFormat(t *testing.T) {
 	tmpDir := t.TempDir()
 	diskPath := filepath.Join(tmpDir, "test.vmdk")
-	os.WriteFile(diskPath, []byte("test"), 0644)
+	_ = os.WriteFile(diskPath, []byte("test"), 0644)
 
 	disk := DiskArtifact{
 		ID:           "disk-0",
@@ -1032,7 +1032,7 @@ func TestValidateDisk_InvalidSourceFormat(t *testing.T) {
 func TestValidateDisk_NegativeBytes(t *testing.T) {
 	tmpDir := t.TempDir()
 	diskPath := filepath.Join(tmpDir, "test.vmdk")
-	os.WriteFile(diskPath, []byte("test"), 0644)
+	_ = os.WriteFile(diskPath, []byte("test"), 0644)
 
 	disk := DiskArtifact{
 		ID:           "disk-0",
@@ -1093,7 +1093,7 @@ func TestValidateDisk_NonexistentPath(t *testing.T) {
 func TestValidateDisk_InvalidChecksum(t *testing.T) {
 	tmpDir := t.TempDir()
 	diskPath := filepath.Join(tmpDir, "test.vmdk")
-	os.WriteFile(diskPath, []byte("test"), 0644)
+	_ = os.WriteFile(diskPath, []byte("test"), 0644)
 
 	disk := DiskArtifact{
 		ID:           "disk-0",
@@ -1117,7 +1117,7 @@ func TestValidateDisk_InvalidChecksum(t *testing.T) {
 func TestValidateDisk_NegativeBootOrder(t *testing.T) {
 	tmpDir := t.TempDir()
 	diskPath := filepath.Join(tmpDir, "test.vmdk")
-	os.WriteFile(diskPath, []byte("test"), 0644)
+	_ = os.WriteFile(diskPath, []byte("test"), 0644)
 
 	disk := DiskArtifact{
 		ID:            "disk-0",
@@ -1141,7 +1141,7 @@ func TestValidateDisk_NegativeBootOrder(t *testing.T) {
 func TestValidateDisk_InvalidDiskType(t *testing.T) {
 	tmpDir := t.TempDir()
 	diskPath := filepath.Join(tmpDir, "test.vmdk")
-	os.WriteFile(diskPath, []byte("test"), 0644)
+	_ = os.WriteFile(diskPath, []byte("test"), 0644)
 
 	disk := DiskArtifact{
 		ID:           "disk-0",
@@ -1165,7 +1165,7 @@ func TestValidateDisk_InvalidDiskType(t *testing.T) {
 func TestValidateDisk_ValidDiskTypes(t *testing.T) {
 	tmpDir := t.TempDir()
 	diskPath := filepath.Join(tmpDir, "test.vmdk")
-	os.WriteFile(diskPath, []byte("test"), 0644)
+	_ = os.WriteFile(diskPath, []byte("test"), 0644)
 
 	validTypes := []string{"boot", "data", "unknown"}
 
@@ -1189,7 +1189,7 @@ func TestValidateDisk_ValidDiskTypes(t *testing.T) {
 func TestValidateDisk_ValidSourceFormats(t *testing.T) {
 	tmpDir := t.TempDir()
 	diskPath := filepath.Join(tmpDir, "test.vmdk")
-	os.WriteFile(diskPath, []byte("test"), 0644)
+	_ = os.WriteFile(diskPath, []byte("test"), 0644)
 
 	validFormats := []string{"vmdk", "qcow2", "raw", "vhd", "vhdx", "vdi"}
 
@@ -1771,7 +1771,7 @@ func TestWithMetadata_NilTags(t *testing.T) {
 	}
 
 	// Tags should not be set when nil is passed
-	if builder.manifest.Metadata.Tags != nil && len(builder.manifest.Metadata.Tags) > 0 {
+	if len(builder.manifest.Metadata.Tags) > 0 {
 		t.Error("Expected tags to remain empty when nil is passed")
 	}
 }

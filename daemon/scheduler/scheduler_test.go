@@ -37,12 +37,6 @@ func (m *mockJobExecutor) getSubmittedCount() int {
 	return len(m.submittedJobs)
 }
 
-func (m *mockJobExecutor) reset() {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.submittedJobs = nil
-}
-
 func TestNewScheduler(t *testing.T) {
 	log := logger.New("info")
 	executor := &mockJobExecutor{}
@@ -183,7 +177,7 @@ func TestRemoveScheduledJob(t *testing.T) {
 		Enabled:  true,
 	}
 
-	scheduler.AddScheduledJob(sj)
+	_ = scheduler.AddScheduledJob(sj)
 
 	err := scheduler.RemoveScheduledJob("test-job-remove")
 	if err != nil {
@@ -223,7 +217,7 @@ func TestUpdateScheduledJob(t *testing.T) {
 		Enabled:     true,
 	}
 
-	scheduler.AddScheduledJob(original)
+	_ = scheduler.AddScheduledJob(original)
 
 	// Update the job
 	updates := &models.ScheduledJob{
@@ -282,7 +276,7 @@ func TestGetScheduledJob(t *testing.T) {
 		Enabled:  true,
 	}
 
-	scheduler.AddScheduledJob(sj)
+	_ = scheduler.AddScheduledJob(sj)
 
 	retrieved, err := scheduler.GetScheduledJob("test-job-get")
 	if err != nil {
@@ -320,7 +314,7 @@ func TestListScheduledJobs(t *testing.T) {
 			Schedule: "0 0 * * *",
 			Enabled:  i%2 == 1, // Alternate enabled/disabled
 		}
-		scheduler.AddScheduledJob(sj)
+		_ = scheduler.AddScheduledJob(sj)
 	}
 
 	jobs := scheduler.ListScheduledJobs()
@@ -343,7 +337,7 @@ func TestEnableScheduledJob(t *testing.T) {
 		Enabled:  false,
 	}
 
-	scheduler.AddScheduledJob(sj)
+	_ = scheduler.AddScheduledJob(sj)
 
 	err := scheduler.EnableScheduledJob("test-job-enable")
 	if err != nil {
@@ -371,7 +365,7 @@ func TestEnableAlreadyEnabledJob(t *testing.T) {
 		Enabled:  true,
 	}
 
-	scheduler.AddScheduledJob(sj)
+	_ = scheduler.AddScheduledJob(sj)
 
 	// Should not error when enabling already enabled job
 	err := scheduler.EnableScheduledJob("test-job-already-enabled")
@@ -394,7 +388,7 @@ func TestDisableScheduledJob(t *testing.T) {
 		Enabled:  true,
 	}
 
-	scheduler.AddScheduledJob(sj)
+	_ = scheduler.AddScheduledJob(sj)
 
 	err := scheduler.DisableScheduledJob("test-job-disable")
 	if err != nil {
@@ -422,7 +416,7 @@ func TestDisableAlreadyDisabledJob(t *testing.T) {
 		Enabled:  false,
 	}
 
-	scheduler.AddScheduledJob(sj)
+	_ = scheduler.AddScheduledJob(sj)
 
 	// Should not error when disabling already disabled job
 	err := scheduler.DisableScheduledJob("test-job-already-disabled")
@@ -449,7 +443,7 @@ func TestTriggerNow(t *testing.T) {
 		Enabled:  true,
 	}
 
-	scheduler.AddScheduledJob(sj)
+	_ = scheduler.AddScheduledJob(sj)
 
 	err := scheduler.TriggerNow("test-job-trigger")
 	if err != nil {
@@ -508,9 +502,9 @@ func TestGetScheduleStats(t *testing.T) {
 		RunCount: 0,
 	}
 
-	scheduler.AddScheduledJob(sj1)
-	scheduler.AddScheduledJob(sj2)
-	scheduler.AddScheduledJob(sj3)
+	_ = scheduler.AddScheduledJob(sj1)
+	_ = scheduler.AddScheduledJob(sj2)
+	_ = scheduler.AddScheduledJob(sj3)
 
 	stats := scheduler.GetScheduleStats()
 
@@ -611,7 +605,7 @@ func TestConcurrentOperations(t *testing.T) {
 				Schedule: "0 0 * * *",
 				Enabled:  true,
 			}
-			scheduler.AddScheduledJob(sj)
+			_ = scheduler.AddScheduledJob(sj)
 		}(i)
 	}
 

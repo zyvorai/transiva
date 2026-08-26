@@ -47,7 +47,7 @@ func (r *VMSnapshotReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	// Handle deletion
-	if !snapshot.ObjectMeta.DeletionTimestamp.IsZero() {
+	if !snapshot.DeletionTimestamp.IsZero() {
 		return r.handleDeletion(ctx, snapshot)
 	}
 
@@ -129,7 +129,7 @@ func (r *VMSnapshotReconciler) reconcilePending(ctx context.Context, snapshot *t
 	}
 
 	logger.Info("Started snapshot creation", "snapshot", snapshot.Name, "vm", vm.Name)
-	return ctrl.Result{Requeue: true}, nil
+	return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
 }
 
 // reconcileCreating handles snapshot creation

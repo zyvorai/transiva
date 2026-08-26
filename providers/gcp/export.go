@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"cloud.google.com/go/compute/apiv1/computepb"
@@ -20,7 +19,6 @@ import (
 	"google.golang.org/api/option"
 
 	"github.com/zyvorai/transiva/progress"
-	"github.com/zyvorai/transiva/providers/common"
 )
 
 // gcpResourceNameRegex matches the safe character set for a GCP resource
@@ -233,9 +231,9 @@ func (c *Client) downloadFromGCS(ctx context.Context, bucket, object, localPath 
 	var opts []option.ClientOption
 	if c.config.CredentialsJSON != "" {
 		if _, err := os.Stat(c.config.CredentialsJSON); err == nil {
-			opts = append(opts, option.WithCredentialsFile(c.config.CredentialsJSON))
+			opts = append(opts, option.WithAuthCredentialsFile(option.ServiceAccount, c.config.CredentialsJSON))
 		} else {
-			opts = append(opts, option.WithCredentialsJSON([]byte(c.config.CredentialsJSON)))
+			opts = append(opts, option.WithAuthCredentialsJSON(option.ServiceAccount, []byte(c.config.CredentialsJSON)))
 		}
 	}
 
@@ -243,7 +241,7 @@ func (c *Client) downloadFromGCS(ctx context.Context, bucket, object, localPath 
 	if err != nil {
 		return 0, fmt.Errorf("create GCS client: %w", err)
 	}
-	defer gcsClient.Close()
+	defer func() { _ = gcsClient.Close() }()
 
 	// Get object attributes to determine size
 	bucketHandle := gcsClient.Bucket(bucket)
@@ -269,14 +267,14 @@ func (c *Client) downloadFromGCS(ctx context.Context, bucket, object, localPath 
 	if err != nil {
 		return 0, fmt.Errorf("create local file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	// Create reader
 	reader, err := objectHandle.NewReader(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("create GCS reader: %w", err)
 	}
-	defer reader.Close()
+	defer func() { _ = reader.Close() }()
 
 	// Create progress reader wrapper if reporter provided
 	var ioReader io.Reader = reader
@@ -301,85 +299,15 @@ func (c *Client) downloadFromGCS(ctx context.Context, bucket, object, localPath 
 	return written, nil
 }
 
-// uploadToGCS uploads a local file to Google Cloud Storage
-func (c *Client) uploadToGCS(ctx context.Context, localPath, bucket, object string, reporter progress.ProgressReporter) error {
-	// Get file size
-	fileInfo, err := os.Stat(localPath)
-	if err != nil {
-		return fmt.Errorf("stat local file: %w", err)
-	}
-
-	totalSize := fileInfo.Size()
-	c.logger.Info("uploading to GCS", "object", object, "size_bytes", totalSize)
-
-	// Create GCS client
-	var opts []option.ClientOption
-	if c.config.CredentialsJSON != "" {
-		if _, err := os.Stat(c.config.CredentialsJSON); err == nil {
-			opts = append(opts, option.WithCredentialsFile(c.config.CredentialsJSON))
-		} else {
-			opts = append(opts, option.WithCredentialsJSON([]byte(c.config.CredentialsJSON)))
-		}
-	}
-
-	gcsClient, err := storage.NewClient(ctx, opts...)
-	if err != nil {
-		return fmt.Errorf("create GCS client: %w", err)
-	}
-	defer gcsClient.Close()
-
-	// Open local file
-	// #nosec G304 -- localPath is a locally staged export file path supplied
-	// by the operator/config-driven export pipeline, not taken directly from
-	// an HTTP request.
-	file, err := os.Open(localPath)
-	if err != nil {
-		return fmt.Errorf("open local file: %w", err)
-	}
-	defer file.Close()
-
-	// Create GCS writer
-	bucketHandle := gcsClient.Bucket(bucket)
-	objectHandle := bucketHandle.Object(object)
-	writer := objectHandle.NewWriter(ctx)
-
-	// Create progress reader wrapper if reporter provided
-	var reader io.Reader = file
-	if reporter != nil && totalSize > 0 {
-		reader = &progressReader{
-			reader:   file,
-			total:    totalSize,
-			reporter: reporter,
-		}
-	}
-
-	// Copy with progress tracking
-	_, err = io.Copy(writer, reader)
-	if err != nil {
-		if closeErr := writer.Close(); closeErr != nil {
-			c.logger.Warn("failed to close GCS writer after upload error", "error", closeErr)
-		}
-		return fmt.Errorf("upload file: %w", err)
-	}
-
-	// Close writer to finalize upload
-	if err := writer.Close(); err != nil {
-		return fmt.Errorf("finalize upload: %w", err)
-	}
-
-	c.logger.Info("upload complete", "object", object)
-	return nil
-}
-
 // ListGCSObjects lists objects in a GCS bucket with a given prefix
 func (c *Client) ListGCSObjects(ctx context.Context, bucket, prefix string) ([]string, error) {
 	// Create GCS client
 	var opts []option.ClientOption
 	if c.config.CredentialsJSON != "" {
 		if _, err := os.Stat(c.config.CredentialsJSON); err == nil {
-			opts = append(opts, option.WithCredentialsFile(c.config.CredentialsJSON))
+			opts = append(opts, option.WithAuthCredentialsFile(option.ServiceAccount, c.config.CredentialsJSON))
 		} else {
-			opts = append(opts, option.WithCredentialsJSON([]byte(c.config.CredentialsJSON)))
+			opts = append(opts, option.WithAuthCredentialsJSON(option.ServiceAccount, []byte(c.config.CredentialsJSON)))
 		}
 	}
 
@@ -387,7 +315,7 @@ func (c *Client) ListGCSObjects(ctx context.Context, bucket, prefix string) ([]s
 	if err != nil {
 		return nil, fmt.Errorf("create GCS client: %w", err)
 	}
-	defer gcsClient.Close()
+	defer func() { _ = gcsClient.Close() }()
 
 	bucketHandle := gcsClient.Bucket(bucket)
 
@@ -539,111 +467,3 @@ func (c *Client) ExportDiskWithOptions(ctx context.Context, diskName string, opt
 	return result, nil
 }
 
-// downloadFromGCSWithOptions downloads from GCS with progress callback support
-func (c *Client) downloadFromGCSWithOptions(ctx context.Context, bucket, object, localPath string, opts ExportOptions) (int64, error) {
-	// Create GCS client
-	var clientOpts []option.ClientOption
-	if c.config.CredentialsJSON != "" {
-		if _, err := os.Stat(c.config.CredentialsJSON); err == nil {
-			clientOpts = append(clientOpts, option.WithCredentialsFile(c.config.CredentialsJSON))
-		} else {
-			clientOpts = append(clientOpts, option.WithCredentialsJSON([]byte(c.config.CredentialsJSON)))
-		}
-	}
-
-	gcsClient, err := storage.NewClient(ctx, clientOpts...)
-	if err != nil {
-		return 0, fmt.Errorf("create GCS client: %w", err)
-	}
-	defer gcsClient.Close()
-
-	// Get object attributes to determine size
-	bucketHandle := gcsClient.Bucket(bucket)
-	objectHandle := bucketHandle.Object(object)
-
-	attrs, err := objectHandle.Attrs(ctx)
-	if err != nil {
-		return 0, fmt.Errorf("get object attributes: %w", err)
-	}
-
-	totalSize := attrs.Size
-	c.logger.Info("downloading from GCS", "object", object, "size_bytes", totalSize)
-
-	// Create local file
-	if err := os.MkdirAll(filepath.Dir(localPath), 0750); err != nil {
-		return 0, fmt.Errorf("create output directory: %w", err)
-	}
-
-	// #nosec G304 -- localPath is built from the operator-supplied output
-	// directory joined with a server-generated object name (see
-	// ExportImageToGCS), not taken directly from an HTTP request.
-	file, err := os.Create(localPath)
-	if err != nil {
-		return 0, fmt.Errorf("create local file: %w", err)
-	}
-	defer file.Close()
-
-	// Create reader
-	reader, err := objectHandle.NewReader(ctx)
-	if err != nil {
-		return 0, fmt.Errorf("create GCS reader: %w", err)
-	}
-	defer reader.Close()
-
-	// Create progress reader wrapper with callback if provided
-	var ioReader io.Reader = reader
-	if opts.ProgressCallback != nil && totalSize > 0 {
-		var currentBytes int64
-		ioReader = &callbackProgressReader{
-			reader:       reader,
-			total:        totalSize,
-			currentBytes: &currentBytes,
-			callback:     opts.ProgressCallback,
-			fileName:     filepath.Base(object),
-			fileIndex:    1,
-			totalFiles:   1,
-		}
-	}
-
-	// Apply bandwidth throttling if enabled
-	if opts.BandwidthLimit > 0 {
-		ioReader = common.NewThrottledReaderWithContext(ctx, ioReader, opts.BandwidthLimit, opts.BandwidthBurst)
-	}
-
-	// Copy with progress tracking
-	written, err := io.Copy(file, ioReader)
-	if err != nil {
-		return 0, fmt.Errorf("download file: %w", err)
-	}
-
-	if written != totalSize {
-		return 0, fmt.Errorf("incomplete download: expected %d bytes, got %d", totalSize, written)
-	}
-
-	return written, nil
-}
-
-// callbackProgressReader wraps an io.Reader to call progress callback
-type callbackProgressReader struct {
-	reader       io.Reader
-	total        int64
-	currentBytes *int64
-	callback     func(current, total int64, fileName string, fileIndex, totalFiles int)
-	fileName     string
-	fileIndex    int
-	totalFiles   int
-}
-
-func (cpr *callbackProgressReader) Read(p []byte) (int, error) {
-	n, err := cpr.reader.Read(p)
-
-	// Atomically update current bytes
-	current := atomic.AddInt64(cpr.currentBytes, int64(n))
-
-	// Call progress callback
-	if cpr.callback != nil {
-		cpr.callback(current, cpr.total, cpr.fileName, cpr.fileIndex, cpr.totalFiles)
-	}
-
-	return n, err
-}

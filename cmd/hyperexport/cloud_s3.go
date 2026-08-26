@@ -101,7 +101,7 @@ func (s *S3Storage) Upload(ctx context.Context, localPath, remotePath string, pr
 		if err != nil {
 			return retry.IsNonRetryable(fmt.Errorf("open file: %w", err))
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 
 		fileInfo, err := file.Stat()
 		if err != nil {
@@ -197,7 +197,7 @@ func (s *S3Storage) Download(ctx context.Context, remotePath, localPath string, 
 		if err != nil {
 			return retry.IsNonRetryable(fmt.Errorf("create file: %w", err))
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 
 		// Get size
 		size := int64(0)

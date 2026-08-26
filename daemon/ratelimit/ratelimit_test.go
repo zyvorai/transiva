@@ -109,7 +109,7 @@ func TestMiddleware(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("expected status 200, got %d", resp.StatusCode)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	// Second request should succeed (within burst)
 	resp, err = client.Get(server.URL)
@@ -119,7 +119,7 @@ func TestMiddleware(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("expected status 200, got %d", resp.StatusCode)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	// Third request should be rate limited
 	resp, err = client.Get(server.URL)
@@ -129,7 +129,7 @@ func TestMiddleware(t *testing.T) {
 	if resp.StatusCode != http.StatusTooManyRequests {
 		t.Errorf("expected status 429, got %d", resp.StatusCode)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 }
 
 func TestDefaultConfig(t *testing.T) {

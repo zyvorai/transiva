@@ -65,9 +65,9 @@ func NewClient(cfg *Config, log logger.Logger) (*Client, error) {
 	if cfg.CredentialsJSON != "" {
 		// Check if it's a file path or JSON content
 		if _, err := os.Stat(cfg.CredentialsJSON); err == nil {
-			opts = append(opts, option.WithCredentialsFile(cfg.CredentialsJSON))
+			opts = append(opts, option.WithAuthCredentialsFile(option.ServiceAccount, cfg.CredentialsJSON))
 		} else {
-			opts = append(opts, option.WithCredentialsJSON([]byte(cfg.CredentialsJSON)))
+			opts = append(opts, option.WithAuthCredentialsJSON(option.ServiceAccount, []byte(cfg.CredentialsJSON)))
 		}
 	}
 

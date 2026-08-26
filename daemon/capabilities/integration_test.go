@@ -122,7 +122,7 @@ func TestIntegration_ConcurrentAccess(t *testing.T) {
 	detector := NewDetector(log)
 
 	ctx := context.Background()
-	detector.Detect(ctx)
+	_ = detector.Detect(ctx)
 
 	// Simulate concurrent access
 	done := make(chan bool, 10)

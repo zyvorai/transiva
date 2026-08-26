@@ -100,7 +100,7 @@ func TestHandleCapabilities_MethodNotAllowed(t *testing.T) {
 func TestHandleCapabilities_ContentType(t *testing.T) {
 	log := logger.New("info")
 	detector := capabilities.NewDetector(log)
-	detector.Detect(context.Background())
+	_ = detector.Detect(context.Background())
 
 	manager := jobs.NewManager(log, detector)
 	server := NewServer(manager, detector, log, "localhost:0", nil, nil)
@@ -119,7 +119,7 @@ func TestHandleCapabilities_ContentType(t *testing.T) {
 func TestHandleCapabilities_VerifyCapabilityFields(t *testing.T) {
 	log := logger.New("info")
 	detector := capabilities.NewDetector(log)
-	detector.Detect(context.Background())
+	_ = detector.Detect(context.Background())
 
 	manager := jobs.NewManager(log, detector)
 	server := NewServer(manager, detector, log, "localhost:0", nil, nil)
@@ -176,7 +176,7 @@ func TestHandleCapabilities_VerifyCapabilityFields(t *testing.T) {
 func TestHandleCapabilities_DefaultMethodPriority(t *testing.T) {
 	log := logger.New("info")
 	detector := capabilities.NewDetector(log)
-	detector.Detect(context.Background())
+	_ = detector.Detect(context.Background())
 
 	manager := jobs.NewManager(log, detector)
 	server := NewServer(manager, detector, log, "localhost:0", nil, nil)
@@ -218,7 +218,7 @@ func TestHandleCapabilities_DefaultMethodPriority(t *testing.T) {
 func TestHandleCapabilities_MultipleRequests(t *testing.T) {
 	log := logger.New("info")
 	detector := capabilities.NewDetector(log)
-	detector.Detect(context.Background())
+	_ = detector.Detect(context.Background())
 
 	manager := jobs.NewManager(log, detector)
 	server := NewServer(manager, detector, log, "localhost:0", nil, nil)

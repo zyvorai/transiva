@@ -55,7 +55,7 @@ type ErrorResponse struct {
 // NewClient creates a new Proxmox VE client
 func NewClient(cfg *config.ProxmoxConfig, log logger.Logger) (*Client, error) {
 	if cfg == nil {
-		return nil, fmt.Errorf("Proxmox config is required")
+		return nil, fmt.Errorf("proxmox config is required")
 	}
 
 	// Build base URL
@@ -152,7 +152,7 @@ func (c *Client) authenticate(username, password, realm string) error {
 	if err != nil {
 		return fmt.Errorf("send auth request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -215,7 +215,7 @@ func (c *Client) ListNodes(ctx context.Context) ([]Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -257,7 +257,7 @@ func (c *Client) ListVMs(ctx context.Context, node string) ([]VM, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -304,7 +304,7 @@ func (c *Client) GetVM(ctx context.Context, node string, vmid int) (*VM, error) 
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -330,7 +330,7 @@ func (c *Client) GetVMConfig(ctx context.Context, node string, vmid int) (map[st
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -356,7 +356,7 @@ func (c *Client) StopVM(ctx context.Context, node string, vmid int) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -375,7 +375,7 @@ func (c *Client) StartVM(ctx context.Context, node string, vmid int) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -420,7 +420,7 @@ func (c *Client) GetTaskStatus(ctx context.Context, node, upid string) (string, 
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)

@@ -164,7 +164,7 @@ func TestBroadcastJobUpdate(t *testing.T) {
 	log := logger.New("info")
 	detector := capabilities.NewDetector(log)
 	ctx := context.Background()
-	detector.Detect(ctx)
+	_ = detector.Detect(ctx)
 	manager := jobs.NewManager(log, detector)
 	config := &Config{}
 	config.Metrics.Enabled = false
@@ -219,7 +219,7 @@ func TestBroadcastScheduleEvent(t *testing.T) {
 	log := logger.New("info")
 	detector := capabilities.NewDetector(log)
 	ctx := context.Background()
-	detector.Detect(ctx)
+	_ = detector.Detect(ctx)
 	manager := jobs.NewManager(log, detector)
 	config := &Config{}
 	config.Metrics.Enabled = false
@@ -264,7 +264,7 @@ func TestWebSocketUpgrade(t *testing.T) {
 	log := logger.New("info")
 	detector := capabilities.NewDetector(log)
 	ctx := context.Background()
-	detector.Detect(ctx)
+	_ = detector.Detect(ctx)
 	manager := jobs.NewManager(log, detector)
 	config := &Config{}
 	config.Metrics.Enabled = false
@@ -287,7 +287,7 @@ func TestWebSocketUpgrade(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to connect WebSocket: %v", err)
 	}
-	defer ws.Close()
+	defer func() { _ = ws.Close() }()
 
 	if resp.StatusCode != http.StatusSwitchingProtocols {
 		t.Errorf("Expected status 101, got %d", resp.StatusCode)
@@ -328,7 +328,7 @@ func TestStartStatusBroadcaster(t *testing.T) {
 	log := logger.New("info")
 	detector := capabilities.NewDetector(log)
 	ctx := context.Background()
-	detector.Detect(ctx)
+	_ = detector.Detect(ctx)
 	manager := jobs.NewManager(log, detector)
 	config := &Config{}
 	config.Metrics.Enabled = false

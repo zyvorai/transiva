@@ -538,7 +538,7 @@ func CalculateFileChecksum(filePath string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("open file: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	hasher := sha256.New()
 	if _, err := io.Copy(hasher, f); err != nil {
@@ -557,10 +557,10 @@ func SaveChecksumManifest(exportDir string, checksums map[string]string) error {
 	if err != nil {
 		return fmt.Errorf("create manifest: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	for filename, checksum := range checksums {
-		fmt.Fprintf(f, "%s  %s\n", checksum, filename)
+		_, _ = fmt.Fprintf(f, "%s  %s\n", checksum, filename)
 	}
 
 	return nil

@@ -120,7 +120,7 @@ func (pm *ProfileManager) SaveProfile(profile *ExportProfile) error {
 	if err != nil {
 		return fmt.Errorf("create profile file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ")
@@ -147,7 +147,7 @@ func (pm *ProfileManager) LoadProfile(name string) (*ExportProfile, error) {
 		}
 		return nil, fmt.Errorf("open profile file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	var profile ExportProfile
 	decoder := json.NewDecoder(file)

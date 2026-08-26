@@ -91,8 +91,8 @@ func TestHandleUploadISOInvalidExtension(t *testing.T) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	part, _ := writer.CreateFormFile("iso", "test.txt")
-	part.Write([]byte("test content"))
-	writer.Close()
+	_, _ = part.Write([]byte("test content"))
+	_ = writer.Close()
 
 	req := httptest.NewRequest(http.MethodPost, "/isos/upload", body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
@@ -112,8 +112,8 @@ func TestHandleUploadISO(t *testing.T) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	part, _ := writer.CreateFormFile("iso", "test.iso")
-	part.Write([]byte("fake ISO content"))
-	writer.Close()
+	_, _ = part.Write([]byte("fake ISO content"))
+	_ = writer.Close()
 
 	req := httptest.NewRequest(http.MethodPost, "/isos/upload", body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())

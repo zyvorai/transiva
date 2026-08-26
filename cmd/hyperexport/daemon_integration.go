@@ -269,7 +269,7 @@ func (c *DaemonClient) CreateSchedule(ctx context.Context, name, schedule, vmPat
 	if err != nil {
 		return fmt.Errorf("send request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusCreated {
 		body, _ := io.ReadAll(resp.Body)
@@ -290,7 +290,7 @@ func (c *DaemonClient) GetDaemonHealth(ctx context.Context) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("send request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	return resp.StatusCode == http.StatusOK, nil
 }

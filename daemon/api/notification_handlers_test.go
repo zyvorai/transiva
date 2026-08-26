@@ -422,7 +422,7 @@ func TestHandleCreateAlertRuleDifferentConditions(t *testing.T) {
 			}
 
 			var response AlertRule
-			json.Unmarshal(w.Body.Bytes(), &response)
+			_ = json.Unmarshal(w.Body.Bytes(), &response)
 
 			if response.Name != tt.rule.Name {
 				t.Errorf("Expected name=%s, got %s", tt.rule.Name, response.Name)

@@ -478,7 +478,7 @@ func TestWebSocketUpgrade(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to connect to WebSocket: %v", err)
 	}
-	defer ws.Close()
+	defer func() { _ = ws.Close() }()
 
 	// Should receive initial metrics
 	_, message, err := ws.ReadMessage()
@@ -582,7 +582,7 @@ func TestHandleBroadcast(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to connect to WebSocket: %v", err)
 	}
-	defer ws.Close()
+	defer func() { _ = ws.Close() }()
 
 	// Read initial message
 	_, _, err = ws.ReadMessage()
@@ -629,7 +629,7 @@ func TestUpdateMetrics(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to connect to WebSocket: %v", err)
 	}
-	defer ws.Close()
+	defer func() { _ = ws.Close() }()
 
 	// Start broadcast handler
 	go dashboard.handleBroadcast()
@@ -650,7 +650,7 @@ func TestUpdateMetrics(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 
 	// Try to read an update (may timeout if update cycle hasn't completed yet)
-	ws.SetReadDeadline(time.Now().Add(100 * time.Millisecond))
+	_ = ws.SetReadDeadline(time.Now().Add(100 * time.Millisecond))
 	_, message, err := ws.ReadMessage()
 	if err == nil {
 		var metrics Metrics

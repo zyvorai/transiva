@@ -15,7 +15,7 @@ import (
 // DependencyTracker tracks job dependencies and their completion states
 type DependencyTracker struct {
 	mu            sync.RWMutex
-	jobStates     map[string]JobState    // jobID -> current state
+	jobStates     map[string]JobState      // jobID -> current state
 	waitingJobs   map[string][]*WaitingJob // dependencyID -> jobs waiting for it
 	log           logger.Logger
 	stateCallback StateChangeCallback
@@ -24,18 +24,18 @@ type DependencyTracker struct {
 // JobState represents the current state of a job execution
 type JobState struct {
 	JobID       string
-	State       string    // running, completed, failed, cancelled
+	State       string // running, completed, failed, cancelled
 	CompletedAt time.Time
 	Error       string
 }
 
 // WaitingJob represents a job waiting for dependencies
 type WaitingJob struct {
-	Job        *models.ScheduledJob
-	Config     *models.AdvancedScheduleConfig
+	Job          *models.ScheduledJob
+	Config       *models.AdvancedScheduleConfig
 	WaitingSince time.Time
-	Context    context.Context
-	Cancel     context.CancelFunc
+	Context      context.Context
+	Cancel       context.CancelFunc
 }
 
 // StateChangeCallback is called when a job state changes
@@ -241,7 +241,7 @@ func (dt *DependencyTracker) checkDependenciesLocked(job *models.ScheduledJob) (
 		if dep.Timeout > 0 {
 			elapsed := time.Since(state.CompletedAt)
 			if elapsed > time.Duration(dep.Timeout)*time.Second {
-				return false, fmt.Sprintf("dependency timeout exceeded")
+				return false, "dependency timeout exceeded"
 			}
 		}
 	}

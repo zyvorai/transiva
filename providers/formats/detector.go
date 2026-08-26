@@ -50,7 +50,7 @@ func DetectFormat(path string) (DiskFormat, error) {
 	if err != nil {
 		return FormatUnknown, fmt.Errorf("failed to open file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	// Try extension first
 	if format := detectFromExtension(path); format != FormatUnknown {
@@ -149,7 +149,7 @@ func GetFormatInfo(path string) (*FormatInfo, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	stat, err := file.Stat()
 	if err != nil {

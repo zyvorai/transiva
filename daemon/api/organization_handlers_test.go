@@ -221,7 +221,7 @@ func TestHandleCreateTagDifferentCategories(t *testing.T) {
 			}
 
 			var response Tag
-			json.Unmarshal(w.Body.Bytes(), &response)
+			_ = json.Unmarshal(w.Body.Bytes(), &response)
 
 			if response.Category != tt.category {
 				t.Errorf("Expected category=%s, got %s", tt.category, response.Category)
@@ -439,7 +439,7 @@ func TestHandleCreateCollectionDifferentSizes(t *testing.T) {
 			}
 
 			var response Collection
-			json.Unmarshal(w.Body.Bytes(), &response)
+			_ = json.Unmarshal(w.Body.Bytes(), &response)
 
 			if response.VMCount != tt.expectedVMs {
 				t.Errorf("Expected vm_count=%d, got %d", tt.expectedVMs, response.VMCount)
@@ -660,7 +660,7 @@ func TestHandleCreateSavedSearchDifferentQueries(t *testing.T) {
 			}
 
 			var response SavedSearch
-			json.Unmarshal(w.Body.Bytes(), &response)
+			_ = json.Unmarshal(w.Body.Bytes(), &response)
 
 			if response.Query != tt.query {
 				t.Errorf("Expected query=%s, got %s", tt.query, response.Query)

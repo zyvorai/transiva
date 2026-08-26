@@ -21,12 +21,6 @@ import (
 const (
 	// Shutdown timeout for graceful termination of running jobs
 	shutdownTimeout = 30 * time.Second
-
-	// Default timeout for lease operations
-	leaseWaitTimeout = 5 * time.Minute
-
-	// Default timeout for download operations
-	downloadTimeout = 60 * time.Minute
 )
 
 // Manager handles job lifecycle and execution

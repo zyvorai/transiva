@@ -108,7 +108,7 @@ func TestBandwidthLimiter_GetStats(t *testing.T) {
 	ctx := context.Background()
 
 	// Transfer some data
-	limiter.Wait(ctx, 1024)
+	_ = limiter.Wait(ctx, 1024)
 
 	stats := limiter.GetStats()
 	if stats.BytesTransferred == 0 {
@@ -194,7 +194,7 @@ func TestAdaptiveBandwidthLimiter_GetStats(t *testing.T) {
 	adaptive := NewAdaptiveBandwidthLimiter(1024*1024, 100*1024*1024, logger.NewTestLogger(t))
 	ctx := context.Background()
 
-	adaptive.Wait(ctx, 1024)
+	_ = adaptive.Wait(ctx, 1024)
 	stats := adaptive.GetStats()
 
 	if stats.BytesTransferred == 0 {
@@ -352,7 +352,7 @@ func TestAdaptiveBandwidthLimiter_AdjustSpeedIncrease(t *testing.T) {
 
 	// Trigger adjustment by calling Wait
 	ctx := context.Background()
-	adaptive.Wait(ctx, 1024)
+	_ = adaptive.Wait(ctx, 1024)
 
 	// Speed should have increased (manually trigger adjustSpeed)
 	adaptive.adjustSpeed()

@@ -75,7 +75,7 @@ func (l *LibvirtIntegrator) DefineVM(ctx context.Context, m *manifest.ArtifactMa
 	if err != nil {
 		return "", fmt.Errorf("create temp XML file: %w", err)
 	}
-	defer os.Remove(xmlFile.Name())
+	defer func() { _ = os.Remove(xmlFile.Name()) }()
 
 	if _, err := xmlFile.WriteString(xmlContent); err != nil {
 		return "", fmt.Errorf("write XML file: %w", err)

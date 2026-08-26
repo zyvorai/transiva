@@ -26,7 +26,7 @@ func TestFullIntegrationFlow(t *testing.T) {
 	log := logger.New("error")
 	detector := capabilities.NewDetector(log)
 	ctx := context.Background()
-	detector.Detect(ctx)
+	_ = detector.Detect(ctx)
 	manager := jobs.NewManager(log, detector)
 
 	config := &Config{
@@ -120,7 +120,7 @@ func TestWebSocketIntegration(t *testing.T) {
 	log := logger.New("error")
 	detector := capabilities.NewDetector(log)
 	ctx := context.Background()
-	detector.Detect(ctx)
+	_ = detector.Detect(ctx)
 	manager := jobs.NewManager(log, detector)
 	config := &Config{}
 	config.Metrics.Enabled = false
@@ -195,7 +195,7 @@ func TestScheduleWebhookIntegration(t *testing.T) {
 	log := logger.New("error")
 	detector := capabilities.NewDetector(log)
 	ctx := context.Background()
-	detector.Detect(ctx)
+	_ = detector.Detect(ctx)
 	manager := jobs.NewManager(log, detector)
 
 	// Create webhook receiver
@@ -250,7 +250,7 @@ func TestEnhancedServerShutdown(t *testing.T) {
 	log := logger.New("error")
 	detector := capabilities.NewDetector(log)
 	ctx := context.Background()
-	detector.Detect(ctx)
+	_ = detector.Detect(ctx)
 	manager := jobs.NewManager(log, detector)
 	config := &Config{}
 	config.Metrics.Enabled = false
@@ -279,7 +279,7 @@ func TestConcurrentWebSocketClients(t *testing.T) {
 	log := logger.New("error")
 	detector := capabilities.NewDetector(log)
 	ctx := context.Background()
-	detector.Detect(ctx)
+	_ = detector.Detect(ctx)
 	manager := jobs.NewManager(log, detector)
 	config := &Config{}
 	config.Metrics.Enabled = false
@@ -352,7 +352,7 @@ func TestScheduleCRUDFlow(t *testing.T) {
 	log := logger.New("error")
 	detector := capabilities.NewDetector(log)
 	ctx := context.Background()
-	detector.Detect(ctx)
+	_ = detector.Detect(ctx)
 	manager := jobs.NewManager(log, detector)
 	config := &Config{}
 	config.Metrics.Enabled = false
@@ -431,7 +431,7 @@ func TestWebhookCRUDFlow(t *testing.T) {
 	log := logger.New("error")
 	detector := capabilities.NewDetector(log)
 	ctx := context.Background()
-	detector.Detect(ctx)
+	_ = detector.Detect(ctx)
 	manager := jobs.NewManager(log, detector)
 	config := &Config{
 		Webhooks: []webhooks.Webhook{}, // Initialize empty webhooks to enable manager

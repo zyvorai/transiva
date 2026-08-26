@@ -152,14 +152,14 @@ func (c *Converter) convertRAWToQCOW2(ctx context.Context, sourcePath, targetPat
 	if err != nil {
 		return 0, fmt.Errorf("failed to open source: %w", err)
 	}
-	defer sourceFile.Close()
+	defer func() { _ = sourceFile.Close() }()
 
 	// #nosec G304 -- targetPath is supplied by the local hyperconvert CLI operator, not a remote caller
 	targetFile, err := os.Create(targetPath)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create target: %w", err)
 	}
-	defer targetFile.Close()
+	defer func() { _ = targetFile.Close() }()
 
 	// Write QCOW2 header (simplified - just magic for now)
 	// Real implementation would write full QCOW2 header with L1/L2 tables
@@ -186,14 +186,14 @@ func (c *Converter) convertQCOW2ToRAW(ctx context.Context, sourcePath, targetPat
 	if err != nil {
 		return 0, fmt.Errorf("failed to open source: %w", err)
 	}
-	defer sourceFile.Close()
+	defer func() { _ = sourceFile.Close() }()
 
 	// #nosec G304 -- targetPath is supplied by the local hyperconvert CLI operator, not a remote caller
 	targetFile, err := os.Create(targetPath)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create target: %w", err)
 	}
-	defer targetFile.Close()
+	defer func() { _ = targetFile.Close() }()
 
 	// Skip QCOW2 header and copy data
 	// TODO: Implement full QCOW2 parsing
@@ -207,7 +207,7 @@ func (c *Converter) convertVMDKToQCOW2(ctx context.Context, sourcePath, targetPa
 
 	// Two-step conversion: VMDK → RAW → QCOW2
 	tempPath := targetPath + ".tmp.raw"
-	defer os.Remove(tempPath)
+	defer func() { _ = os.Remove(tempPath) }()
 
 	// Step 1: VMDK to RAW
 	if _, err := c.convertVMDKToRAW(ctx, sourcePath, tempPath, opts); err != nil {
@@ -231,14 +231,14 @@ func (c *Converter) convertVMDKToRAW(ctx context.Context, sourcePath, targetPath
 	if err != nil {
 		return 0, fmt.Errorf("failed to open source: %w", err)
 	}
-	defer sourceFile.Close()
+	defer func() { _ = sourceFile.Close() }()
 
 	// #nosec G304 -- targetPath is supplied by the local hyperconvert CLI operator, not a remote caller
 	targetFile, err := os.Create(targetPath)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create target: %w", err)
 	}
-	defer targetFile.Close()
+	defer func() { _ = targetFile.Close() }()
 
 	// TODO: Implement full VMDK parsing (descriptor, grain tables, etc.)
 	c.logger.Warn("VMDK parsing not fully implemented, using RAW copy")
@@ -254,14 +254,14 @@ func (c *Converter) copyFile(ctx context.Context, sourcePath, targetPath string,
 	if err != nil {
 		return 0, fmt.Errorf("failed to open source: %w", err)
 	}
-	defer sourceFile.Close()
+	defer func() { _ = sourceFile.Close() }()
 
 	// #nosec G304 -- targetPath is supplied by the local hyperconvert CLI operator, not a remote caller
 	targetFile, err := os.Create(targetPath)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create target: %w", err)
 	}
-	defer targetFile.Close()
+	defer func() { _ = targetFile.Close() }()
 
 	return c.copyWithProgress(ctx, sourceFile, targetFile, opts)
 }

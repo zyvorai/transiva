@@ -109,7 +109,7 @@ func (s *SFTPStorage) Upload(ctx context.Context, localPath, remotePath string, 
 		if err != nil {
 			return retry.IsNonRetryable(fmt.Errorf("open file: %w", err))
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 
 		fileInfo, err := file.Stat()
 		if err != nil {
@@ -133,7 +133,7 @@ func (s *SFTPStorage) Upload(ctx context.Context, localPath, remotePath string, 
 		if err != nil {
 			return fmt.Errorf("create remote file: %w", err)
 		}
-		defer remoteFile.Close()
+		defer func() { _ = remoteFile.Close() }()
 
 		// Copy with progress
 		written := int64(0)
@@ -182,7 +182,7 @@ func (s *SFTPStorage) UploadStream(ctx context.Context, reader io.Reader, remote
 	if err != nil {
 		return fmt.Errorf("create remote file: %w", err)
 	}
-	defer remoteFile.Close()
+	defer func() { _ = remoteFile.Close() }()
 
 	// Copy with progress
 	written := int64(0)
@@ -233,7 +233,7 @@ func (s *SFTPStorage) Download(ctx context.Context, remotePath, localPath string
 			}
 			return fmt.Errorf("open remote file: %w", err)
 		}
-		defer remoteFile.Close()
+		defer func() { _ = remoteFile.Close() }()
 
 		// Get file info for size
 		remoteInfo, err := remoteFile.Stat()
@@ -247,7 +247,7 @@ func (s *SFTPStorage) Download(ctx context.Context, remotePath, localPath string
 		if err != nil {
 			return retry.IsNonRetryable(fmt.Errorf("create local file: %w", err))
 		}
-		defer localFile.Close()
+		defer func() { _ = localFile.Close() }()
 
 		// Copy with progress
 		written := int64(0)

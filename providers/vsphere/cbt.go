@@ -321,11 +321,3 @@ func findSnapshotByID(tree []types.VirtualMachineSnapshotTree, id string) *types
 	return nil
 }
 
-// Helper function to calculate total size of changed blocks
-func calculateTotalSize(blocks []incremental.ChangedBlock) int64 {
-	var total int64
-	for _, block := range blocks {
-		total += block.Length
-	}
-	return total
-}

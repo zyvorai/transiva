@@ -49,7 +49,7 @@ func CreateOVA(ovfDir string, ovaPath string, compress bool, compressionLevel in
 	if err != nil {
 		return fmt.Errorf("failed to create OVA file: %w", err)
 	}
-	defer ovaFile.Close()
+	defer func() { _ = ovaFile.Close() }()
 
 	var tw *tar.Writer
 	if compress {
@@ -63,13 +63,13 @@ func CreateOVA(ovfDir string, ovaPath string, compress bool, compressionLevel in
 		if err != nil {
 			return fmt.Errorf("failed to create gzip writer: %w", err)
 		}
-		gzw.Header.Name = filepath.Base(ovaPath)
-		defer gzw.Close()
+		gzw.Name = filepath.Base(ovaPath)
+		defer func() { _ = gzw.Close() }()
 		tw = tar.NewWriter(gzw)
 	} else {
 		tw = tar.NewWriter(ovaFile)
 	}
-	defer tw.Close()
+	defer func() { _ = tw.Close() }()
 
 	// OVF must be first file in OVA (per OVF spec)
 	var ovfFile string
@@ -147,7 +147,7 @@ func addFileToTar(tw *tar.Writer, filePath string, log logger.Logger) error {
 	if err != nil {
 		return fmt.Errorf("failed to open file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	info, err := file.Stat()
 	if err != nil {
@@ -192,7 +192,7 @@ func ExtractOVA(ovaPath string, destDir string, log logger.Logger) error {
 	if err != nil {
 		return fmt.Errorf("failed to open OVA file: %w", err)
 	}
-	defer ovaFile.Close()
+	defer func() { _ = ovaFile.Close() }()
 
 	// Detect gzip compression by reading magic bytes
 	magic := make([]byte, 2)
@@ -215,7 +215,7 @@ func ExtractOVA(ovaPath string, destDir string, log logger.Logger) error {
 		if err != nil {
 			return fmt.Errorf("failed to create gzip reader: %w", err)
 		}
-		defer gzr.Close()
+		defer func() { _ = gzr.Close() }()
 		tr = tar.NewReader(gzr)
 	} else {
 		tr = tar.NewReader(ovaFile)
@@ -296,7 +296,7 @@ func ValidateOVA(ovaPath string) error {
 	if err != nil {
 		return fmt.Errorf("failed to open OVA file: %w", err)
 	}
-	defer ovaFile.Close()
+	defer func() { _ = ovaFile.Close() }()
 
 	tr := tar.NewReader(ovaFile)
 

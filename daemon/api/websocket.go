@@ -28,7 +28,6 @@ type WSClient struct {
 	conn      *websocket.Conn
 	send      chan WSMessage
 	hub       *WSHub
-	mu        sync.Mutex
 	closed    bool
 	closeOnce sync.Once
 }

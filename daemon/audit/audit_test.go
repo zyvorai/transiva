@@ -15,7 +15,7 @@ func TestNewFileLogger(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create logger: %v", err)
 	}
-	defer logger.Close()
+	defer func() { _ = logger.Close() }()
 
 	if logger.directory != tmpDir {
 		t.Errorf("expected directory %s, got %s", tmpDir, logger.directory)
@@ -33,7 +33,7 @@ func TestLogEvent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create logger: %v", err)
 	}
-	defer logger.Close()
+	defer func() { _ = logger.Close() }()
 
 	event := NewEvent(EventTypeLogin, "testuser")
 	event.Status = EventStatusSuccess
@@ -63,7 +63,7 @@ func TestQueryEvents(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create logger: %v", err)
 	}
-	defer logger.Close()
+	defer func() { _ = logger.Close() }()
 
 	// Log multiple events
 	events := []*Event{
@@ -153,13 +153,13 @@ func TestQueryWithLimit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create logger: %v", err)
 	}
-	defer logger.Close()
+	defer func() { _ = logger.Close() }()
 
 	// Log 10 events
 	for i := 0; i < 10; i++ {
 		event := NewEvent(EventTypeLogin, "user")
 		event.Status = EventStatusSuccess
-		logger.Log(event)
+		_ = logger.Log(event)
 	}
 
 	// Query with limit
@@ -241,7 +241,7 @@ func TestLogRotation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create logger: %v", err)
 	}
-	defer logger.Close()
+	defer func() { _ = logger.Close() }()
 
 	// Manually set smaller size for testing
 	logger.maxSize = 1024
@@ -251,7 +251,7 @@ func TestLogRotation(t *testing.T) {
 		event := NewEvent(EventTypeLogin, "user")
 		event.Status = EventStatusSuccess
 		event.Details["iteration"] = i
-		logger.Log(event)
+		_ = logger.Log(event)
 	}
 
 	// Should have multiple log files now
@@ -273,7 +273,7 @@ func TestQueryWithFilters(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create logger: %v", err)
 	}
-	defer logger.Close()
+	defer func() { _ = logger.Close() }()
 
 	// Log events with different attributes
 	now := time.Now()
@@ -370,7 +370,7 @@ func TestQueryWithStartTimeFilter(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create logger: %v", err)
 	}
-	defer logger.Close()
+	defer func() { _ = logger.Close() }()
 
 	now := time.Now()
 	oldEvent := &Event{
@@ -386,8 +386,8 @@ func TestQueryWithStartTimeFilter(t *testing.T) {
 		Username:  "bob",
 	}
 
-	logger.Log(oldEvent)
-	logger.Log(newEvent)
+	_ = logger.Log(oldEvent)
+	_ = logger.Log(newEvent)
 
 	// Query with start time filter
 	startTime := now.Add(-1 * time.Hour)
@@ -412,7 +412,7 @@ func TestQueryWithEndTimeFilter(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create logger: %v", err)
 	}
-	defer logger.Close()
+	defer func() { _ = logger.Close() }()
 
 	now := time.Now()
 	oldEvent := &Event{
@@ -428,8 +428,8 @@ func TestQueryWithEndTimeFilter(t *testing.T) {
 		Username:  "bob",
 	}
 
-	logger.Log(oldEvent)
-	logger.Log(newEvent)
+	_ = logger.Log(oldEvent)
+	_ = logger.Log(newEvent)
 
 	// Query with end time filter
 	endTime := now.Add(-1 * time.Hour)
@@ -456,7 +456,7 @@ func TestCloseNilFile(t *testing.T) {
 	}
 
 	// Close the logger
-	logger.Close()
+	_ = logger.Close()
 
 	// Set file to nil and close again - should not panic
 	logger.file = nil
@@ -473,7 +473,7 @@ func TestShouldRotateNilFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create logger: %v", err)
 	}
-	defer logger.Close()
+	defer func() { _ = logger.Close() }()
 
 	// Set file to nil
 	logger.file = nil
@@ -491,20 +491,20 @@ func TestShouldRotateFileSize(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create logger: %v", err)
 	}
-	defer logger.Close()
+	defer func() { _ = logger.Close() }()
 
 	// Set very small max size
 	logger.maxSize = 100
 
 	// Log an event
 	event := NewEvent(EventTypeLogin, "user")
-	logger.Log(event)
+	_ = logger.Log(event)
 
 	// Log many more events to exceed size
 	for i := 0; i < 50; i++ {
 		event := NewEvent(EventTypeLogin, "user")
 		event.Details["data"] = "some long data to increase file size"
-		logger.Log(event)
+		_ = logger.Log(event)
 	}
 
 	// shouldRotate should return true when file exceeds max size
@@ -528,10 +528,10 @@ func TestQueryEmptyDirectory(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create logger: %v", err)
 	}
-	defer logger.Close()
+	defer func() { _ = logger.Close() }()
 
 	// Close and remove all files
-	logger.Close()
+	_ = logger.Close()
 
 	// Query should return empty results, not error
 	results, err := logger.Query(QueryFilter{})

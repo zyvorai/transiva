@@ -280,9 +280,10 @@ func (gc *GuestConfig) ToCloudInit() (string, error) {
 		for _, iface := range gc.Network.Interfaces {
 			ifaceConfig := make(map[string]interface{})
 
-			if iface.Method == "dhcp" {
+			switch iface.Method {
+			case "dhcp":
 				ifaceConfig["dhcp4"] = true
-			} else if iface.Method == "static" {
+			case "static":
 				ifaceConfig["addresses"] = []string{fmt.Sprintf("%s/%s", iface.IPAddress, iface.Netmask)}
 				if iface.Gateway != "" {
 					ifaceConfig["gateway4"] = iface.Gateway

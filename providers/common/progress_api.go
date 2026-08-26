@@ -399,7 +399,7 @@ func (s *ProgressAPIServer) handleStreamProgress(w http.ResponseWriter, r *http.
 	// Send initial state
 	if progress, err := s.tracker.GetProgress(taskID); err == nil {
 		data, _ := json.Marshal(progress)
-		fmt.Fprintf(w, "data: %s\n\n", data)
+		_, _ = fmt.Fprintf(w, "data: %s\n\n", data)
 		if f, ok := w.(http.Flusher); ok {
 			f.Flush()
 		}
@@ -415,7 +415,7 @@ func (s *ProgressAPIServer) handleStreamProgress(w http.ResponseWriter, r *http.
 				return
 			}
 			data, _ := json.Marshal(progress)
-			fmt.Fprintf(w, "data: %s\n\n", data)
+			_, _ = fmt.Fprintf(w, "data: %s\n\n", data)
 			if f, ok := w.(http.Flusher); ok {
 				f.Flush()
 			}

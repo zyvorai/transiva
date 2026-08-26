@@ -25,7 +25,7 @@ type Client struct {
 // NewClient creates a new Alibaba Cloud ECS client
 func NewClient(cfg *config.AlibabaCloudConfig, log logger.Logger) (*Client, error) {
 	if cfg == nil {
-		return nil, fmt.Errorf("Alibaba Cloud config is required")
+		return nil, fmt.Errorf("alibaba cloud config is required")
 	}
 
 	// Create ECS client

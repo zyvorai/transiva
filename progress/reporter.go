@@ -33,7 +33,7 @@ func NewBarProgress(writer io.Writer, options ...progressbar.Option) *BarProgres
 		progressbar.OptionShowIts(),
 		progressbar.OptionSetItsString("bytes"),
 		progressbar.OptionOnCompletion(func() {
-			fmt.Fprint(writer, "\n")
+			_, _ = fmt.Fprint(writer, "\n")
 		}),
 		progressbar.OptionSpinnerType(14),
 		progressbar.OptionFullWidth(),
@@ -117,7 +117,7 @@ func NewDownloadProgress(writer io.Writer, filename string, totalSize int64) *Ba
 			BarEnd:        "]",
 		}),
 		progressbar.OptionOnCompletion(func() {
-			fmt.Fprint(writer, "\n")
+			_, _ = fmt.Fprint(writer, "\n")
 		}),
 	)
 	return &BarProgress{bar: bar}

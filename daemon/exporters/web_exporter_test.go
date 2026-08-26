@@ -159,7 +159,5 @@ func TestWebExporter_ProgressCallback(t *testing.T) {
 	}
 
 	// We can't actually test export without real vCenter, but we can verify callback is callable
-	if progressCallback == nil {
-		t.Error("Progress callback is nil")
-	}
+	progressCallback(&models.JobProgress{ExportMethod: string(capabilities.ExportMethodWeb)})
 }

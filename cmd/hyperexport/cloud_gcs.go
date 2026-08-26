@@ -68,7 +68,7 @@ func (g *GCSStorage) Upload(ctx context.Context, localPath, remotePath string, p
 		if err != nil {
 			return retry.IsNonRetryable(fmt.Errorf("open file: %w", err))
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 
 		fileInfo, err := file.Stat()
 		if err != nil {
@@ -173,7 +173,7 @@ func (g *GCSStorage) Download(ctx context.Context, remotePath, localPath string,
 		if err != nil {
 			return retry.IsNonRetryable(fmt.Errorf("create file: %w", err))
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 
 		// Get size
 		attrs, err := obj.Attrs(ctx)

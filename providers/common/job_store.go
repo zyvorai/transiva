@@ -314,7 +314,7 @@ func (s *SQLiteJobStore) ListJobs(filter JobFilter) ([]*Job, error) {
 	if err != nil {
 		return nil, fmt.Errorf("query jobs: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var jobs []*Job
 	for rows.Next() {

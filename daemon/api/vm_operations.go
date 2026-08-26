@@ -50,7 +50,7 @@ func (s *Server) handleVMShutdown(w http.ResponseWriter, r *http.Request) {
 		s.errorResponse(w, http.StatusInternalServerError, "failed to connect to vSphere: %v", err)
 		return
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := context.Background()
 	if err := client.ShutdownVM(ctx, req.VMPath, timeout); err != nil {
@@ -90,7 +90,7 @@ func (s *Server) handleVMPowerOff(w http.ResponseWriter, r *http.Request) {
 		s.errorResponse(w, http.StatusInternalServerError, "failed to connect to vSphere: %v", err)
 		return
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := context.Background()
 	if err := client.PowerOffVM(ctx, req.VMPath); err != nil {
@@ -130,7 +130,7 @@ func (s *Server) handleVMRemoveCDROM(w http.ResponseWriter, r *http.Request) {
 		s.errorResponse(w, http.StatusInternalServerError, "failed to connect to vSphere: %v", err)
 		return
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := context.Background()
 	if err := client.RemoveCDROMDevices(ctx, req.VMPath); err != nil {

@@ -539,7 +539,7 @@ func (c *VSphereClient) createOVFDescriptor(ctx context.Context, vm *object.Virt
 	if err != nil {
 		return "", fmt.Errorf("create OVF file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	if _, err := file.WriteString(desc.OvfDescriptor); err != nil {
 		return "", fmt.Errorf("write OVF descriptor: %w", err)
@@ -569,14 +569,14 @@ func (c *VSphereClient) downloadFilesParallel(
 	}
 
 	var (
-		wg                sync.WaitGroup
-		sem               = make(chan struct{}, concurrency)
-		errCh             = make(chan error, len(items))
-		results           = make([]string, len(items))
-		resultsMux        sync.Mutex
-		totalBytesDownloaded int64 // Track cumulative progress
-		checkpointMux     sync.Mutex // Protect checkpoint updates
-		lastCheckpointSave time.Time
+		wg                   sync.WaitGroup
+		sem                  = make(chan struct{}, concurrency)
+		errCh                = make(chan error, len(items))
+		results              = make([]string, len(items))
+		resultsMux           sync.Mutex
+		totalBytesDownloaded int64      // Track cumulative progress
+		checkpointMux        sync.Mutex // Protect checkpoint updates
+		lastCheckpointSave   time.Time
 	)
 
 	// Initialize checkpoint with all files if enabled
@@ -652,13 +652,13 @@ func (c *VSphereClient) downloadFilesParallel(
 			// Wrap progress bar with callback if provided
 			if progressCallback != nil {
 				fileBar = &callbackProgressReporter{
-					inner:            fileBar,
-					callback:         progressCallback,
-					totalBytes:       &totalBytesDownloaded,
-					totalSize:        totalSize,
-					fileName:         filepath.Base(item.Path),
-					fileIndex:        idx,
-					totalFiles:       len(items),
+					inner:      fileBar,
+					callback:   progressCallback,
+					totalBytes: &totalBytesDownloaded,
+					totalSize:  totalSize,
+					fileName:   filepath.Base(item.Path),
+					fileIndex:  idx,
+					totalFiles: len(items),
 				}
 			}
 
@@ -834,14 +834,14 @@ func (c *VSphereClient) downloadFileResumable(
 	if err != nil {
 		return 0, fmt.Errorf("open file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	// Use SOAP client for download (handles auth automatically)
 	// Must read the response body inside the callback
 	var totalWritten int64
 	var downloadErr error
 
-	err = c.client.Client.Client.Do(ctx, req, func(res *http.Response) error {
+	err = c.client.Do(ctx, req, func(res *http.Response) error {
 		if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusPartialContent {
 			return fmt.Errorf("HTTP error: %s", res.Status)
 		}
@@ -911,8 +911,7 @@ func (c *VSphereClient) generateArtifactManifest(
 	opts ExportOptions,
 ) (string, error) {
 	// Get VM properties for metadata
-	var moVM types.ManagedObjectReference
-	moVM = vm.Reference()
+	moVM := vm.Reference()
 
 	// Get VM runtime info
 	vmProps, err := c.getVMProperties(ctx, vm)
@@ -1115,8 +1114,7 @@ type vmProperties struct {
 
 // getVMProperties retrieves VM properties needed for manifest generation
 func (c *VSphereClient) getVMProperties(ctx context.Context, vm *object.VirtualMachine) (*vmProperties, error) {
-	var moVM types.ManagedObjectReference
-	moVM = vm.Reference()
+	moVM := vm.Reference()
 
 	// Get VM configuration
 	var obj struct {

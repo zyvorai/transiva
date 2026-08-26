@@ -19,7 +19,7 @@ func TestEnhancedServerCreation(t *testing.T) {
 	// Create capability detector
 	detector := capabilities.NewDetector(log)
 	ctx := context.Background()
-	detector.Detect(ctx)
+	_ = detector.Detect(ctx)
 
 	// Create job manager
 	manager := jobs.NewManager(log, detector)
@@ -75,7 +75,7 @@ func TestJobExecutorAdapter(t *testing.T) {
 	log := logger.New("info")
 	detector := capabilities.NewDetector(log)
 	ctx := context.Background()
-	detector.Detect(ctx)
+	_ = detector.Detect(ctx)
 	manager := jobs.NewManager(log, detector)
 
 	adapter := &jobExecutorAdapter{manager: manager}

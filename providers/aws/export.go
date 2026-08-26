@@ -331,7 +331,7 @@ func (c *Client) downloadFromS3(ctx context.Context, s3Key, localPath string, re
 	if err != nil {
 		return 0, fmt.Errorf("create local file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	// Download object
 	getInput := &s3.GetObjectInput{
@@ -343,7 +343,7 @@ func (c *Client) downloadFromS3(ctx context.Context, s3Key, localPath string, re
 	if err != nil {
 		return 0, fmt.Errorf("get object from S3: %w", err)
 	}
-	defer result.Body.Close()
+	defer func() { _ = result.Body.Close() }()
 
 	// Create progress reader wrapper if reporter provided
 	var reader io.Reader = result.Body
@@ -562,7 +562,7 @@ func (c *Client) downloadFromS3WithOptions(ctx context.Context, s3Key, localPath
 	if err != nil {
 		return 0, fmt.Errorf("create local file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	// Download object
 	getInput := &s3.GetObjectInput{
@@ -574,7 +574,7 @@ func (c *Client) downloadFromS3WithOptions(ctx context.Context, s3Key, localPath
 	if err != nil {
 		return 0, fmt.Errorf("get object from S3: %w", err)
 	}
-	defer result.Body.Close()
+	defer func() { _ = result.Body.Close() }()
 
 	// Create progress reader wrapper with callback if provided
 	var reader io.Reader = result.Body

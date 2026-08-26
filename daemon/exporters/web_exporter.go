@@ -49,7 +49,7 @@ func (e *WebExporter) Export(ctx context.Context, job *models.JobDefinition, pro
 	if err != nil {
 		return nil, fmt.Errorf("create vsphere client: %w", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Update progress
 	if progressCallback != nil {

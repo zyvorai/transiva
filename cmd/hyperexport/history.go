@@ -196,7 +196,7 @@ func (h *ExportHistory) loadHistory() ([]ExportHistoryEntry, error) {
 		}
 		return nil, fmt.Errorf("open history file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	var entries []ExportHistoryEntry
 	decoder := json.NewDecoder(file)
@@ -219,7 +219,7 @@ func (h *ExportHistory) saveHistory(entries []ExportHistoryEntry) error {
 	if err != nil {
 		return fmt.Errorf("create history file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ")

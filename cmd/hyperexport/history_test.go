@@ -209,7 +209,7 @@ func TestExportHistory_GetExportsByVM_NoMatches(t *testing.T) {
 		Format:    "ova",
 		Success:   true,
 	}
-	history.RecordExport(entry)
+	_ = history.RecordExport(entry)
 
 	// Get exports for non-existent VM
 	vmExports, err := history.GetExportsByVM("nonexistent-vm")
@@ -316,7 +316,7 @@ func TestExportHistory_ClearHistory(t *testing.T) {
 		Format:    "ova",
 		Success:   true,
 	}
-	history.RecordExport(entry)
+	_ = history.RecordExport(entry)
 
 	// Clear history
 	err := history.ClearHistory()
@@ -497,7 +497,7 @@ func TestExportReport_GenerateReport_WithHistory(t *testing.T) {
 		Duration:  5 * time.Minute,
 		Success:   true,
 	}
-	history.RecordExport(entry)
+	_ = history.RecordExport(entry)
 
 	report := NewExportReport(history)
 
@@ -528,7 +528,7 @@ func TestExportReport_SaveReportToFile(t *testing.T) {
 		Format:    "ova",
 		Success:   true,
 	}
-	history.RecordExport(entry)
+	_ = history.RecordExport(entry)
 
 	report := NewExportReport(history)
 	reportFile := filepath.Join(tmpDir, "report.txt")

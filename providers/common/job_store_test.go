@@ -17,7 +17,7 @@ func TestSQLiteJobStore_CreateAndLoad(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create store: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	// Create a job
 	now := time.Now()
@@ -82,7 +82,7 @@ func TestSQLiteJobStore_UpdateStatus(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create store: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	// Create a job
 	job := &Job{
@@ -141,7 +141,7 @@ func TestSQLiteJobStore_UpdateProgress(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create store: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	// Create a job
 	job := &Job{
@@ -189,7 +189,7 @@ func TestSQLiteJobStore_ListJobs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create store: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	// Create multiple jobs
 	jobs := []*Job{
@@ -277,7 +277,7 @@ func TestSQLiteJobStore_DeleteJob(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create store: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	// Create a job
 	job := &Job{
@@ -324,7 +324,7 @@ func TestSQLiteJobStore_GetStats(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create store: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	// Create jobs with different statuses
 	jobs := []*Job{
@@ -382,7 +382,7 @@ func TestSQLiteJobStore_Prune(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create store: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	// Create old completed jobs
 	oldTime := time.Now().Add(-48 * time.Hour)
@@ -469,7 +469,7 @@ func TestSQLiteJobStore_Persistence(t *testing.T) {
 			t.Fatalf("Failed to save job: %v", err)
 		}
 
-		store.Close()
+		_ = store.Close()
 	}
 
 	// Reopen database and verify job persisted
@@ -478,7 +478,7 @@ func TestSQLiteJobStore_Persistence(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to reopen store: %v", err)
 		}
-		defer store.Close()
+		defer func() { _ = store.Close() }()
 
 		job, err := store.LoadJob("persist-001")
 		if err != nil {
@@ -520,7 +520,7 @@ func TestSQLiteJobStore_SaveJobValidation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create store: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	// Try to save job with empty ID
 	job := &Job{
@@ -529,7 +529,7 @@ func TestSQLiteJobStore_SaveJobValidation(t *testing.T) {
 		Status: JobStatusPending,
 	}
 
-	err = store.SaveJob(job)
+	_ = store.SaveJob(job)
 	// Should succeed even with empty ID (database will handle it)
 	// This tests that the function doesn't crash with edge cases
 }
@@ -542,7 +542,7 @@ func TestSQLiteJobStore_LoadNonexistentJob(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create store: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	_, err = store.LoadJob("nonexistent-job-id")
 	if err == nil {
@@ -558,10 +558,10 @@ func TestSQLiteJobStore_UpdateNonexistentJob(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create store: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	// Try to update status of nonexistent job
-	err = store.UpdateJobStatus("nonexistent-job", JobStatusRunning)
+	_ = store.UpdateJobStatus("nonexistent-job", JobStatusRunning)
 	// Should handle gracefully (may succeed with no effect or return error)
 	// This tests robustness
 }
@@ -574,9 +574,9 @@ func TestSQLiteJobStore_DeleteNonexistentJob(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create store: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	// Try to delete nonexistent job - should not error
-	err = store.DeleteJob("nonexistent-job")
+	_ = store.DeleteJob("nonexistent-job")
 	// Should succeed (no-op) or return specific error
 }

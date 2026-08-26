@@ -166,7 +166,7 @@ func (d *Dashboard) Start(ctx context.Context) error {
 	if err == nil {
 		d.k8sDash = k8sDash
 		// Start K8s metrics collection
-		go d.k8sDash.Start(ctx)
+		go func() { _ = d.k8sDash.Start(ctx) }()
 	}
 
 	// Setup chi router

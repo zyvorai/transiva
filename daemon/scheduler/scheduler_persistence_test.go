@@ -31,7 +31,7 @@ func TestScheduler_Persistence(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create store: %v", err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	log := logger.New("debug")
 	executor := &mockExecutor{}
@@ -105,7 +105,7 @@ func TestScheduler_LoadSchedules(t *testing.T) {
 		},
 	}
 
-	sched1.AddScheduledJob(sj)
+	_ = sched1.AddScheduledJob(sj)
 	sched1.Stop()
 
 	// Create new scheduler and load schedules
@@ -127,7 +127,7 @@ func TestScheduler_LoadSchedules(t *testing.T) {
 		t.Errorf("Loaded wrong schedule ID: %s", loaded[0].ID)
 	}
 
-	db.Close()
+	_ = db.Close()
 }
 
 func TestScheduler_UpdatePersistence(t *testing.T) {
@@ -138,7 +138,7 @@ func TestScheduler_UpdatePersistence(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create store: %v", err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	log := logger.New("debug")
 	executor := &mockExecutor{}
@@ -157,7 +157,7 @@ func TestScheduler_UpdatePersistence(t *testing.T) {
 		JobTemplate: models.JobDefinition{},
 	}
 
-	sched.AddScheduledJob(sj)
+	_ = sched.AddScheduledJob(sj)
 
 	// Update schedule
 	updates := &models.ScheduledJob{
@@ -198,7 +198,7 @@ func TestScheduler_DeletePersistence(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create store: %v", err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	log := logger.New("debug")
 	executor := &mockExecutor{}
@@ -217,7 +217,7 @@ func TestScheduler_DeletePersistence(t *testing.T) {
 		JobTemplate: models.JobDefinition{},
 	}
 
-	sched.AddScheduledJob(sj)
+	_ = sched.AddScheduledJob(sj)
 
 	// Verify it exists
 	_, err = db.GetSchedule("delete-test")
@@ -246,7 +246,7 @@ func TestScheduler_ExecutionHistory(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create store: %v", err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	// Record some executions
 	execution1 := &store.ScheduleExecution{
@@ -308,7 +308,7 @@ func TestScheduler_MultipleSchedules(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create store: %v", err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	log := logger.New("debug")
 	executor := &mockExecutor{}

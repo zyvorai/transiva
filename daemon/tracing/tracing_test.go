@@ -74,7 +74,7 @@ func TestNewProvider_Stdout(t *testing.T) {
 		t.Fatal("expected provider to be created")
 	}
 
-	defer provider.Shutdown(context.Background())
+	defer func() { _ = provider.Shutdown(context.Background()) }()
 
 	// Create a span to verify provider works
 	tracer := provider.Tracer("test")
@@ -122,7 +122,7 @@ func TestNewProvider_Sampling(t *testing.T) {
 			if err != nil {
 				t.Fatalf("failed to create provider: %v", err)
 			}
-			defer provider.Shutdown(context.Background())
+			defer func() { _ = provider.Shutdown(context.Background()) }()
 
 			if provider == nil {
 				t.Error("expected provider to be created")
@@ -142,7 +142,7 @@ func TestStartSpan(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create provider: %v", err)
 	}
-	defer provider.Shutdown(context.Background())
+	defer func() { _ = provider.Shutdown(context.Background()) }()
 
 	tracer := provider.Tracer("test")
 
@@ -186,7 +186,7 @@ func TestSpanHelpers(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create provider: %v", err)
 	}
-	defer provider.Shutdown(context.Background())
+	defer func() { _ = provider.Shutdown(context.Background()) }()
 
 	tracer := provider.Tracer("test")
 	ctx, span := tracer.Start(context.Background(), "test-span")
@@ -228,7 +228,7 @@ func TestTraceJobExport(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create provider: %v", err)
 	}
-	defer provider.Shutdown(context.Background())
+	defer func() { _ = provider.Shutdown(context.Background()) }()
 
 	tracer := provider.Tracer("test")
 	ctx, span := TraceJobExport(context.Background(), tracer, "job123", "export-vm", "test-vm")
@@ -254,7 +254,7 @@ func TestTraceProviderOperation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create provider: %v", err)
 	}
-	defer provider.Shutdown(context.Background())
+	defer func() { _ = provider.Shutdown(context.Background()) }()
 
 	tracer := provider.Tracer("test")
 	ctx, span := TraceProviderOperation(context.Background(), tracer, "aws", "export-instance")
@@ -276,7 +276,7 @@ func TestTraceHTTPRequest(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create provider: %v", err)
 	}
-	defer provider.Shutdown(context.Background())
+	defer func() { _ = provider.Shutdown(context.Background()) }()
 
 	tracer := provider.Tracer("test")
 	ctx, span := TraceHTTPRequest(context.Background(), tracer, "GET", "/api/jobs")
@@ -298,7 +298,7 @@ func TestTraceDBOperation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create provider: %v", err)
 	}
-	defer provider.Shutdown(context.Background())
+	defer func() { _ = provider.Shutdown(context.Background()) }()
 
 	tracer := provider.Tracer("test")
 	ctx, span := TraceDBOperation(context.Background(), tracer, "SELECT", "jobs")
@@ -320,7 +320,7 @@ func TestHTTPMiddleware(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create provider: %v", err)
 	}
-	defer provider.Shutdown(context.Background())
+	defer func() { _ = provider.Shutdown(context.Background()) }()
 
 	tracer := provider.Tracer("test")
 	middleware := NewHTTPMiddleware(tracer)
@@ -334,7 +334,7 @@ func TestHTTPMiddleware(t *testing.T) {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
+		_, _ = w.Write([]byte("OK"))
 	}))
 
 	// Create test request
@@ -361,7 +361,7 @@ func TestHTTPMiddleware_ErrorStatus(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create provider: %v", err)
 	}
-	defer provider.Shutdown(context.Background())
+	defer func() { _ = provider.Shutdown(context.Background()) }()
 
 	tracer := provider.Tracer("test")
 	middleware := NewHTTPMiddleware(tracer)
@@ -369,7 +369,7 @@ func TestHTTPMiddleware_ErrorStatus(t *testing.T) {
 	// Create handler that returns error
 	handler := middleware.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Error"))
+		_, _ = w.Write([]byte("Error"))
 	}))
 
 	req := httptest.NewRequest("POST", "/error", nil)
@@ -393,7 +393,7 @@ func TestHTTPMiddleware_TraceContextPropagation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create provider: %v", err)
 	}
-	defer provider.Shutdown(context.Background())
+	defer func() { _ = provider.Shutdown(context.Background()) }()
 
 	tracer := provider.Tracer("test")
 

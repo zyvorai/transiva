@@ -114,7 +114,7 @@ func exportSingleNutanixVM(ctx context.Context, cfg *config.Config, log logger.L
 		}
 		return fmt.Errorf("create nutanix provider: %w", err)
 	}
-	defer provider.Disconnect()
+	defer func() { _ = provider.Disconnect() }()
 
 	if spinner != nil {
 		spinner.Success("Connected to Nutanix Prism")
@@ -350,7 +350,7 @@ func (c *DaemonClient) ExportNutanixVM(ctx context.Context, req api.VMExportRequ
 	if err != nil {
 		return nil, fmt.Errorf("send request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK {

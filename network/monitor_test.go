@@ -290,7 +290,7 @@ func BenchmarkNetworkMonitor_GetState(b *testing.B) {
 	monitor := NewMonitor(nil, log)
 
 	ctx := context.Background()
-	monitor.Start(ctx)
+	_ = monitor.Start(ctx)
 	defer monitor.Stop()
 
 	b.ResetTimer()
@@ -304,7 +304,7 @@ func BenchmarkNetworkMonitor_IsUp(b *testing.B) {
 	monitor := NewMonitor(nil, log)
 
 	ctx := context.Background()
-	monitor.Start(ctx)
+	_ = monitor.Start(ctx)
 	defer monitor.Stop()
 
 	b.ResetTimer()
@@ -338,7 +338,7 @@ func TestWaitForNetwork_AlreadyUp(t *testing.T) {
 	monitor := NewMonitor(nil, log)
 
 	ctx := context.Background()
-	monitor.Start(ctx)
+	_ = monitor.Start(ctx)
 	defer monitor.Stop()
 
 	// Wait for monitor to initialize and check network status
@@ -368,7 +368,7 @@ func TestWaitForNetwork_ContextCancelled(t *testing.T) {
 	monitor := NewMonitor(config, log)
 
 	ctx := context.Background()
-	monitor.Start(ctx)
+	_ = monitor.Start(ctx)
 	defer monitor.Stop()
 
 	// Wait for monitor to check network (and likely determine it's down)

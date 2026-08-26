@@ -259,12 +259,9 @@ func TestResourcePoolConfigValidation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			isValid := true
+			isValid := tt.config.Name != ""
 
 			// Validate name
-			if tt.config.Name == "" {
-				isValid = false
-			}
 
 			// Validate CPU limits
 			if tt.config.CPULimitMhz > 0 && tt.config.CPUReservationMhz > tt.config.CPULimitMhz {

@@ -212,7 +212,7 @@ func (s *SQLiteStore) ListSchedules(enabled *bool) ([]*models.ScheduledJob, erro
 	if err != nil {
 		return nil, fmt.Errorf("failed to query scheduled jobs: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var schedules []*models.ScheduledJob
 	for rows.Next() {
@@ -326,7 +326,7 @@ func (s *SQLiteStore) GetExecutionHistory(scheduleID string, limit int) ([]*Sche
 	if err != nil {
 		return nil, fmt.Errorf("failed to query execution history: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var executions []*ScheduleExecution
 	for rows.Next() {

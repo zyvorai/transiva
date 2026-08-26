@@ -356,7 +356,7 @@ func (s *SQLiteStore) ListJobs(filter JobFilter) ([]*models.Job, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to query jobs: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var jobs []*models.Job
 	for rows.Next() {
@@ -463,7 +463,7 @@ func (s *SQLiteStore) GetJobHistory(jobID string) ([]HistoryEntry, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to query history: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var history []HistoryEntry
 	for rows.Next() {

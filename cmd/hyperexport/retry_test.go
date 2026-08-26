@@ -200,7 +200,7 @@ func TestRetryExponentialBackoff(t *testing.T) {
 		return fmt.Errorf("timeout")
 	}
 
-	retryer.Do(context.Background(), operation, "test-operation")
+	_ = retryer.Do(context.Background(), operation, "test-operation")
 
 	// Expected delays: 10ms, 20ms, 40ms
 	expectedDelays := []time.Duration{
@@ -464,7 +464,7 @@ func BenchmarkRetrySuccess(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		retryer.Do(context.Background(), operation, "benchmark")
+		_ = retryer.Do(context.Background(), operation, "benchmark")
 	}
 }
 
@@ -489,6 +489,6 @@ func BenchmarkRetryWithFailures(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		retryer.Do(context.Background(), operation, "benchmark")
+		_ = retryer.Do(context.Background(), operation, "benchmark")
 	}
 }

@@ -24,22 +24,27 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Write kind config
+        run: |
+          cat > /tmp/kind-config.yaml <<'EOF'
+          kind: Cluster
+          apiVersion: kind.x-k8s.io/v1alpha4
+          nodes:
+          - role: control-plane
+            extraPortMappings:
+            - containerPort: 80
+              hostPort: 80
+            - containerPort: 443
+              hostPort: 443
+          - role: worker
+          - role: worker
+          EOF
+
       - name: Create kind cluster
         uses: helm/kind-action@v1
         with:
           cluster_name: transiva-test
-          config: |
-            kind: Cluster
-            apiVersion: kind.x-k8s.io/v1alpha4
-            nodes:
-            - role: control-plane
-              extraPortMappings:
-              - containerPort: 80
-                hostPort: 80
-              - containerPort: 443
-                hostPort: 443
-            - role: worker
-            - role: worker
+          config: /tmp/kind-config.yaml
 
       - name: Install MetalLB
         run: |
@@ -148,18 +153,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Write kind config
+        run: |
+          cat > /tmp/kind-config.yaml <<'EOF'
+          kind: Cluster
+          apiVersion: kind.x-k8s.io/v1alpha4
+          nodes:
+          - role: control-plane
+          - role: worker
+          - role: worker
+          - role: worker
+          EOF
+
       - name: Create multi-node kind cluster
         uses: helm/kind-action@v1
         with:
           cluster_name: transiva-multi
-          config: |
-            kind: Cluster
-            apiVersion: kind.x-k8s.io/v1alpha4
-            nodes:
-            - role: control-plane
-            - role: worker
-            - role: worker
-            - role: worker
+          config: /tmp/kind-config.yaml
 
       - name: Deploy and test
         run: |

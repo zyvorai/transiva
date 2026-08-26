@@ -308,6 +308,7 @@ func (bo *BatchOrchestrator) executeMigration(ctx context.Context, task *VMMigra
 		convStartTime := time.Now()
 
 		opts := bo.config.ConvertOptions
+		//nolint:staticcheck // TODO: custom PipelineConfig passthrough to the converter is not yet implemented
 		if task.PipelineConfig != nil {
 			// Apply custom pipeline config
 			// This would be passed to the converter

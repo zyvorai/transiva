@@ -92,8 +92,8 @@ func TestCleanupManager_CleanupOldExports_ByAge(t *testing.T) {
 	}
 
 	// Add files to directories
-	os.WriteFile(filepath.Join(oldExport, "data.bin"), []byte("old data"), 0644)
-	os.WriteFile(filepath.Join(newExport, "data.bin"), []byte("new data"), 0644)
+	_ = os.WriteFile(filepath.Join(oldExport, "data.bin"), []byte("old data"), 0644)
+	_ = os.WriteFile(filepath.Join(newExport, "data.bin"), []byte("new data"), 0644)
 
 	// Set old directory's modification time to 60 days ago
 	oldTime := time.Now().Add(-60 * 24 * time.Hour)
@@ -139,7 +139,7 @@ func TestCleanupManager_CleanupOldExports_ByCount(t *testing.T) {
 		}
 
 		// Add a file
-		os.WriteFile(filepath.Join(exportDir, "data.bin"), []byte("data"), 0644)
+		_ = os.WriteFile(filepath.Join(exportDir, "data.bin"), []byte("data"), 0644)
 
 		// Set different modification times (older = smaller number)
 		modTime := time.Now().Add(-time.Duration(6-i) * time.Hour)
@@ -191,7 +191,7 @@ func TestCleanupManager_CleanupOldExports_DryRun(t *testing.T) {
 		t.Fatalf("Failed to create export dir: %v", err)
 	}
 
-	os.WriteFile(filepath.Join(oldExport, "data.bin"), []byte("data"), 0644)
+	_ = os.WriteFile(filepath.Join(oldExport, "data.bin"), []byte("data"), 0644)
 
 	oldTime := time.Now().Add(-60 * 24 * time.Hour)
 	if err := os.Chtimes(oldExport, oldTime, oldTime); err != nil {
@@ -236,7 +236,7 @@ func TestCleanupManager_CleanupOldExports_PreservePattern(t *testing.T) {
 			t.Fatalf("Failed to create dir: %v", err)
 		}
 
-		os.WriteFile(filepath.Join(dir, "data.bin"), []byte("data"), 0644)
+		_ = os.WriteFile(filepath.Join(dir, "data.bin"), []byte("data"), 0644)
 
 		oldTime := time.Now().Add(-60 * 24 * time.Hour)
 		if err := os.Chtimes(dir, oldTime, oldTime); err != nil {
@@ -430,7 +430,7 @@ func TestCleanupManager_CleanupOldExports_WithTotalSizeLimit(t *testing.T) {
 
 		// Create files of different sizes
 		dataSize := i * 10 * 1024 // 10KB, 20KB, 30KB
-		os.WriteFile(filepath.Join(exportDir, "data.bin"), make([]byte, dataSize), 0644)
+		_ = os.WriteFile(filepath.Join(exportDir, "data.bin"), make([]byte, dataSize), 0644)
 
 		// Set different modification times (older = smaller number)
 		modTime := time.Now().Add(-time.Duration(4-i) * time.Hour)
@@ -471,7 +471,7 @@ func TestCleanupManager_GetAvailableSpace(t *testing.T) {
 
 	// Test with file path (should use parent directory)
 	testFile := filepath.Join(tmpDir, "testfile.txt")
-	os.WriteFile(testFile, []byte("test"), 0644)
+	_ = os.WriteFile(testFile, []byte("test"), 0644)
 
 	space, err = manager.getAvailableSpace(testFile)
 	if err != nil {
@@ -503,7 +503,7 @@ func TestCleanupManager_CleanupByFreeSpace(t *testing.T) {
 
 		// Add files
 		dataSize := i * 1024 * 1024 // 1MB, 2MB, 3MB
-		os.WriteFile(filepath.Join(exportDir, "data.bin"), make([]byte, dataSize), 0644)
+		_ = os.WriteFile(filepath.Join(exportDir, "data.bin"), make([]byte, dataSize), 0644)
 
 		// Set different modification times
 		modTime := time.Now().Add(-time.Duration(4-i) * 24 * time.Hour)
@@ -552,7 +552,7 @@ func TestCleanupManager_ScheduledCleanup(t *testing.T) {
 	if err := os.Mkdir(oldExport, 0755); err != nil {
 		t.Fatalf("Failed to create export dir: %v", err)
 	}
-	os.WriteFile(filepath.Join(oldExport, "data.bin"), []byte("data"), 0644)
+	_ = os.WriteFile(filepath.Join(oldExport, "data.bin"), []byte("data"), 0644)
 
 	oldTime := time.Now().Add(-60 * 24 * time.Hour)
 	if err := os.Chtimes(oldExport, oldTime, oldTime); err != nil {

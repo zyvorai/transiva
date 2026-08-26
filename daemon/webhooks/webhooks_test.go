@@ -101,7 +101,7 @@ func TestSendWebhookBasic(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		var payload Payload
-		json.Unmarshal(body, &payload)
+		_ = json.Unmarshal(body, &payload)
 		mu.Lock()
 		receivedPayload = payload
 		mu.Unlock()
@@ -299,7 +299,7 @@ func TestSendJobCreated(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		var payload Payload
-		json.Unmarshal(body, &payload)
+		_ = json.Unmarshal(body, &payload)
 		mu.Lock()
 		receivedPayload = payload
 		mu.Unlock()
@@ -351,7 +351,7 @@ func TestSendJobStarted(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		var payload Payload
-		json.Unmarshal(body, &payload)
+		_ = json.Unmarshal(body, &payload)
 		mu.Lock()
 		receivedPayload = payload
 		mu.Unlock()
@@ -398,7 +398,7 @@ func TestSendJobCompleted(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		var payload Payload
-		json.Unmarshal(body, &payload)
+		_ = json.Unmarshal(body, &payload)
 		mu.Lock()
 		receivedPayload = payload
 		mu.Unlock()
@@ -464,7 +464,7 @@ func TestSendJobFailed(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		var payload Payload
-		json.Unmarshal(body, &payload)
+		_ = json.Unmarshal(body, &payload)
 		mu.Lock()
 		receivedPayload = payload
 		mu.Unlock()
@@ -516,7 +516,7 @@ func TestSendJobCancelled(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		var payload Payload
-		json.Unmarshal(body, &payload)
+		_ = json.Unmarshal(body, &payload)
 		mu.Lock()
 		receivedPayload = payload
 		mu.Unlock()
@@ -563,7 +563,7 @@ func TestSendJobProgress(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		var payload Payload
-		json.Unmarshal(body, &payload)
+		_ = json.Unmarshal(body, &payload)
 		mu.Lock()
 		receivedPayload = payload
 		mu.Unlock()

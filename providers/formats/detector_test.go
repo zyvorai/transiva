@@ -42,13 +42,13 @@ func TestDetectFormat(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer os.Remove(tmpfile.Name())
+			defer func() { _ = os.Remove(tmpfile.Name()) }()
 
 			// Write magic bytes
 			if _, err := tmpfile.Write(tt.magic); err != nil {
 				t.Fatal(err)
 			}
-			tmpfile.Close()
+			_ = tmpfile.Close()
 
 			// Detect format
 			got, err := DetectFormat(tmpfile.Name())
@@ -116,12 +116,12 @@ func TestDetectFromMagic(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer os.Remove(tmpfile.Name())
+			defer func() { _ = os.Remove(tmpfile.Name()) }()
 
 			if _, err := tmpfile.Write(tt.data); err != nil {
 				t.Fatal(err)
 			}
-			tmpfile.Seek(0, 0)
+			_, _ = tmpfile.Seek(0, 0)
 
 			got, err := detectFromMagic(tmpfile)
 			if err != nil {
@@ -132,7 +132,7 @@ func TestDetectFromMagic(t *testing.T) {
 				t.Errorf("detectFromMagic() = %v, want %v", got, tt.want)
 			}
 
-			tmpfile.Close()
+			_ = tmpfile.Close()
 		})
 	}
 }
@@ -194,7 +194,7 @@ func TestGetFormatInfo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.Remove(tmpfile.Name())
+	defer func() { _ = os.Remove(tmpfile.Name()) }()
 
 	// Write QCOW2 header
 	header := make([]byte, 512)
@@ -209,8 +209,8 @@ func TestGetFormatInfo(t *testing.T) {
 	for i := 0; i < 8; i++ {
 		header[24+i] = byte(size >> (56 - uint(i)*8))
 	}
-	tmpfile.Write(header)
-	tmpfile.Close()
+	_, _ = tmpfile.Write(header)
+	_ = tmpfile.Close()
 
 	// Get format info
 	info, err := GetFormatInfo(tmpfile.Name())
@@ -251,15 +251,15 @@ func BenchmarkDetectFormat(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
-	defer os.Remove(tmpfile.Name())
+	defer func() { _ = os.Remove(tmpfile.Name()) }()
 
 	// Write QCOW2 magic
-	tmpfile.Write(MagicQCOW2)
-	tmpfile.Close()
+	_, _ = tmpfile.Write(MagicQCOW2)
+	_ = tmpfile.Close()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		DetectFormat(tmpfile.Name())
+		_, _ = DetectFormat(tmpfile.Name())
 	}
 }
 

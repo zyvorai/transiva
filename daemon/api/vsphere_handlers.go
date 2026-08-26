@@ -34,7 +34,7 @@ func (es *EnhancedServer) handleListHosts(w http.ResponseWriter, r *http.Request
 		es.errorResponse(w, http.StatusInternalServerError, "failed to create vSphere client: %v", err)
 		return
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// List hosts
 	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
@@ -72,7 +72,7 @@ func (es *EnhancedServer) handleListClusters(w http.ResponseWriter, r *http.Requ
 		es.errorResponse(w, http.StatusInternalServerError, "failed to create vSphere client: %v", err)
 		return
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// List clusters
 	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
@@ -105,7 +105,7 @@ func (es *EnhancedServer) handleListDatacenters(w http.ResponseWriter, r *http.R
 		es.errorResponse(w, http.StatusInternalServerError, "failed to create vSphere client: %v", err)
 		return
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// List datacenters
 	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
@@ -138,7 +138,7 @@ func (es *EnhancedServer) handleGetVCenterInfo(w http.ResponseWriter, r *http.Re
 		es.errorResponse(w, http.StatusInternalServerError, "failed to create vSphere client: %v", err)
 		return
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Get vCenter info
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
@@ -186,7 +186,7 @@ func (es *EnhancedServer) handleGetMetrics(w http.ResponseWriter, r *http.Reques
 		es.errorResponse(w, http.StatusInternalServerError, "failed to create vSphere client: %v", err)
 		return
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
 	defer cancel()
@@ -267,7 +267,7 @@ func (es *EnhancedServer) handleListResourcePools(w http.ResponseWriter, r *http
 		es.errorResponse(w, http.StatusInternalServerError, "failed to create vSphere client: %v", err)
 		return
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// List resource pools
 	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
@@ -307,7 +307,7 @@ func (es *EnhancedServer) handleCreateResourcePool(w http.ResponseWriter, r *htt
 		es.errorResponse(w, http.StatusInternalServerError, "failed to create vSphere client: %v", err)
 		return
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Create resource pool
 	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
@@ -356,7 +356,7 @@ func (es *EnhancedServer) handleUpdateResourcePool(w http.ResponseWriter, r *htt
 		es.errorResponse(w, http.StatusInternalServerError, "failed to create vSphere client: %v", err)
 		return
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Update resource pool
 	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
@@ -397,7 +397,7 @@ func (es *EnhancedServer) handleDeleteResourcePool(w http.ResponseWriter, r *htt
 		es.errorResponse(w, http.StatusInternalServerError, "failed to create vSphere client: %v", err)
 		return
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Delete resource pool
 	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
@@ -459,7 +459,7 @@ func (es *EnhancedServer) handleGetRecentEvents(w http.ResponseWriter, r *http.R
 		es.errorResponse(w, http.StatusInternalServerError, "failed to create vSphere client: %v", err)
 		return
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Get events
 	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
@@ -507,7 +507,7 @@ func (es *EnhancedServer) handleGetRecentTasks(w http.ResponseWriter, r *http.Re
 		es.errorResponse(w, http.StatusInternalServerError, "failed to create vSphere client: %v", err)
 		return
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Get tasks
 	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
@@ -549,7 +549,7 @@ func (es *EnhancedServer) handleCloneVM(w http.ResponseWriter, r *http.Request) 
 		es.errorResponse(w, http.StatusInternalServerError, "failed to create vSphere client: %v", err)
 		return
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Clone VM
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Minute)
@@ -593,7 +593,7 @@ func (es *EnhancedServer) handleBulkClone(w http.ResponseWriter, r *http.Request
 		es.errorResponse(w, http.StatusInternalServerError, "failed to create vSphere client: %v", err)
 		return
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Bulk clone VMs
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Minute)
@@ -646,7 +646,7 @@ func (es *EnhancedServer) handleCreateTemplate(w http.ResponseWriter, r *http.Re
 		es.errorResponse(w, http.StatusInternalServerError, "failed to create vSphere client: %v", err)
 		return
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Create template
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Minute)
@@ -687,7 +687,7 @@ func (es *EnhancedServer) handleDeployFromTemplate(w http.ResponseWriter, r *htt
 		es.errorResponse(w, http.StatusInternalServerError, "failed to create vSphere client: %v", err)
 		return
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Deploy from template
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Minute)

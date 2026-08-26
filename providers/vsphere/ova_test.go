@@ -88,7 +88,7 @@ func TestCreateOVA_Compressed(t *testing.T) {
 
 	// Create uncompressed version for comparison
 	uncompressedPath := filepath.Join(tmpDir, "test-uncompressed.ova")
-	CreateOVA(tmpDir, uncompressedPath, false, 0, log)
+	_ = CreateOVA(tmpDir, uncompressedPath, false, 0, log)
 	uncompressedInfo, _ := os.Stat(uncompressedPath)
 
 	if compressedInfo.Size() >= uncompressedInfo.Size() {
@@ -107,9 +107,9 @@ func TestCreateOVA_OVFFirst(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create files in "wrong" alphabetical order
-	os.WriteFile(filepath.Join(tmpDir, "zzz.vmdk"), []byte("VMDK"), 0644)
-	os.WriteFile(filepath.Join(tmpDir, "aaa.mf"), []byte("MF"), 0644)
-	os.WriteFile(filepath.Join(tmpDir, "middle.ovf"), []byte("OVF"), 0644)
+	_ = os.WriteFile(filepath.Join(tmpDir, "zzz.vmdk"), []byte("VMDK"), 0644)
+	_ = os.WriteFile(filepath.Join(tmpDir, "aaa.mf"), []byte("MF"), 0644)
+	_ = os.WriteFile(filepath.Join(tmpDir, "middle.ovf"), []byte("OVF"), 0644)
 
 	// Create OVA
 	ovaPath := filepath.Join(tmpDir, "test.ova")
@@ -125,7 +125,7 @@ func TestCreateOVA_OVFFirst(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	tr := tar.NewReader(file)
 	header, err := tr.Next()
@@ -142,11 +142,11 @@ func TestExtractOVA_Uncompressed(t *testing.T) {
 	// Create a test OVA
 	tmpDir := t.TempDir()
 	ovfContent := "Test OVF content"
-	os.WriteFile(filepath.Join(tmpDir, "test.ovf"), []byte(ovfContent), 0644)
+	_ = os.WriteFile(filepath.Join(tmpDir, "test.ovf"), []byte(ovfContent), 0644)
 
 	ovaPath := filepath.Join(tmpDir, "test.ova")
 	log := logger.New("debug")
-	CreateOVA(tmpDir, ovaPath, false, 0, log)
+	_ = CreateOVA(tmpDir, ovaPath, false, 0, log)
 
 	// Extract to new directory
 	extractDir := filepath.Join(tmpDir, "extracted")
@@ -171,11 +171,11 @@ func TestExtractOVA_Compressed(t *testing.T) {
 	// Create a test compressed OVA
 	tmpDir := t.TempDir()
 	ovfContent := "Test OVF content for compression"
-	os.WriteFile(filepath.Join(tmpDir, "test.ovf"), []byte(ovfContent), 0644)
+	_ = os.WriteFile(filepath.Join(tmpDir, "test.ovf"), []byte(ovfContent), 0644)
 
 	ovaPath := filepath.Join(tmpDir, "test.ova.gz")
 	log := logger.New("debug")
-	CreateOVA(tmpDir, ovaPath, true, 9, log)
+	_ = CreateOVA(tmpDir, ovaPath, true, 9, log)
 
 	// Extract to new directory
 	extractDir := filepath.Join(tmpDir, "extracted")
@@ -199,12 +199,12 @@ func TestExtractOVA_Compressed(t *testing.T) {
 func TestValidateOVA_Valid(t *testing.T) {
 	// Create valid OVA
 	tmpDir := t.TempDir()
-	os.WriteFile(filepath.Join(tmpDir, "test.ovf"), []byte("OVF"), 0644)
-	os.WriteFile(filepath.Join(tmpDir, "test.vmdk"), []byte("VMDK"), 0644)
+	_ = os.WriteFile(filepath.Join(tmpDir, "test.ovf"), []byte("OVF"), 0644)
+	_ = os.WriteFile(filepath.Join(tmpDir, "test.vmdk"), []byte("VMDK"), 0644)
 
 	ovaPath := filepath.Join(tmpDir, "test.ova")
 	log := logger.New("debug")
-	CreateOVA(tmpDir, ovaPath, false, 0, log)
+	_ = CreateOVA(tmpDir, ovaPath, false, 0, log)
 
 	// Validate
 	err := ValidateOVA(ovaPath)
@@ -216,11 +216,11 @@ func TestValidateOVA_Valid(t *testing.T) {
 func TestValidateOVA_NoOVF(t *testing.T) {
 	// Create OVA without OVF file
 	tmpDir := t.TempDir()
-	os.WriteFile(filepath.Join(tmpDir, "test.vmdk"), []byte("VMDK"), 0644)
+	_ = os.WriteFile(filepath.Join(tmpDir, "test.vmdk"), []byte("VMDK"), 0644)
 
 	ovaPath := filepath.Join(tmpDir, "test.ova")
 	log := logger.New("debug")
-	CreateOVA(tmpDir, ovaPath, false, 0, log)
+	_ = CreateOVA(tmpDir, ovaPath, false, 0, log)
 
 	// Should fail validation
 	err := ValidateOVA(ovaPath)
@@ -232,11 +232,11 @@ func TestValidateOVA_NoOVF(t *testing.T) {
 func TestValidateOVA_NoVMDK(t *testing.T) {
 	// Create OVA without VMDK file
 	tmpDir := t.TempDir()
-	os.WriteFile(filepath.Join(tmpDir, "test.ovf"), []byte("OVF"), 0644)
+	_ = os.WriteFile(filepath.Join(tmpDir, "test.ovf"), []byte("OVF"), 0644)
 
 	ovaPath := filepath.Join(tmpDir, "test.ova")
 	log := logger.New("debug")
-	CreateOVA(tmpDir, ovaPath, false, 0, log)
+	_ = CreateOVA(tmpDir, ovaPath, false, 0, log)
 
 	// Should fail validation
 	err := ValidateOVA(ovaPath)
@@ -251,7 +251,7 @@ func verifyOVAStructure(ovaPath string, compressed bool) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	var tr *tar.Reader
 
@@ -261,7 +261,7 @@ func verifyOVAStructure(ovaPath string, compressed bool) error {
 		if err != nil {
 			return err
 		}
-		defer gzr.Close()
+		defer func() { _ = gzr.Close() }()
 		tr = tar.NewReader(gzr)
 	} else {
 		tr = tar.NewReader(file)
@@ -285,8 +285,8 @@ func TestCompressionLevels(t *testing.T) {
 
 	// Create large compressible file
 	content := strings.Repeat("ABCD", 10000)
-	os.WriteFile(filepath.Join(tmpDir, "test.ovf"), []byte(content), 0644)
-	os.WriteFile(filepath.Join(tmpDir, "test.vmdk"), []byte(content), 0644)
+	_ = os.WriteFile(filepath.Join(tmpDir, "test.ovf"), []byte(content), 0644)
+	_ = os.WriteFile(filepath.Join(tmpDir, "test.vmdk"), []byte(content), 0644)
 
 	log := logger.New("debug")
 

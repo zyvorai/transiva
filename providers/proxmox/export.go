@@ -82,7 +82,7 @@ func (c *Client) CreateBackup(ctx context.Context, opts ExportOptions) (*ExportR
 	if err != nil {
 		return nil, fmt.Errorf("create backup task: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -137,7 +137,7 @@ func (c *Client) findLatestBackup(ctx context.Context, node string, vmid int) (s
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -217,7 +217,7 @@ func (c *Client) DownloadBackup(ctx context.Context, node, backupVolID, outputPa
 	if err != nil {
 		return fmt.Errorf("send download request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -235,7 +235,7 @@ func (c *Client) DownloadBackup(ctx context.Context, node, backupVolID, outputPa
 	if err != nil {
 		return fmt.Errorf("create output file: %w", err)
 	}
-	defer outFile.Close()
+	defer func() { _ = outFile.Close() }()
 
 	// Copy content with progress tracking
 	written, err := io.Copy(outFile, resp.Body)
@@ -318,7 +318,7 @@ func (c *Client) DeleteBackup(ctx context.Context, node, backupVolID string) err
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -337,7 +337,7 @@ func (c *Client) ListBackups(ctx context.Context, node string, vmid int) ([]Stor
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)

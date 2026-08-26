@@ -102,7 +102,7 @@ func TestProfileManager_LoadProfile(t *testing.T) {
 		Parallel:    4,
 		Tags:        map[string]string{"env": "test"},
 	}
-	pm.SaveProfile(original)
+	_ = pm.SaveProfile(original)
 
 	// Load it back
 	loaded, err := pm.LoadProfile("test-profile")
@@ -200,7 +200,7 @@ func TestProfileManager_DeleteProfile(t *testing.T) {
 		Name:   "to-delete",
 		Format: "ova",
 	}
-	pm.SaveProfile(profile)
+	_ = pm.SaveProfile(profile)
 
 	// Verify it exists
 	if !pm.ProfileExists("to-delete") {
@@ -249,7 +249,7 @@ func TestProfileManager_ProfileExists(t *testing.T) {
 		Name:   "test-profile",
 		Format: "ova",
 	}
-	pm.SaveProfile(profile)
+	_ = pm.SaveProfile(profile)
 
 	// Should exist now
 	if !pm.ProfileExists("test-profile") {
@@ -480,7 +480,7 @@ func TestProfileManager_UpdateProfile(t *testing.T) {
 		Format:      "ovf",
 		Compress:    false,
 	}
-	pm.SaveProfile(profile)
+	_ = pm.SaveProfile(profile)
 	originalModified := profile.Modified
 
 	// Wait a bit to ensure Modified timestamp changes
@@ -489,7 +489,7 @@ func TestProfileManager_UpdateProfile(t *testing.T) {
 	// Update the profile
 	profile.Description = "Updated description"
 	profile.Compress = true
-	pm.SaveProfile(profile)
+	_ = pm.SaveProfile(profile)
 
 	// Load and verify
 	loaded, err := pm.LoadProfile("update-test")
@@ -520,15 +520,15 @@ func TestProfileManager_ListProfiles_IgnoresNonJSON(t *testing.T) {
 		Name:   "valid-profile",
 		Format: "ova",
 	}
-	pm.SaveProfile(profile)
+	_ = pm.SaveProfile(profile)
 
 	// Create a non-JSON file
 	nonJSONFile := filepath.Join(tmpDir, "not-a-profile.txt")
-	os.WriteFile(nonJSONFile, []byte("not json"), 0644)
+	_ = os.WriteFile(nonJSONFile, []byte("not json"), 0644)
 
 	// Create a subdirectory
 	subdir := filepath.Join(tmpDir, "subdir")
-	os.Mkdir(subdir, 0755)
+	_ = os.Mkdir(subdir, 0755)
 
 	// List profiles
 	profiles, err := pm.ListProfiles()

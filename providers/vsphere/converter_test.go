@@ -46,7 +46,7 @@ func TestValidateBinary(t *testing.T) {
 				// Create temporary executable
 				tmpDir, _ := os.MkdirTemp("", "converter-test-*")
 				exePath := filepath.Join(tmpDir, "test-exec")
-				os.WriteFile(exePath, []byte("#!/bin/sh\necho test"), 0755)
+				_ = os.WriteFile(exePath, []byte("#!/bin/sh\necho test"), 0755)
 				return exePath
 			},
 			wantErr: false,
@@ -56,7 +56,7 @@ func TestValidateBinary(t *testing.T) {
 			setup: func() string {
 				tmpDir, _ := os.MkdirTemp("", "converter-test-*")
 				filePath := filepath.Join(tmpDir, "test-file")
-				os.WriteFile(filePath, []byte("test"), 0644)
+				_ = os.WriteFile(filePath, []byte("test"), 0644)
 				return filePath
 			},
 			wantErr: true,
@@ -89,7 +89,7 @@ func TestValidateBinary(t *testing.T) {
 
 			// Cleanup
 			if _, err := os.Stat(path); err == nil {
-				os.RemoveAll(filepath.Dir(path))
+				_ = os.RemoveAll(filepath.Dir(path))
 			}
 		})
 	}
@@ -103,7 +103,7 @@ func TestNewHyper2KVMConverter(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	mockBinary := filepath.Join(tmpDir, "hyper2kvm")
 	if err := os.WriteFile(mockBinary, []byte("#!/bin/sh\necho 'hyper2kvm v1.0.0'"), 0755); err != nil {
@@ -197,7 +197,7 @@ func TestParseConversionResults(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Create mock report.json
 	reportPath := filepath.Join(tmpDir, "report.json")
@@ -225,7 +225,7 @@ func TestParseConversionResults(t *testing.T) {
 
 	// Create mock converter
 	mockBinary := filepath.Join(tmpDir, "hyper2kvm")
-	os.WriteFile(mockBinary, []byte("#!/bin/sh\necho 'mock'"), 0755)
+	_ = os.WriteFile(mockBinary, []byte("#!/bin/sh\necho 'mock'"), 0755)
 
 	converter, err := NewHyper2KVMConverter(mockBinary, log)
 	if err != nil {
@@ -264,7 +264,7 @@ func TestGetVersion(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	mockBinary := filepath.Join(tmpDir, "hyper2kvm")
 	mockScript := `#!/bin/sh
@@ -302,7 +302,7 @@ func TestConvert_ContextTimeout(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	mockBinary := filepath.Join(tmpDir, "hyper2kvm")
 	mockScript := `#!/bin/sh
@@ -319,7 +319,7 @@ sleep 10
 
 	// Create mock manifest
 	manifestPath := filepath.Join(tmpDir, "manifest.json")
-	os.WriteFile(manifestPath, []byte("{}"), 0644)
+	_ = os.WriteFile(manifestPath, []byte("{}"), 0644)
 
 	// Create context with short timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)

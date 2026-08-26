@@ -16,7 +16,7 @@ func TestManifestGeneration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Create test VMDK file
 	vmdkPath := filepath.Join(tmpDir, "test-disk.vmdk")
@@ -152,7 +152,7 @@ func TestManifestWithChecksums(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Create test VMDK file with known content
 	vmdkPath := filepath.Join(tmpDir, "test-disk.vmdk")
@@ -224,7 +224,7 @@ func TestManifestPipelineConfiguration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Create test VMDK file
 	vmdkPath := filepath.Join(tmpDir, "test-disk.vmdk")

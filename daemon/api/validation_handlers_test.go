@@ -98,7 +98,7 @@ func TestHandleValidateMigrationEmptyPath(t *testing.T) {
 	}
 
 	var response map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &response)
+	_ = json.Unmarshal(w.Body.Bytes(), &response)
 
 	validation := response["validation"].(map[string]interface{})
 	// Empty path should still return valid structure
@@ -192,7 +192,7 @@ func TestHandleVerifyMigrationWithTests(t *testing.T) {
 	}
 
 	var response map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &response)
+	_ = json.Unmarshal(w.Body.Bytes(), &response)
 
 	verification := response["verification"].(map[string]interface{})
 
@@ -316,7 +316,7 @@ func TestHandleCheckCompatibilityWithFeatures(t *testing.T) {
 	}
 
 	var response map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &response)
+	_ = json.Unmarshal(w.Body.Bytes(), &response)
 
 	compatibility := response["compatibility"].(map[string]interface{})
 	details := compatibility["details"].(map[string]interface{})
@@ -409,7 +409,7 @@ func TestHandleTestMigrationAllTests(t *testing.T) {
 	}
 
 	var response map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &response)
+	_ = json.Unmarshal(w.Body.Bytes(), &response)
 
 	test := response["test"].(map[string]interface{})
 	details := test["details"].(map[string]interface{})
@@ -441,7 +441,7 @@ func TestHandleTestMigrationWithAutoShutdown(t *testing.T) {
 	}
 
 	var response map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &response)
+	_ = json.Unmarshal(w.Body.Bytes(), &response)
 
 	// Verify response structure
 	if _, ok := response["test"]; !ok {

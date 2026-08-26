@@ -53,7 +53,7 @@ func (e *NutanixExporter) Export(ctx context.Context, job *models.JobDefinition,
 	if err != nil {
 		return nil, fmt.Errorf("create nutanix provider: %w", err)
 	}
-	defer provider.Disconnect()
+	defer func() { _ = provider.Disconnect() }()
 
 	exportOpts := buildNutanixExportOptions(job, e.appConfig)
 	if progressCallback != nil {

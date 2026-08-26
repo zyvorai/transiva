@@ -193,7 +193,7 @@ func TestHandleCreateUserDifferentRoles(t *testing.T) {
 			}
 
 			var response User
-			json.Unmarshal(w.Body.Bytes(), &response)
+			_ = json.Unmarshal(w.Body.Bytes(), &response)
 
 			if response.Role != tt.role {
 				t.Errorf("Expected role='%s', got %s", tt.role, response.Role)
@@ -456,7 +456,7 @@ func TestHandleGenerateAPIKeyMultiple(t *testing.T) {
 			}
 
 			var response APIKey
-			json.Unmarshal(w.Body.Bytes(), &response)
+			_ = json.Unmarshal(w.Body.Bytes(), &response)
 
 			// Verify each key is unique
 			if generatedKeys[response.Key] {

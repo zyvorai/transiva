@@ -239,13 +239,13 @@ func (cfg *CloudStorageConfig) Validate() error {
 
 	case ProviderAzure:
 		if cfg.AzureConfig == nil {
-			return fmt.Errorf("Azure config is required for Azure provider")
+			return fmt.Errorf("azure config is required for Azure provider")
 		}
 		if cfg.AzureConfig.AccountName == "" {
-			return fmt.Errorf("Azure account name is required")
+			return fmt.Errorf("azure account name is required")
 		}
 		if cfg.AzureConfig.Container == "" {
-			return fmt.Errorf("Azure container is required")
+			return fmt.Errorf("azure container is required")
 		}
 
 	case ProviderGCS:

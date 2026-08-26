@@ -170,7 +170,7 @@ func (mh *MetricsHistory) GetHistory(startTime, endTime time.Time) ([]Historical
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var history []HistoricalMetrics
 	for rows.Next() {
