@@ -233,7 +233,7 @@ jobs:
           echo "All documentation files present"
 
       - name: Validate markdown
-        uses: DavidAnson/markdownlint-cli2-action@v22
+        uses: DavidAnson/markdownlint-cli2-action@v24
         with:
           globs: |
             packaging/**/*.md
