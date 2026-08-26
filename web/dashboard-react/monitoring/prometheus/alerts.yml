@@ -1,0 +1,176 @@
+groups:
+  - name: hypersdk_alerts
+    interval: 30s
+    rules:
+      # Job Failure Rate Alerts
+      - alert: HighJobFailureRate
+        expr: |
+          (
+            rate(hypersdk_jobs_failed_total[5m])
+            /
+            (rate(hypersdk_jobs_completed_total[5m]) + rate(hypersdk_jobs_failed_total[5m]))
+          ) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: jobs
+        annotations:
+          summary: "High job failure rate detected"
+          description: "Job failure rate is {{ $value | humanizePercentage }} (threshold: 10%)"
+
+      - alert: CriticalJobFailureRate
+        expr: |
+          (
+            rate(hypersdk_jobs_failed_total[5m])
+            /
+            (rate(hypersdk_jobs_completed_total[5m]) + rate(hypersdk_jobs_failed_total[5m]))
+          ) > 0.25
+        for: 2m
+        labels:
+          severity: critical
+          component: jobs
+        annotations:
+          summary: "Critical job failure rate"
+          description: "Job failure rate is {{ $value | humanizePercentage }} (threshold: 25%)"
+
+      # Memory Usage Alerts
+      - alert: HighMemoryUsage
+        expr: hypersdk_memory_bytes > 2147483648
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value | humanize1024 }}B (threshold: 2GB)"
+
+      - alert: CriticalMemoryUsage
+        expr: hypersdk_memory_bytes > 4294967296
+        for: 2m
+        labels:
+          severity: critical
+          component: system
+        annotations:
+          summary: "Critical memory usage"
+          description: "Memory usage is {{ $value | humanize1024 }}B (threshold: 4GB)"
+
+      # Queue Backlog Alerts
+      - alert: LargeJobQueue
+        expr: hypersdk_queue_length > 50
+        for: 10m
+        labels:
+          severity: warning
+          component: jobs
+        annotations:
+          summary: "Large job queue detected"
+          description: "Job queue has {{ $value }} pending jobs (threshold: 50)"
+
+      - alert: MassiveJobQueue
+        expr: hypersdk_queue_length > 100
+        for: 5m
+        labels:
+          severity: critical
+          component: jobs
+        annotations:
+          summary: "Massive job queue backlog"
+          description: "Job queue has {{ $value }} pending jobs (threshold: 100)"
+
+      # Goroutine Leak Detection
+      - alert: GoroutineLeakSuspected
+        expr: hypersdk_goroutines > 1000
+        for: 15m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "Potential goroutine leak"
+          description: "Goroutine count is {{ $value }} (threshold: 1000)"
+
+      - alert: GoroutineLeak
+        expr: hypersdk_goroutines > 2000
+        for: 5m
+        labels:
+          severity: critical
+          component: system
+        annotations:
+          summary: "Goroutine leak detected"
+          description: "Goroutine count is {{ $value }} (threshold: 2000)"
+
+      # HTTP Error Rate
+      - alert: HighHTTPErrorRate
+        expr: |
+          (
+            rate(hypersdk_http_errors_total[5m])
+            /
+            rate(hypersdk_http_requests_total[5m])
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "High HTTP error rate"
+          description: "HTTP error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+
+      # Response Time Degradation
+      - alert: SlowAPIResponses
+        expr: |
+          histogram_quantile(0.95,
+            rate(hypersdk_http_response_time_seconds_bucket[5m])
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "Slow API responses detected"
+          description: "P95 response time is {{ $value }}s (threshold: 1s)"
+
+      # WebSocket Connection Issues
+      - alert: NoWebSocketClients
+        expr: hypersdk_websocket_clients == 0
+        for: 5m
+        labels:
+          severity: info
+          component: websocket
+        annotations:
+          summary: "No active WebSocket clients"
+          description: "No WebSocket clients connected for 5 minutes"
+
+      # Provider-Specific Alerts
+      - alert: ProviderJobFailures
+        expr: |
+          (
+            rate(hypersdk_provider_jobs_failed[5m])
+            /
+            rate(hypersdk_provider_jobs_total[5m])
+          ) > 0.2
+        for: 5m
+        labels:
+          severity: warning
+          component: provider
+        annotations:
+          summary: "High failure rate for provider {{ $labels.provider }}"
+          description: "Provider {{ $labels.provider }} has {{ $value | humanizePercentage }} failure rate"
+
+      # Daemon Health
+      - alert: DaemonDown
+        expr: up{job="transiva"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: daemon
+        annotations:
+          summary: "HyperSDK daemon is down"
+          description: "HyperSDK daemon has been unreachable for 1 minute"
+
+      # Connection Pool Alerts (if metrics exist)
+      - alert: ConnectionPoolExhausted
+        expr: hypersdk_connection_pool_active >= hypersdk_connection_pool_max
+        for: 5m
+        labels:
+          severity: warning
+          component: connection_pool
+        annotations:
+          summary: "Connection pool exhausted"
+          description: "All {{ $value }} connections in pool are in use"

@@ -1,0 +1,285 @@
+# OpenShift-specific values for HyperSDK Helm chart
+# This configuration enables OpenShift-specific features and optimizations
+
+# OpenShift configuration
+openshift:
+  # Enable OpenShift-specific features
+  enabled: true
+
+  # SecurityContextConstraints configuration
+  scc:
+    enabled: true
+    annotations:
+      kubernetes.io/description: "Custom SCC for HyperSDK allowing specific UIDs and volumes"
+
+# Route configuration (OpenShift-native ingress)
+route:
+  enabled: true
+  host: transiva.apps.example.com
+  path: ""
+  annotations:
+    # Enable automatic HTTP/2 support
+    haproxy.router.openshift.io/balance: roundrobin
+    # Set timeout for long-running operations
+    haproxy.router.openshift.io/timeout: 5m
+  tls:
+    # edge, passthrough, or reencrypt
+    termination: edge
+    # Redirect HTTP to HTTPS
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None
+
+# Disable standard Kubernetes Ingress (use Route instead)
+ingress:
+  enabled: false
+
+# Image configuration
+image:
+  repository: ghcr.io/ssahani/transiva
+  pullPolicy: IfNotPresent
+  tag: "" # Defaults to chart appVersion
+
+# Image pull secrets (if using private registry)
+imagePullSecrets: []
+# - name: regcred
+
+# Replica configuration
+replicaCount: 2
+
+# Service account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Disable init containers - OpenShift assigns UID automatically
+# The default init-permissions container runs as root which is not allowed on OpenShift
+# fsGroup in podSecurityContext handles permissions automatically
+initContainers: []
+
+# Pod annotations
+podAnnotations:
+  # Enable OpenShift container monitoring
+  alpha.image.policy.openshift.io/resolve-names: "*"
+
+# Security context - OpenShift assigns random UID in allowed range
+podSecurityContext:
+  runAsNonRoot: true
+  # OpenShift will assign UID from SCC range (1000-1000 in our SCC)
+  # Explicitly unset runAsUser and runAsGroup - let OpenShift assign from SCC
+  runAsUser: null
+  runAsGroup: null
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  # OpenShift will assign UID from SCC range
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 8080
+  metricsPort: 8081
+  annotations: {}
+
+# Resource limits and requests
+resources:
+  limits:
+    cpu: 1000m
+    memory: 2Gi
+  requests:
+    cpu: 250m
+    memory: 512Mi
+
+# Horizontal Pod Autoscaler
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+# Persistent storage
+persistence:
+  data:
+    enabled: true
+    size: 10Gi
+    # Use OpenShift default StorageClass
+    storageClass: ""
+    accessMode: ReadWriteOnce
+  exports:
+    enabled: true
+    size: 500Gi
+    # Use OpenShift default StorageClass
+    storageClass: ""
+    accessMode: ReadWriteOnce
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity - prefer spreading across nodes
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: transiva
+          topologyKey: kubernetes.io/hostname
+
+# Liveness probe
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+    scheme: HTTP
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 3
+
+# Readiness probe
+readinessProbe:
+  httpGet:
+    path: /health
+    port: http
+    scheme: HTTP
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  successThreshold: 1
+  failureThreshold: 3
+
+# Startup probe for slow-starting containers
+startupProbe:
+  httpGet:
+    path: /health
+    port: http
+    scheme: HTTP
+  initialDelaySeconds: 0
+  periodSeconds: 10
+  timeoutSeconds: 3
+  successThreshold: 1
+  failureThreshold: 30
+
+# Monitoring configuration
+monitoring:
+  serviceMonitor:
+    enabled: true
+    namespace: openshift-monitoring
+    interval: 30s
+    scrapeTimeout: 10s
+    labels:
+      # Required for OpenShift cluster monitoring
+      openshift.io/cluster-monitoring: "true"
+
+  prometheusRule:
+    enabled: true
+    namespace: openshift-monitoring
+    labels:
+      # Required for OpenShift cluster monitoring
+      openshift.io/cluster-monitoring: "true"
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# Network Policy
+networkPolicy:
+  enabled: true
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        # Allow from OpenShift router
+        - namespaceSelector:
+            matchLabels:
+              network.openshift.io/policy-group: ingress
+      ports:
+        - protocol: TCP
+          port: 8080
+    - from:
+        # Allow from Prometheus
+        - namespaceSelector:
+            matchLabels:
+              network.openshift.io/policy-group: monitoring
+      ports:
+        - protocol: TCP
+          port: 8081
+  egress:
+    # Allow DNS
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: openshift-dns
+      ports:
+        - protocol: UDP
+          port: 53
+    # Allow HTTPS to external services
+    - to:
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 443
+    # Allow vSphere API (example)
+    - to:
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 443
+
+# Environment variables
+env:
+  - name: LOG_LEVEL
+    value: "info"
+  - name: DAEMON_ADDR
+    value: "0.0.0.0:8080"
+  - name: METRICS_ADDR
+    value: "0.0.0.0:8081"
+
+# vSphere credentials (example - use Secrets in production)
+vsphere:
+  enabled: false
+  # Create secret: oc create secret generic vsphere-credentials \
+  #   --from-literal=url=https://vcenter.example.com/sdk \
+  #   --from-literal=username=admin@vsphere.local \
+  #   --from-literal=password=changeme
+  secretName: vsphere-credentials
+
+# AWS credentials (example - use Secrets in production)
+aws:
+  enabled: false
+  secretName: aws-credentials
+
+# Azure credentials (example - use Secrets in production)
+azure:
+  enabled: false
+  secretName: azure-credentials
+
+# GCP credentials (example - use Secrets in production)
+gcp:
+  enabled: false
+  secretName: gcp-credentials
+
+# ConfigMap data
+config:
+  log_level: info
+  daemon_addr: "0.0.0.0:8080"
+  metrics_addr: "0.0.0.0:8081"
+  download_workers: 3
+  database_path: /data/transiva.db
+  exports_path: /exports

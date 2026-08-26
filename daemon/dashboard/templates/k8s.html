@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HyperSDK - Kubernetes Dashboard</title>
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+    <link rel="stylesheet" href="/static/css/k8s.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: #1e293b;
+            padding: 20px 0;
+            border-bottom: 2px solid #334155;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2rem;
+            color: #f97316;
+            margin-bottom: 5px;
+        }
+
+        header p {
+            color: #94a3b8;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #334155;
+        }
+
+        .nav-tab {
+            padding: 12px 24px;
+            background: #1e293b;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            border-radius: 8px 8px 0 0;
+            transition: all 0.3s;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .nav-tab:hover {
+            background: #334155;
+            color: #e2e8f0;
+        }
+
+        .nav-tab.active {
+            background: #f97316;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #334155;
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            border-color: #f97316;
+        }
+
+        .stat-card h3 {
+            font-size: 0.875rem;
+            color: #94a3b8;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #f97316;
+            margin-bottom: 4px;
+        }
+
+        .stat-card .label {
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+
+        .status-running { background: #10b981; }
+        .status-completed { background: #3b82f6; }
+        .status-failed { background: #ef4444; }
+        .status-pending { background: #f59e0b; }
+
+        .table-container {
+            background: #1e293b;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #334155;
+            margin-bottom: 30px;
+        }
+
+        .table-header {
+            padding: 20px;
+            border-bottom: 1px solid #334155;
+        }
+
+        .table-header h2 {
+            font-size: 1.25rem;
+            color: #f97316;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: #0f172a;
+        }
+
+        th {
+            padding: 12px 20px;
+            text-align: left;
+            font-size: 0.875rem;
+            color: #94a3b8;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        td {
+            padding: 16px 20px;
+            border-top: 1px solid #334155;
+            color: #e2e8f0;
+        }
+
+        tr:hover td {
+            background: #0f172a;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #334155;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #f97316, #fb923c);
+            transition: width 0.3s;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-primary { background: #3b82f6; color: white; }
+        .badge-success { background: #10b981; color: white; }
+        .badge-warning { background: #f59e0b; color: white; }
+        .badge-danger { background: #ef4444; color: white; }
+        .badge-secondary { background: #64748b; color: white; }
+
+        .cluster-info {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #334155;
+            margin-bottom: 30px;
+        }
+
+        .cluster-info h2 {
+            color: #f97316;
+            margin-bottom: 20px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .info-item {
+            padding: 10px;
+            background: #0f172a;
+            border-radius: 8px;
+        }
+
+        .info-item .label {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
+        }
+
+        .info-item .value {
+            font-size: 1rem;
+            color: #e2e8f0;
+            font-weight: 500;
+        }
+
+        .chart-container {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #334155;
+            margin-bottom: 30px;
+        }
+
+        .chart-container h3 {
+            color: #f97316;
+            margin-bottom: 20px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #64748b;
+        }
+
+        .empty-state .icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .timestamp {
+            font-size: 0.75rem;
+            color: #64748b;
+            text-align: right;
+            margin-top: 10px;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid;
+        }
+
+        .alert-info {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: #3b82f6;
+            color: #93c5fd;
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: #10b981;
+            color: #6ee7b7;
+        }
+
+        .alert-warning {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: #f59e0b;
+            color: #fcd34d;
+        }
+
+        .carbon-stats {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid #334155;
+            margin-bottom: 30px;
+        }
+
+        .carbon-stats h3 {
+            color: #10b981;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .carbon-icon {
+            font-size: 1.5rem;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            flex: 1;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-charts {
+            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-charts:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .header-actions {
+                margin-top: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="header-title">
+                    <h1>☸️ Kubernetes Dashboard</h1>
+                    <p>HyperSDK Operator Management & Monitoring</p>
+                </div>
+                <div class="header-actions">
+                    <a href="/k8s/charts" class="btn-charts">📊 View Charts & Analytics</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Cluster Connection Status -->
+        <div class="cluster-info" id="cluster-info">
+            <h2>Cluster Information</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="label">Status</div>
+                    <div class="value" id="cluster-status">
+                        <span class="status-indicator status-pending"></span>
+                        Connecting...
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="label">Operator</div>
+                    <div class="value" id="operator-status">-</div>
+                </div>
+                <div class="info-item">
+                    <div class="label">Version</div>
+                    <div class="value" id="cluster-version">-</div>
+                </div>
+                <div class="info-item">
+                    <div class="label">Nodes</div>
+                    <div class="value" id="node-count">-</div>
+                </div>
+                <div class="info-item">
+                    <div class="label">Namespaces</div>
+                    <div class="value" id="namespace-count">-</div>
+                </div>
+                <div class="info-item">
+                    <div class="label">KubeVirt</div>
+                    <div class="value" id="kubevirt-status">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="nav-tabs">
+            <button class="nav-tab active" data-tab="overview">Overview</button>
+            <button class="nav-tab" data-tab="backupjobs">Backup Jobs</button>
+            <button class="nav-tab" data-tab="schedules">Schedules</button>
+            <button class="nav-tab" data-tab="restores">Restore Jobs</button>
+            <button class="nav-tab" data-tab="carbon">Carbon Stats</button>
+        </div>
+
+        <!-- Overview Tab -->
+        <div class="tab-content active" id="overview-tab">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Total Backups</h3>
+                    <div class="value" id="total-backups">0</div>
+                    <div class="label">All time</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Running Backups</h3>
+                    <div class="value" id="running-backups">0</div>
+                    <div class="label">In progress</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Active Schedules</h3>
+                    <div class="value" id="active-schedules">0</div>
+                    <div class="label">Enabled</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Pending Restores</h3>
+                    <div class="value" id="pending-restores">0</div>
+                    <div class="label">Queued</div>
+                </div>
+            </div>
+
+            <div class="alert alert-info">
+                <strong>💡 Quick Start:</strong> Use <code>kubectl get backupjobs</code> to list all backup jobs, or use the hyperctl CLI: <code>hyperctl k8s -op backup-list</code>
+            </div>
+        </div>
+
+        <!-- BackupJobs Tab -->
+        <div class="tab-content" id="backupjobs-tab">
+            <!-- Filters -->
+            <div class="filters-section" style="background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <div>
+                        <label style="display: block; font-size: 0.75rem; color: #94a3b8; margin-bottom: 5px; text-transform: uppercase;">Search</label>
+                        <input type="text" id="backup-search" placeholder="Search by name or VM..."
+                            style="width: 100%; padding: 8px 12px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #e2e8f0; font-size: 0.875rem;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.75rem; color: #94a3b8; margin-bottom: 5px; text-transform: uppercase;">Namespace</label>
+                        <select id="backup-namespace-filter"
+                            style="width: 100%; padding: 8px 12px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #e2e8f0; font-size: 0.875rem;">
+                            <option value="">All Namespaces</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.75rem; color: #94a3b8; margin-bottom: 5px; text-transform: uppercase;">Provider</label>
+                        <select id="backup-provider-filter"
+                            style="width: 100%; padding: 8px 12px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #e2e8f0; font-size: 0.875rem;">
+                            <option value="">All Providers</option>
+                            <option value="kubevirt">KubeVirt</option>
+                            <option value="vsphere">vSphere</option>
+                            <option value="aws">AWS</option>
+                            <option value="azure">Azure</option>
+                            <option value="gcp">GCP</option>
+                            <option value="proxmox">Proxmox</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.75rem; color: #94a3b8; margin-bottom: 5px; text-transform: uppercase;">Phase</label>
+                        <select id="backup-phase-filter"
+                            style="width: 100%; padding: 8px 12px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #e2e8f0; font-size: 0.875rem;">
+                            <option value="">All Phases</option>
+                            <option value="pending">Pending</option>
+                            <option value="running">Running</option>
+                            <option value="completed">Completed</option>
+                            <option value="failed">Failed</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center;">
+                    <button id="clear-filters"
+                        style="padding: 8px 16px; background: #334155; border: none; border-radius: 6px; color: #e2e8f0; font-size: 0.875rem; cursor: pointer; transition: background 0.2s;"
+                        onmouseover="this.style.background='#475569'" onmouseout="this.style.background='#334155'">
+                        Clear Filters
+                    </button>
+                    <span id="filter-count" style="font-size: 0.875rem; color: #94a3b8;">Showing all backups</span>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <div class="table-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2>Backup Jobs</h2>
+                    <div class="export-buttons" style="display: flex; gap: 10px;">
+                        <button id="export-csv" class="export-btn"
+                            style="padding: 8px 16px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; border-radius: 6px; color: white; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px;"
+                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(16, 185, 129, 0.4)'"
+                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                            <span>📥</span> Export CSV
+                        </button>
+                        <button id="export-json" class="export-btn"
+                            style="padding: 8px 16px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); border: none; border-radius: 6px; color: white; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px;"
+                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(59, 130, 246, 0.4)'"
+                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                            <span>📄</span> Export JSON
+                        </button>
+                    </div>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>VM</th>
+                            <th>Provider</th>
+                            <th>Phase</th>
+                            <th>Progress</th>
+                            <th>Size</th>
+                            <th>Carbon</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody id="backupjobs-tbody">
+                        <tr>
+                            <td colspan="8">
+                                <div class="empty-state">
+                                    <div class="icon">📦</div>
+                                    <p>No backup jobs found</p>
+                                    <p style="font-size: 0.875rem; margin-top: 10px;">
+                                        Create one with: <code>hyperctl k8s -op backup-create ...</code>
+                                    </p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Schedules Tab -->
+        <div class="tab-content" id="schedules-tab">
+            <div class="table-container">
+                <div class="table-header">
+                    <h2>Backup Schedules</h2>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Schedule</th>
+                            <th>VM</th>
+                            <th>Provider</th>
+                            <th>Status</th>
+                            <th>Success</th>
+                            <th>Failed</th>
+                            <th>Next Run</th>
+                        </tr>
+                    </thead>
+                    <tbody id="schedules-tbody">
+                        <tr>
+                            <td colspan="8">
+                                <div class="empty-state">
+                                    <div class="icon">⏰</div>
+                                    <p>No backup schedules found</p>
+                                    <p style="font-size: 0.875rem; margin-top: 10px;">
+                                        Create one with: <code>hyperctl k8s -op schedule-create ...</code>
+                                    </p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Restores Tab -->
+        <div class="tab-content" id="restores-tab">
+            <div class="table-container">
+                <div class="table-header">
+                    <h2>Restore Jobs</h2>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>VM</th>
+                            <th>Provider</th>
+                            <th>Source Backup</th>
+                            <th>Phase</th>
+                            <th>Progress</th>
+                            <th>Power On</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody id="restores-tbody">
+                        <tr>
+                            <td colspan="8">
+                                <div class="empty-state">
+                                    <div class="icon">♻️</div>
+                                    <p>No restore jobs found</p>
+                                    <p style="font-size: 0.875rem; margin-top: 10px;">
+                                        Create one with: <code>hyperctl k8s -op restore-create ...</code>
+                                    </p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Carbon Stats Tab -->
+        <div class="tab-content" id="carbon-tab">
+            <div class="carbon-stats">
+                <h3>
+                    <span class="carbon-icon">🌱</span>
+                    Carbon-Aware Backup Statistics
+                </h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Carbon-Aware Backups</h3>
+                        <div class="value" id="carbon-backups">0</div>
+                        <div class="label">Using green energy</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Avg Carbon Intensity</h3>
+                        <div class="value" id="avg-intensity">0</div>
+                        <div class="label">gCO₂/kWh</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Estimated Savings</h3>
+                        <div class="value" id="carbon-savings">0</div>
+                        <div class="label">kg CO₂</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Delayed Backups</h3>
+                        <div class="value" id="delayed-backups">0</div>
+                        <div class="label">Waiting for green energy</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert alert-success">
+                <strong>🌍 Sustainability Impact:</strong> Carbon-aware scheduling automatically delays backups to times when the electrical grid uses more renewable energy, reducing your carbon footprint.
+            </div>
+        </div>
+
+        <div class="timestamp" id="last-update">Last updated: Never</div>
+    </div>
+
+    <script src="/static/js/k8s-dashboard.js"></script>
+</body>
+</html>

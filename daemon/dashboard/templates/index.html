@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HyperSDK Dashboard</title>
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="dashboard">
+        <header class="header">
+            <h1>🚀 HyperSDK Dashboard</h1>
+            <div class="header-info">
+                <span class="connection-status" id="connectionStatus">
+                    <span class="status-dot" id="statusDot"></span>
+                    <span id="statusText">Connecting...</span>
+                </span>
+                <span class="timestamp" id="timestamp"></span>
+            </div>
+        </header>
+
+        <div class="alerts-container" id="alertsContainer"></div>
+
+        <!-- Tab Navigation -->
+        <div class="tabs">
+            <button class="tab-button active" data-tab="dashboard">📊 Dashboard</button>
+            <button class="tab-button" data-tab="jobs">💼 Jobs</button>
+            <button class="tab-button" data-tab="manifest">📦 Manifest Converter</button>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div class="tab-content active" id="dashboard-tab">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">🔄</div>
+                <div class="stat-content">
+                    <div class="stat-label">Active Jobs</div>
+                    <div class="stat-value" id="jobsActive">0</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">✅</div>
+                <div class="stat-content">
+                    <div class="stat-label">Completed</div>
+                    <div class="stat-value" id="jobsCompleted">0</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">❌</div>
+                <div class="stat-content">
+                    <div class="stat-label">Failed</div>
+                    <div class="stat-value" id="jobsFailed">0</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">⏳</div>
+                <div class="stat-content">
+                    <div class="stat-label">Queue Length</div>
+                    <div class="stat-value" id="queueLength">0</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">🌐</div>
+                <div class="stat-content">
+                    <div class="stat-label">HTTP Requests</div>
+                    <div class="stat-value" id="httpRequests">0</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">⚡</div>
+                <div class="stat-content">
+                    <div class="stat-label">Avg Response</div>
+                    <div class="stat-value" id="avgResponse">0ms</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">💾</div>
+                <div class="stat-content">
+                    <div class="stat-label">Memory</div>
+                    <div class="stat-value" id="memoryUsage">0MB</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">🔧</div>
+                <div class="stat-content">
+                    <div class="stat-label">CPU Usage</div>
+                    <div class="stat-value" id="cpuUsage">0%</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3>Job Status Distribution</h3>
+                <canvas id="jobStatusChart"></canvas>
+            </div>
+
+            <div class="chart-card">
+                <h3>Jobs Over Time</h3>
+                <canvas id="jobsTimeChart"></canvas>
+            </div>
+
+            <div class="chart-card">
+                <h3>Provider Distribution</h3>
+                <canvas id="providerChart"></canvas>
+            </div>
+
+            <div class="chart-card">
+                <h3>System Resources</h3>
+                <canvas id="resourcesChart"></canvas>
+            </div>
+        </div>
+
+        </div>
+        <!-- End Dashboard Tab -->
+
+        <!-- Jobs Tab -->
+        <div class="tab-content" id="jobs-tab">
+        <div class="jobs-container">
+            <h2>All Jobs</h2>
+            <div class="jobs-table">
+                <table id="jobsTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Status</th>
+                            <th>Progress</th>
+                            <th>Provider</th>
+                            <th>VM Name</th>
+                            <th>Duration</th>
+                            <th>Start Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="jobsTableBody">
+                        <tr>
+                            <td colspan="8" class="no-data">No jobs yet</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        </div>
+        <!-- End Jobs Tab -->
+
+        <!-- Manifest Converter Tab -->
+        <div class="tab-content" id="manifest-tab">
+            <div class="manifest-container">
+                <h2>📦 Manifest Converter - One-Shot Hyper2KVM Conversion</h2>
+                <p class="manifest-description">
+                    Generate an Artifact Manifest from your exported VM and automatically convert it to KVM format using hyper2kvm.
+                    This combines export manifest generation with immediate conversion in a single operation.
+                </p>
+
+                <div class="manifest-form-container">
+                    <div class="manifest-section">
+                        <h3>Step 1: Export Configuration</h3>
+                        <form id="manifestForm">
+                            <div class="form-group">
+                                <label for="vmPath">VM Path:</label>
+                                <input type="text" id="vmPath" name="vmPath" placeholder="/datacenter/vm/production/myvm" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="outputPath">Output Directory:</label>
+                                <input type="text" id="outputPath" name="outputPath" placeholder="/exports/myvm" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="targetFormat">Target Format:</label>
+                                <select id="targetFormat" name="targetFormat">
+                                    <option value="qcow2" selected>QCOW2 (Recommended)</option>
+                                    <option value="raw">RAW</option>
+                                    <option value="vdi">VDI</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group checkbox-group">
+                                <label>
+                                    <input type="checkbox" id="autoConvert" name="autoConvert" checked>
+                                    Automatically convert after export
+                                </label>
+                            </div>
+
+                            <div class="form-group checkbox-group">
+                                <label>
+                                    <input type="checkbox" id="compress" name="compress">
+                                    Compress exported files
+                                </label>
+                            </div>
+
+                            <div class="form-group checkbox-group">
+                                <label>
+                                    <input type="checkbox" id="verify" name="verify" checked>
+                                    Verify checksums after conversion
+                                </label>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="manifest-section">
+                        <h3>Step 2: Conversion Options</h3>
+                        <div class="form-group">
+                            <label for="hyper2kvmBinary">Hyper2KVM Binary Path:</label>
+                            <input type="text" id="hyper2kvmBinary" name="hyper2kvmBinary" placeholder="Auto-detect" value="">
+                            <small>Leave empty to auto-detect</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="conversionTimeout">Conversion Timeout (minutes):</label>
+                            <input type="number" id="conversionTimeout" name="conversionTimeout" value="120" min="1">
+                        </div>
+
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="streamOutput" name="streamOutput" checked>
+                                Stream conversion output to logs
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="manifest-actions">
+                        <button type="button" id="submitManifestJob" class="btn-primary">
+                            🚀 Start Export &amp; Conversion
+                        </button>
+                        <button type="button" id="generateManifestOnly" class="btn-secondary">
+                            📄 Generate Manifest Only
+                        </button>
+                    </div>
+                </div>
+
+                <div class="manifest-status" id="manifestStatus" style="display: none;">
+                    <h3>Conversion Status</h3>
+                    <div class="status-info">
+                        <div class="status-item">
+                            <span class="status-label">Job ID:</span>
+                            <span class="status-value" id="manifestJobId">-</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Status:</span>
+                            <span class="status-value" id="manifestJobStatus">-</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Progress:</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="manifestProgress" style="width: 0%"></div>
+                            </div>
+                            <span class="status-value" id="manifestProgressText">0%</span>
+                        </div>
+                    </div>
+                    <div class="conversion-logs" id="conversionLogs">
+                        <h4>Conversion Logs</h4>
+                        <pre id="logsOutput"></pre>
+                    </div>
+                </div>
+
+                <div class="manifest-help">
+                    <h3>💡 How It Works</h3>
+                    <ol>
+                        <li><strong>Export:</strong> The VM is exported from vSphere in OVF/OVA format</li>
+                        <li><strong>Manifest Generation:</strong> An Artifact Manifest v1.0 is automatically created with disk metadata and checksums</li>
+                        <li><strong>Conversion:</strong> Hyper2KVM reads the manifest and converts VM disks to your chosen format (QCOW2/RAW/VDI)</li>
+                        <li><strong>Verification:</strong> Checksums are verified to ensure data integrity</li>
+                        <li><strong>Result:</strong> You get KVM-ready disk images and a complete conversion report</li>
+                    </ol>
+
+                    <h3>📋 Example Manifest</h3>
+                    <pre class="manifest-example">{
+  "version": "1.0",
+  "source": {
+    "provider": "vsphere",
+    "vm_name": "production-web-01",
+    "export_date": "2026-01-22T10:30:00Z"
+  },
+  "disks": [
+    {
+      "path": "production-web-01-disk1.vmdk",
+      "format": "vmdk",
+      "size": 107374182400,
+      "checksum": "sha256:abc123..."
+    }
+  ],
+  "conversion": {
+    "target_format": "qcow2",
+    "verify_checksums": true
+  }
+}</pre>
+                </div>
+            </div>
+        </div>
+        <!-- End Manifest Tab -->
+
+        <footer class="footer">
+            <p>HyperSDK dashboard • <span id="clientCount">0</span> active connections • system health: <span id="systemHealth" class="health-healthy">healthy</span></p>
+        </footer>
+    </div>
+
+    <script src="/static/js/dashboard.js"></script>
+    <script src="/static/js/manifest.js"></script>
+</body>
+</html>

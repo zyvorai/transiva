@@ -1,0 +1,72 @@
+# EKS Production Values
+# For Amazon Elastic Kubernetes Service deployment
+
+# Use IAM Roles for Service Accounts (IRSA)
+serviceAccount:
+  create: true
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/transiva-role
+
+# Production replicas
+replicaCount: 3
+
+# Use EBS storage
+persistence:
+  data:
+    storageClass: "gp3"  # General Purpose SSD
+    size: 20Gi
+  exports:
+    storageClass: "gp3"
+    size: 1Ti
+
+# AWS LoadBalancer
+externalService:
+  enabled: true
+  type: LoadBalancer
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internal"
+
+# Production resources
+resources:
+  requests:
+    memory: "1Gi"
+    cpu: "500m"
+  limits:
+    memory: "4Gi"
+    cpu: "2000m"
+
+# Enable autoscaling
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+
+# Enable monitoring
+monitoring:
+  serviceMonitor:
+    enabled: true
+
+# Enable NetworkPolicy
+networkPolicy:
+  enabled: true
+
+# Spread across AZs
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - transiva
+          topologyKey: topology.kubernetes.io/zone
+
+# vSphere credentials
+credentials:
+  vsphere:
+    enabled: true
+    existingSecret: "vsphere-credentials"

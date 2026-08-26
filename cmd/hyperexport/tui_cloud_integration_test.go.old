@@ -1,0 +1,523 @@
+// SPDX-License-Identifier: Apache-2.0
+
+//go:build integration
+// +build integration
+
+package main
+
+import (
+	"context"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"testing"
+	"time"
+
+	"github.com/zyvorai/transiva/logger"
+)
+
+// Integration tests for cloud storage with real cloud providers
+// Run with: go test -tags=integration -v
+
+// TestS3Integration tests S3 upload integration
+func TestS3Integration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	// Check for required environment variables
+	accessKey := os.Getenv("AWS_ACCESS_KEY_ID")
+	secretKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
+	bucket := os.Getenv("TEST_S3_BUCKET")
+
+	if accessKey == "" || secretKey == "" || bucket == "" {
+		t.Skip("Skipping S3 integration test: AWS credentials or TEST_S3_BUCKET not set")
+	}
+
+	ctx := context.Background()
+	log := logger.New("info")
+
+	// Create test configuration
+	config := &cloudConfig{
+		provider:  CloudProviderS3,
+		bucket:    bucket,
+		region:    "us-east-1",
+		accessKey: accessKey,
+		secretKey: secretKey,
+		prefix:    "test-exports/" + time.Now().Format("20060102-150405"),
+	}
+
+	// Create test file
+	tmpDir, err := ioutil.TempDir("", "transiva-test-")
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	testFile := filepath.Join(tmpDir, "test.txt")
+	testContent := []byte("HyperSDK cloud upload test")
+	if err := ioutil.WriteFile(testFile, testContent, 0644); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	// Build storage URL
+	storageURL := generateCloudStorageURL(config)
+	t.Logf("Testing upload to: %s", storageURL)
+
+	// Create cloud storage client
+	storage, err := NewCloudStorage(storageURL, log)
+	if err != nil {
+		t.Fatalf("Failed to create cloud storage client: %v", err)
+	}
+	defer storage.Close()
+
+	// Upload test file
+	remotePath := filepath.Join(config.prefix, "test.txt")
+	err = storage.Upload(ctx, testFile, remotePath, func(transferred, total int64) {
+		if total > 0 {
+			pct := float64(transferred) / float64(total) * 100
+			t.Logf("Upload progress: %.1f%%", pct)
+		}
+	})
+	if err != nil {
+		t.Fatalf("Failed to upload file: %v", err)
+	}
+	t.Logf("✓ Upload successful")
+
+	// Verify file exists
+	exists, err := storage.Exists(ctx, remotePath)
+	if err != nil {
+		t.Fatalf("Failed to check file existence: %v", err)
+	}
+	if !exists {
+		t.Errorf("Uploaded file does not exist in cloud storage")
+	}
+	t.Logf("✓ File exists in cloud storage")
+
+	// Download file
+	downloadPath := filepath.Join(tmpDir, "downloaded.txt")
+	err = storage.Download(ctx, remotePath, downloadPath, func(transferred, total int64) {
+		if total > 0 {
+			pct := float64(transferred) / float64(total) * 100
+			t.Logf("Download progress: %.1f%%", pct)
+		}
+	})
+	if err != nil {
+		t.Fatalf("Failed to download file: %v", err)
+	}
+	t.Logf("✓ Download successful")
+
+	// Verify downloaded content
+	downloadedContent, err := ioutil.ReadFile(downloadPath)
+	if err != nil {
+		t.Fatalf("Failed to read downloaded file: %v", err)
+	}
+	if string(downloadedContent) != string(testContent) {
+		t.Errorf("Downloaded content doesn't match: got %s, want %s",
+			downloadedContent, testContent)
+	}
+	t.Logf("✓ Content verification passed")
+
+	// List files
+	files, err := storage.List(ctx, config.prefix)
+	if err != nil {
+		t.Fatalf("Failed to list files: %v", err)
+	}
+	if len(files) == 0 {
+		t.Errorf("No files found in listing")
+	}
+	t.Logf("✓ Found %d files in listing", len(files))
+
+	// Cleanup - delete test file
+	err = storage.Delete(ctx, remotePath)
+	if err != nil {
+		t.Fatalf("Failed to delete test file: %v", err)
+	}
+	t.Logf("✓ Cleanup successful")
+}
+
+// TestAzureIntegration tests Azure Blob Storage integration
+func TestAzureIntegration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	accountName := os.Getenv("AZURE_STORAGE_ACCOUNT")
+	accountKey := os.Getenv("AZURE_STORAGE_KEY")
+	container := os.Getenv("TEST_AZURE_CONTAINER")
+
+	if accountName == "" || accountKey == "" || container == "" {
+		t.Skip("Skipping Azure integration test: credentials or TEST_AZURE_CONTAINER not set")
+	}
+
+	ctx := context.Background()
+	log := logger.New("info")
+
+	config := &cloudConfig{
+		provider:  CloudProviderAzure,
+		bucket:    container,
+		accessKey: accountName,
+		secretKey: accountKey,
+		prefix:    "test-exports/" + time.Now().Format("20060102-150405"),
+	}
+
+	// Create test file
+	tmpDir, err := ioutil.TempDir("", "transiva-test-")
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	testFile := filepath.Join(tmpDir, "test.txt")
+	testContent := []byte("HyperSDK Azure test")
+	if err := ioutil.WriteFile(testFile, testContent, 0644); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	storageURL := generateCloudStorageURL(config)
+	t.Logf("Testing upload to: %s", storageURL)
+
+	storage, err := NewCloudStorage(storageURL, log)
+	if err != nil {
+		t.Fatalf("Failed to create cloud storage client: %v", err)
+	}
+	defer storage.Close()
+
+	// Upload and verify
+	remotePath := filepath.Join(config.prefix, "test.txt")
+	err = storage.Upload(ctx, testFile, remotePath, nil)
+	if err != nil {
+		t.Fatalf("Failed to upload file: %v", err)
+	}
+	t.Logf("✓ Upload successful")
+
+	exists, err := storage.Exists(ctx, remotePath)
+	if err != nil {
+		t.Fatalf("Failed to check file existence: %v", err)
+	}
+	if !exists {
+		t.Errorf("Uploaded file does not exist in cloud storage")
+	}
+	t.Logf("✓ File verification passed")
+
+	// Cleanup
+	err = storage.Delete(ctx, remotePath)
+	if err != nil {
+		t.Fatalf("Failed to delete test file: %v", err)
+	}
+	t.Logf("✓ Cleanup successful")
+}
+
+// TestGCSIntegration tests Google Cloud Storage integration
+func TestGCSIntegration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	credFile := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
+	bucket := os.Getenv("TEST_GCS_BUCKET")
+
+	if credFile == "" || bucket == "" {
+		t.Skip("Skipping GCS integration test: GOOGLE_APPLICATION_CREDENTIALS or TEST_GCS_BUCKET not set")
+	}
+
+	ctx := context.Background()
+	log := logger.New("info")
+
+	config := &cloudConfig{
+		provider: CloudProviderGCS,
+		bucket:   bucket,
+		prefix:   "test-exports/" + time.Now().Format("20060102-150405"),
+	}
+
+	tmpDir, err := ioutil.TempDir("", "transiva-test-")
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	testFile := filepath.Join(tmpDir, "test.txt")
+	testContent := []byte("HyperSDK GCS test")
+	if err := ioutil.WriteFile(testFile, testContent, 0644); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	storageURL := generateCloudStorageURL(config)
+	t.Logf("Testing upload to: %s", storageURL)
+
+	storage, err := NewCloudStorage(storageURL, log)
+	if err != nil {
+		t.Fatalf("Failed to create cloud storage client: %v", err)
+	}
+	defer storage.Close()
+
+	remotePath := filepath.Join(config.prefix, "test.txt")
+	err = storage.Upload(ctx, testFile, remotePath, nil)
+	if err != nil {
+		t.Fatalf("Failed to upload file: %v", err)
+	}
+	t.Logf("✓ Upload successful")
+
+	exists, err := storage.Exists(ctx, remotePath)
+	if err != nil {
+		t.Fatalf("Failed to check file existence: %v", err)
+	}
+	if !exists {
+		t.Errorf("Uploaded file does not exist in cloud storage")
+	}
+	t.Logf("✓ File verification passed")
+
+	err = storage.Delete(ctx, remotePath)
+	if err != nil {
+		t.Fatalf("Failed to delete test file: %v", err)
+	}
+	t.Logf("✓ Cleanup successful")
+}
+
+// TestSFTPIntegration tests SFTP upload integration
+func TestSFTPIntegration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	host := os.Getenv("TEST_SFTP_HOST")
+	username := os.Getenv("TEST_SFTP_USERNAME")
+	password := os.Getenv("TEST_SFTP_PASSWORD")
+
+	if host == "" || username == "" {
+		t.Skip("Skipping SFTP integration test: TEST_SFTP_HOST or TEST_SFTP_USERNAME not set")
+	}
+
+	ctx := context.Background()
+	log := logger.New("info")
+
+	config := &cloudConfig{
+		provider:  CloudProviderSFTP,
+		host:      host,
+		port:      "22",
+		accessKey: username,
+		secretKey: password,
+		prefix:    "/tmp/transiva-test-" + time.Now().Format("20060102-150405"),
+	}
+
+	tmpDir, err := ioutil.TempDir("", "transiva-test-")
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	testFile := filepath.Join(tmpDir, "test.txt")
+	testContent := []byte("HyperSDK SFTP test")
+	if err := ioutil.WriteFile(testFile, testContent, 0644); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	storageURL := generateCloudStorageURL(config)
+	t.Logf("Testing upload to: %s", storageURL)
+
+	storage, err := NewCloudStorage(storageURL, log)
+	if err != nil {
+		t.Fatalf("Failed to create cloud storage client: %v", err)
+	}
+	defer storage.Close()
+
+	remotePath := filepath.Join(config.prefix, "test.txt")
+	err = storage.Upload(ctx, testFile, remotePath, nil)
+	if err != nil {
+		t.Fatalf("Failed to upload file: %v", err)
+	}
+	t.Logf("✓ Upload successful")
+
+	exists, err := storage.Exists(ctx, remotePath)
+	if err != nil {
+		t.Fatalf("Failed to check file existence: %v", err)
+	}
+	if !exists {
+		t.Errorf("Uploaded file does not exist on SFTP server")
+	}
+	t.Logf("✓ File verification passed")
+
+	err = storage.Delete(ctx, remotePath)
+	if err != nil {
+		t.Fatalf("Failed to delete test file: %v", err)
+	}
+	t.Logf("✓ Cleanup successful")
+}
+
+// TestMultiFileUpload tests uploading multiple files
+func TestMultiFileUpload(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	accessKey := os.Getenv("AWS_ACCESS_KEY_ID")
+	secretKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
+	bucket := os.Getenv("TEST_S3_BUCKET")
+
+	if accessKey == "" || secretKey == "" || bucket == "" {
+		t.Skip("Skipping multi-file upload test: AWS credentials not set")
+	}
+
+	ctx := context.Background()
+	log := logger.New("info")
+
+	config := &cloudConfig{
+		provider:  CloudProviderS3,
+		bucket:    bucket,
+		region:    "us-east-1",
+		accessKey: accessKey,
+		secretKey: secretKey,
+		prefix:    "test-multi-upload/" + time.Now().Format("20060102-150405"),
+	}
+
+	// Create temporary directory with multiple files
+	tmpDir, err := ioutil.TempDir("", "transiva-multi-test-")
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Create test files
+	fileCount := 10
+	for i := 0; i < fileCount; i++ {
+		filename := filepath.Join(tmpDir, "file"+string(rune('0'+i))+".txt")
+		content := []byte("Test file " + string(rune('0'+i)))
+		if err := ioutil.WriteFile(filename, content, 0644); err != nil {
+			t.Fatalf("Failed to create test file: %v", err)
+		}
+	}
+
+	storageURL := generateCloudStorageURL(config)
+	storage, err := NewCloudStorage(storageURL, log)
+	if err != nil {
+		t.Fatalf("Failed to create cloud storage client: %v", err)
+	}
+	defer storage.Close()
+
+	// Upload directory
+	startTime := time.Now()
+	err = UploadDirectory(ctx, storage, tmpDir, config.prefix, log)
+	if err != nil {
+		t.Fatalf("Failed to upload directory: %v", err)
+	}
+	duration := time.Since(startTime)
+	t.Logf("✓ Uploaded %d files in %v", fileCount, duration)
+
+	// Verify all files uploaded
+	files, err := storage.List(ctx, config.prefix)
+	if err != nil {
+		t.Fatalf("Failed to list files: %v", err)
+	}
+	if len(files) != fileCount {
+		t.Errorf("Expected %d files, got %d", fileCount, len(files))
+	}
+	t.Logf("✓ Verified %d files in cloud storage", len(files))
+
+	// Cleanup
+	err = DeleteDirectory(ctx, storage, config.prefix, log)
+	if err != nil {
+		t.Fatalf("Failed to cleanup: %v", err)
+	}
+	t.Logf("✓ Cleanup successful")
+}
+
+// TestLargeFileUpload tests uploading a large file (multipart)
+func TestLargeFileUpload(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	accessKey := os.Getenv("AWS_ACCESS_KEY_ID")
+	secretKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
+	bucket := os.Getenv("TEST_S3_BUCKET")
+
+	if accessKey == "" || secretKey == "" || bucket == "" {
+		t.Skip("Skipping large file upload test: AWS credentials not set")
+	}
+
+	ctx := context.Background()
+	log := logger.New("info")
+
+	config := &cloudConfig{
+		provider:  CloudProviderS3,
+		bucket:    bucket,
+		region:    "us-east-1",
+		accessKey: accessKey,
+		secretKey: secretKey,
+		prefix:    "test-large-file/" + time.Now().Format("20060102-150405"),
+	}
+
+	tmpDir, err := ioutil.TempDir("", "transiva-large-test-")
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Create 100MB test file
+	testFile := filepath.Join(tmpDir, "large-file.bin")
+	f, err := os.Create(testFile)
+	if err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	fileSize := int64(100 * 1024 * 1024) // 100MB
+	chunk := make([]byte, 1024*1024)     // 1MB chunks
+	written := int64(0)
+
+	for written < fileSize {
+		n, err := f.Write(chunk)
+		if err != nil {
+			t.Fatalf("Failed to write to test file: %v", err)
+		}
+		written += int64(n)
+	}
+	f.Close()
+
+	t.Logf("Created %dMB test file", fileSize/(1024*1024))
+
+	storageURL := generateCloudStorageURL(config)
+	storage, err := NewCloudStorage(storageURL, log)
+	if err != nil {
+		t.Fatalf("Failed to create cloud storage client: %v", err)
+	}
+	defer storage.Close()
+
+	// Upload with progress tracking
+	remotePath := filepath.Join(config.prefix, "large-file.bin")
+	var lastProgress float64
+	startTime := time.Now()
+
+	err = storage.Upload(ctx, testFile, remotePath, func(transferred, total int64) {
+		progress := float64(transferred) / float64(total) * 100
+		if progress-lastProgress >= 10 {
+			t.Logf("Upload progress: %.0f%% (%d/%d bytes)",
+				progress, transferred, total)
+			lastProgress = progress
+		}
+	})
+
+	if err != nil {
+		t.Fatalf("Failed to upload large file: %v", err)
+	}
+
+	duration := time.Since(startTime)
+	speed := float64(fileSize) / duration.Seconds() / (1024 * 1024)
+	t.Logf("✓ Uploaded %dMB in %v (%.2f MB/s)", fileSize/(1024*1024), duration, speed)
+
+	// Verify file exists
+	exists, err := storage.Exists(ctx, remotePath)
+	if err != nil {
+		t.Fatalf("Failed to check file existence: %v", err)
+	}
+	if !exists {
+		t.Errorf("Large file does not exist in cloud storage")
+	}
+	t.Logf("✓ File verification passed")
+
+	// Cleanup
+	err = storage.Delete(ctx, remotePath)
+	if err != nil {
+		t.Fatalf("Failed to delete large file: %v", err)
+	}
+	t.Logf("✓ Cleanup successful")
+}

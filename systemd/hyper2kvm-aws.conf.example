@@ -1,0 +1,45 @@
+# hyper2kvm Daemon Configuration (AWS Instance)
+#
+# This file is sourced by the hyper2kvm@aws.service unit.
+# Copy to /etc/hyper2kvm/hyper2kvm-aws.conf and customize.
+#
+# systemctl daemon-reload
+# systemctl restart hyper2kvm@aws.service
+
+# AWS-specific directories
+WATCH_DIR=/var/lib/hyper2kvm/aws/queue
+OUTPUT_DIR=/var/lib/hyper2kvm/aws/output
+
+# Log level
+LOG_LEVEL=info
+
+# AWS EBS snapshots can be large, limit concurrent conversions
+MAX_CONCURRENT=2
+
+# AWS typically uses RAW format, convert to qcow2 with compression
+QEMU_CONVERT_OPTIONS="-O qcow2 -c -p"
+COMPRESS_LEVEL=9
+
+# Keep source files (S3 backed)
+CLEANUP_SOURCE=false
+
+# Enable libvirt integration
+LIBVIRT_INTEGRATION=true
+LIBVIRT_URI=qemu:///system
+LIBVIRT_BRIDGE=br-aws
+LIBVIRT_POOL=aws-vms
+LIBVIRT_AUTOSTART=false
+
+# Timeout for large AWS volumes
+CONVERSION_TIMEOUT=180
+
+# Progress logging
+VERBOSE_PROGRESS=true
+
+# Notifications
+# NOTIFY_EMAIL=aws-ops@example.com
+# WEBHOOK_URL=https://hooks.slack.com/services/YOUR/AWS/WEBHOOK
+
+# Retention
+RETENTION_DAYS=30
+FAILED_RETENTION_DAYS=14

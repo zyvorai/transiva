@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hypervisord
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+      - name: hypervisord
+        # Production resource limits - higher than staging
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        env:
+        # Production-specific environment variables
+        - name: DOWNLOAD_WORKERS
+          value: "5"
+        - name: RETRY_ATTEMPTS
+          value: "5"
+
+      # Node affinity for production (prefer specific node types)
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: node-role.kubernetes.io/worker
+                operator: In
+                values:
+                - "true"
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - hypervisord
+              topologyKey: kubernetes.io/hostname
+
+      # Tolerations for dedicated nodes (if using tainted nodes)
+      # tolerations:
+      # - key: "workload"
+      #   operator: "Equal"
+      #   value: "transiva"
+      #   effect: "NoSchedule"
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hypervisord-data-pvc
+spec:
+  resources:
+    requests:
+      storage: 20Gi  # Larger for production
+  # storageClassName: fast-ssd  # Use fast storage for database
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hypervisord-exports-pvc
+spec:
+  resources:
+    requests:
+      storage: 1Ti  # Large storage for production VM exports
+  # storageClassName: standard-hdd  # Cheaper storage for exports

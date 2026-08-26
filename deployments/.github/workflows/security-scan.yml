@@ -1,0 +1,294 @@
+name: Security Scanning
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Daily at midnight UTC
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'deployments/helm/**'
+      - 'deployments/docker/**'
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  trivy-scan:
+    name: Trivy Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner (Helm)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          scan-ref: 'deployments/helm'
+          format: 'sarif'
+          output: 'trivy-helm-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+
+      - name: Upload Trivy Helm results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-helm-results.sarif'
+          category: 'helm-security'
+
+      - name: Run Trivy vulnerability scanner (Dockerfiles)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          scan-ref: 'deployments/docker'
+          format: 'sarif'
+          output: 'trivy-docker-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+
+      - name: Upload Trivy Docker results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-docker-results.sarif'
+          category: 'docker-security'
+
+  secret-scanning:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run TruffleHog
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --only-verified
+
+  helm-security-check:
+    name: Helm Security Best Practices
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+
+      - name: Check for hardcoded secrets in values
+        run: |
+          echo "Checking for potential hardcoded secrets..."
+          if grep -r -i -E "(password|secret|token|key):\s*['\"]?[a-zA-Z0-9]{8,}" deployments/helm/transiva/values.yaml; then
+            echo "::error::Potential hardcoded secrets found in values.yaml"
+            exit 1
+          fi
+          echo "✓ No hardcoded secrets found"
+
+      - name: Check security context settings
+        run: |
+          echo "Checking security context settings..."
+          helm template test deployments/helm/transiva > /tmp/manifests.yaml
+
+          # Check runAsNonRoot
+          if ! grep -q "runAsNonRoot: true" /tmp/manifests.yaml; then
+            echo "::warning::runAsNonRoot should be set to true"
+          fi
+
+          # Check privileged: false
+          if grep -q "privileged: true" /tmp/manifests.yaml; then
+            echo "::error::Privileged containers found"
+            exit 1
+          fi
+
+          # Check allowPrivilegeEscalation
+          if grep -q "allowPrivilegeEscalation: true" /tmp/manifests.yaml; then
+            echo "::warning::allowPrivilegeEscalation should be false"
+          fi
+
+          echo "✓ Security context checks passed"
+
+      - name: Check for latest tag usage
+        run: |
+          echo "Checking for 'latest' tag usage..."
+          if grep -r ":latest" deployments/helm/transiva/values.yaml; then
+            echo "::warning::Using 'latest' tag is not recommended for production"
+          fi
+
+      - name: Validate resource limits
+        run: |
+          echo "Checking resource limits..."
+          helm template test deployments/helm/transiva > /tmp/manifests.yaml
+
+          if ! grep -q "limits:" /tmp/manifests.yaml; then
+            echo "::warning::Resource limits should be defined"
+          fi
+
+          echo "✓ Resource limit checks passed"
+
+  kubernetes-security:
+    name: Kubernetes Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+
+      - name: Install kubesec
+        run: |
+          wget https://github.com/controlplaneio/kubesec/releases/download/v2.13.0/kubesec_linux_amd64.tar.gz
+          tar -xvf kubesec_linux_amd64.tar.gz
+          sudo mv kubesec /usr/local/bin/
+
+      - name: Run kubesec scan
+        run: |
+          helm template test deployments/helm/transiva > /tmp/manifests.yaml
+          kubesec scan /tmp/manifests.yaml
+
+      - name: Install kube-score
+        run: |
+          wget https://github.com/zegl/kube-score/releases/download/v1.17.0/kube-score_1.17.0_linux_amd64.tar.gz
+          tar -xvf kube-score_1.17.0_linux_amd64.tar.gz
+          sudo mv kube-score /usr/local/bin/
+
+      - name: Run kube-score
+        run: |
+          helm template test deployments/helm/transiva | kube-score score - \
+            --ignore-test pod-networkpolicy \
+            --ignore-test deployment-has-poddisruptionbudget
+
+  policy-check:
+    name: Policy Validation (OPA)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+
+      - name: Install Conftest
+        run: |
+          wget https://github.com/open-policy-agent/conftest/releases/download/v0.49.1/conftest_0.49.1_Linux_x86_64.tar.gz
+          tar xzf conftest_0.49.1_Linux_x86_64.tar.gz
+          sudo mv conftest /usr/local/bin/
+
+      - name: Create OPA policies
+        run: |
+          mkdir -p policy
+          cat > policy/security.rego <<'EOF'
+          package main
+
+          deny[msg] {
+            input.kind == "Deployment"
+            not input.spec.template.spec.securityContext.runAsNonRoot
+            msg = "Containers must not run as root"
+          }
+
+          deny[msg] {
+            input.kind == "Deployment"
+            container := input.spec.template.spec.containers[_]
+            not container.securityContext.allowPrivilegeEscalation == false
+            msg = sprintf("Container %s must set allowPrivilegeEscalation to false", [container.name])
+          }
+
+          deny[msg] {
+            input.kind == "Deployment"
+            container := input.spec.template.spec.containers[_]
+            not container.resources.limits
+            msg = sprintf("Container %s must have resource limits", [container.name])
+          }
+          EOF
+
+      - name: Run Conftest
+        run: |
+          helm template test deployments/helm/transiva > /tmp/manifests.yaml
+          conftest test /tmp/manifests.yaml -p policy/
+
+  dependency-check:
+    name: Dependency Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+
+      - name: Check chart dependencies
+        run: |
+          cd deployments/helm/transiva
+          if [ -f "Chart.lock" ]; then
+            echo "Checking for outdated dependencies..."
+            helm dependency update
+          fi
+
+      - name: Scan dependencies with Trivy
+        if: hashFiles('deployments/helm/transiva/Chart.lock') != ''
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          scan-ref: 'deployments/helm/transiva/Chart.lock'
+          format: 'table'
+
+  security-summary:
+    name: Security Summary
+    runs-on: ubuntu-latest
+    needs: [trivy-scan, secret-scanning, helm-security-check, kubernetes-security, policy-check, dependency-check]
+    if: always()
+    steps:
+      - name: Check security scan results
+        run: |
+          if [ "${{ needs.trivy-scan.result }}" != "success" ] || \
+             [ "${{ needs.secret-scanning.result }}" != "success" ] || \
+             [ "${{ needs.helm-security-check.result }}" != "success" ] || \
+             [ "${{ needs.kubernetes-security.result }}" != "success" ] || \
+             [ "${{ needs.policy-check.result }}" != "success" ]; then
+            echo "::warning::Some security scans failed or found issues"
+          else
+            echo "✓ All security scans passed!"
+          fi
+
+      - name: Create issue on failure
+        if: failure() && github.event_name == 'schedule'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🔒 Daily Security Scan Failed',
+              body: `The daily security scan failed on ${new Date().toISOString()}.
+
+              Please review the [workflow run](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for details.
+
+              Affected jobs:
+              - Trivy Scan: ${{ needs.trivy-scan.result }}
+              - Secret Scanning: ${{ needs.secret-scanning.result }}
+              - Helm Security: ${{ needs.helm-security-check.result }}
+              - Kubernetes Security: ${{ needs.kubernetes-security.result }}
+              - Policy Check: ${{ needs.policy-check.result }}
+              - Dependency Check: ${{ needs.dependency-check.result }}`,
+              labels: ['security', 'automated']
+            });

@@ -1,0 +1,120 @@
+---
+# Namespace for the operator
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: transiva-system
+  labels:
+    app: transiva
+    app.kubernetes.io/name: transiva
+    app.kubernetes.io/component: system
+
+---
+# Deployment for the operator
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transiva-operator
+  namespace: transiva-system
+  labels:
+    app: transiva-operator
+    app.kubernetes.io/name: transiva-operator
+    app.kubernetes.io/component: operator
+    app.kubernetes.io/version: "2.1.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: transiva-operator
+      app.kubernetes.io/name: transiva-operator
+  template:
+    metadata:
+      labels:
+        app: transiva-operator
+        app.kubernetes.io/name: transiva-operator
+        app.kubernetes.io/component: operator
+        app.kubernetes.io/version: "2.1.0"
+    spec:
+      serviceAccountName: transiva-operator
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: operator
+          image: ghcr.io/ssahani/transiva-operator:v2.1.0
+          imagePullPolicy: IfNotPresent
+          command:
+            - /usr/local/bin/transiva-operator
+          args:
+            - --workers=3
+            - --log-level=info
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      terminationGracePeriodSeconds: 10
+
+---
+# Service for the operator (health checks)
+apiVersion: v1
+kind: Service
+metadata:
+  name: transiva-operator
+  namespace: transiva-system
+  labels:
+    app: transiva-operator
+    app.kubernetes.io/name: transiva-operator
+    app.kubernetes.io/component: operator
+spec:
+  selector:
+    app: transiva-operator
+    app.kubernetes.io/name: transiva-operator
+  ports:
+    - name: http
+      port: 8081
+      targetPort: 8081
+      protocol: TCP
+  type: ClusterIP

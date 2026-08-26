@@ -1,0 +1,265 @@
+name: RPM Packaging
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'packaging/**'
+      - 'systemd/**'
+      - '.github/workflows/rpm-packaging.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'packaging/**'
+      - 'systemd/**'
+      - '.github/workflows/rpm-packaging.yml'
+  release:
+    types: [ created ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Package version'
+        required: false
+        default: '1.0.0'
+      release:
+        description: 'Package release'
+        required: false
+        default: '1'
+
+jobs:
+  build-rpm:
+    name: Build RPM on ${{ matrix.os }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - os: fedora:39
+            dist: fc39
+          - os: fedora:40
+            dist: fc40
+          - os: rockylinux:8
+            dist: el8
+          - os: rockylinux:9
+            dist: el9
+          - os: almalinux:9
+            dist: el9
+
+    container:
+      image: ${{ matrix.os }}
+
+    steps:
+      - name: Install dependencies
+        run: |
+          if [ -f /etc/fedora-release ]; then
+            dnf install -y rpm-build rpmdevtools git systemd-rpm-macros
+          else
+            yum install -y rpm-build rpmdevtools git systemd-rpm-macros
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set version from input or tag
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            VERSION="${{ github.event.release.tag_name }}"
+            VERSION="${VERSION#v}"  # Remove 'v' prefix if present
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="1.0.0"
+          fi
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            RELEASE="${{ github.event.inputs.release }}"
+          else
+            RELEASE="1"
+          fi
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "release=$RELEASE" >> $GITHUB_OUTPUT
+          echo "Building version $VERSION-$RELEASE"
+
+      - name: Setup RPM build tree
+        run: rpmdev-setuptree
+
+      - name: Build RPM package
+        run: |
+          cd packaging/rpm
+          ./build.sh --version ${{ steps.version.outputs.version }} --release ${{ steps.version.outputs.release }}
+
+      - name: List built packages
+        run: |
+          echo "Built RPM packages:"
+          ls -lh ~/rpmbuild/RPMS/noarch/
+          ls -lh ~/rpmbuild/SRPMS/
+
+      - name: Verify RPM package
+        run: |
+          rpm -qpi ~/rpmbuild/RPMS/noarch/hyper2kvm-daemon-*.rpm
+          rpm -qpl ~/rpmbuild/RPMS/noarch/hyper2kvm-daemon-*.rpm
+
+      - name: Test RPM installation
+        run: |
+          # Install the package. --nodeps because this container doesn't have
+          # libvirt-daemon/qemu-img (runtime Requires) installed, and
+          # --noscripts because %post runs systemctl, which doesn't work in a
+          # container with no running systemd -- this step only verifies the
+          # package's file layout, not a functional daemon.
+          rpm -ivh --nodeps --noscripts ~/rpmbuild/RPMS/noarch/hyper2kvm-daemon-*.rpm
+
+          # Verify files were installed
+          test -f /usr/lib/systemd/system/hyper2kvm.service || exit 1
+          test -f /usr/lib/systemd/system/hyper2kvm@.service || exit 1
+          test -f /usr/lib/systemd/system/hyper2kvm.target || exit 1
+          test -d /etc/hyper2kvm || exit 1
+          test -f /etc/hyper2kvm/hyper2kvm.conf.example || exit 1
+
+          echo "Package installation verified successfully"
+
+      - name: Upload RPM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpm-${{ matrix.dist }}-${{ steps.version.outputs.version }}-${{ steps.version.outputs.release }}
+          path: |
+            ~/rpmbuild/RPMS/noarch/*.rpm
+            ~/rpmbuild/SRPMS/*.rpm
+          retention-days: 30
+
+      - name: Upload to release
+        if: github.event_name == 'release'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ~/rpmbuild/RPMS/noarch/hyper2kvm-daemon-${{ steps.version.outputs.version }}-${{ steps.version.outputs.release }}.${{ matrix.dist }}.noarch.rpm
+          asset_name: hyper2kvm-daemon-${{ steps.version.outputs.version }}-${{ steps.version.outputs.release }}.${{ matrix.dist }}.noarch.rpm
+          asset_content_type: application/x-rpm
+
+  lint-spec:
+    name: Lint RPM Spec
+    runs-on: ubuntu-latest
+    container:
+      image: fedora:latest
+
+    steps:
+      - name: Install rpmlint
+        run: dnf install -y rpmlint git
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run rpmlint on spec file
+        run: |
+          rpmlint packaging/rpm/hyper2kvm-daemon.spec || true
+        continue-on-error: true
+
+  test-build-script:
+    name: Test Build Script
+    runs-on: ubuntu-latest
+    container:
+      image: fedora:latest
+
+    steps:
+      - name: Install dependencies
+        run: dnf install -y rpm-build rpmdevtools git systemd-rpm-macros
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Test build script help
+        run: |
+          cd packaging/rpm
+          ./build.sh --help
+
+      - name: Test clean build
+        run: |
+          cd packaging/rpm
+          ./build.sh --clean
+          ./build.sh --version 99.99.99 --release 999
+
+      - name: Verify custom version
+        run: |
+          rpm -qp ~/rpmbuild/RPMS/noarch/hyper2kvm-daemon-*.rpm --qf '%{VERSION}-%{RELEASE}\n' | grep "99.99.99-999"
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run ShellCheck on build script
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: './packaging/rpm'
+          severity: warning
+
+      - name: Check systemd unit files
+        run: |
+          # Check for common security issues in systemd units
+          echo "Checking systemd unit files for security best practices..."
+
+          for unit in systemd/*.service; do
+            echo "Checking $unit"
+
+            # Check for User directive
+            grep -q "^User=" "$unit" || echo "WARNING: $unit missing User directive"
+
+            # Check for security hardening
+            grep -q "NoNewPrivileges=true" "$unit" || echo "INFO: $unit could benefit from NoNewPrivileges=true"
+            grep -q "ProtectSystem=" "$unit" || echo "INFO: $unit could benefit from ProtectSystem"
+            grep -q "PrivateTmp=" "$unit" || echo "INFO: $unit could benefit from PrivateTmp"
+          done
+
+  documentation:
+    name: Validate Documentation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for required documentation
+        run: |
+          # Verify all required documentation files exist
+          test -f packaging/README.md || exit 1
+          test -f packaging/rpm/README.md || exit 1
+          test -f systemd/README.md || exit 1
+
+          echo "All documentation files present"
+
+      - name: Validate markdown
+        uses: DavidAnson/markdownlint-cli2-action@v22
+        with:
+          globs: |
+            packaging/**/*.md
+            systemd/README.md
+        continue-on-error: true
+
+  summary:
+    name: Build Summary
+    runs-on: ubuntu-latest
+    needs: [build-rpm, lint-spec, test-build-script, security-scan, documentation]
+    if: always()
+
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## RPM Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Build RPM: ${{ needs.build-rpm.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Lint Spec: ${{ needs.lint-spec.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Test Build Script: ${{ needs.test-build-script.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Security Scan: ${{ needs.security-scan.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Documentation: ${{ needs.documentation.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.build-rpm.result }}" = "success" ]; then
+            echo "✅ RPM packages built successfully for all distributions" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ RPM build failed" >> $GITHUB_STEP_SUMMARY
+          fi

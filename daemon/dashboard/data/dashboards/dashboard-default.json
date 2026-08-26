@@ -1,0 +1,78 @@
+{
+  "id": "default",
+  "name": "Default Dashboard",
+  "description": "Default HyperSDK dashboard with all metrics",
+  "layout": {
+    "columns": 12,
+    "rows": 6,
+    "widgets": [
+      {
+        "id": "vm-overview",
+        "type": "metric",
+        "title": "VM Overview",
+        "x": 0,
+        "y": 0,
+        "width": 3,
+        "height": 1,
+        "config": {
+          "metric": "vm_total"
+        },
+        "refresh": 5
+      },
+      {
+        "id": "vm-status-chart",
+        "type": "chart",
+        "title": "VM Status Distribution",
+        "x": 3,
+        "y": 0,
+        "width": 3,
+        "height": 2,
+        "config": {
+          "chartType": "pie",
+          "metric": "vm_by_status"
+        },
+        "refresh": 10
+      },
+      {
+        "id": "resource-usage",
+        "type": "chart",
+        "title": "Resource Usage",
+        "x": 6,
+        "y": 0,
+        "width": 6,
+        "height": 2,
+        "config": {
+          "chartType": "line",
+          "metrics": [
+            "cpu_usage",
+            "memory_usage"
+          ]
+        },
+        "refresh": 5
+      },
+      {
+        "id": "vm-list",
+        "type": "table",
+        "title": "Virtual Machines",
+        "x": 0,
+        "y": 2,
+        "width": 12,
+        "height": 4,
+        "config": {
+          "columns": [
+            "name",
+            "status",
+            "cpus",
+            "memory",
+            "node"
+          ]
+        },
+        "refresh": 10
+      }
+    ]
+  },
+  "isDefault": true,
+  "createdAt": "2026-08-26T14:39:40.790862+05:30",
+  "updatedAt": "2026-08-26T14:39:40.790862+05:30",
+  "shared": true
+}

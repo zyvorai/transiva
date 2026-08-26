@@ -1,0 +1,88 @@
+# hyper2kvm Daemon Configuration (Default Instance)
+#
+# This file is sourced by the systemd service unit.
+# Copy to /etc/hyper2kvm/hyper2kvm.conf and customize as needed.
+#
+# systemctl daemon-reload
+# systemctl restart hyper2kvm.service
+
+# Watch directory where manifest files are placed for processing
+# Default: /var/lib/hyper2kvm/queue
+WATCH_DIR=/var/lib/hyper2kvm/queue
+
+# Output directory where converted VMs are written
+# Default: /var/lib/hyper2kvm/output
+OUTPUT_DIR=/var/lib/hyper2kvm/output
+
+# Log level: debug, info, warn, error
+# Default: info
+LOG_LEVEL=info
+
+# Poll interval (seconds) - how often to check for new files
+# Default: 5
+POLL_INTERVAL=5
+
+# Conversion options
+# Maximum concurrent conversions (0 = unlimited)
+MAX_CONCURRENT=2
+
+# QEMU image conversion options
+QEMU_CONVERT_OPTIONS="-O qcow2 -c -p"
+
+# Compression level for qcow2 (if -c is used)
+# Range: 0-9, default: 6
+COMPRESS_LEVEL=6
+
+# Cleanup source files after successful conversion
+# Default: false
+CLEANUP_SOURCE=false
+
+# Enable libvirt integration
+# Default: false
+LIBVIRT_INTEGRATION=false
+
+# Libvirt connection URI
+# Default: qemu:///system
+LIBVIRT_URI=qemu:///system
+
+# Libvirt network bridge
+# Default: virbr0
+LIBVIRT_BRIDGE=virbr0
+
+# Libvirt storage pool
+# Default: default
+LIBVIRT_POOL=default
+
+# Enable VM auto-start in libvirt
+# Default: false
+LIBVIRT_AUTOSTART=false
+
+# Timeout for conversion operations (minutes)
+# Default: 60
+CONVERSION_TIMEOUT=60
+
+# Temporary directory for conversions
+# Default: /var/cache/hyper2kvm
+TEMP_DIR=/var/cache/hyper2kvm
+
+# Enable detailed progress logging
+# Default: false
+VERBOSE_PROGRESS=false
+
+# Email notifications (requires mail command)
+# Default: (empty - disabled)
+# NOTIFY_EMAIL=admin@example.com
+
+# Webhook URL for job notifications
+# Default: (empty - disabled)
+# WEBHOOK_URL=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
+
+# Retention policy for completed jobs
+# How long to keep conversion results (days)
+# Default: 7
+RETENTION_DAYS=7
+
+# Retention policy for failed jobs
+# How long to keep failed conversion attempts (days)
+# Default: 3
+FAILED_RETENTION_DAYS=3

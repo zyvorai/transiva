@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hypervisord
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+      - name: hypervisord
+        # Staging resource limits - similar to production
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hypervisord-data-pvc
+spec:
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hypervisord-exports-pvc
+spec:
+  resources:
+    requests:
+      storage: 200Gi

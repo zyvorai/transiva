@@ -1,0 +1,78 @@
+# Podman Quadlet file for HyperSDK
+# Place this file in /etc/containers/systemd/ or ~/.config/containers/systemd/
+# Then run: systemctl --user daemon-reload && systemctl --user start transiva
+
+[Unit]
+Description=HyperSDK VM Export Daemon
+Documentation=https://github.com/ssahani/transiva
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+# Container image
+Image=transiva/hypervisord:latest
+
+# Container name
+ContainerName=transiva-hypervisord
+
+# Ports
+PublishPort=8080:8080
+PublishPort=8081:8081
+
+# Volumes
+Volume=transiva-data:/data:Z
+Volume=transiva-exports:/exports:Z
+Volume=/etc/transiva/config.yaml:/config/config.yaml:ro,Z
+
+# Environment variables
+Environment=DAEMON_ADDR=0.0.0.0:8080
+Environment=LOG_LEVEL=info
+Environment=DATABASE_PATH=/data/transiva.db
+
+# vSphere credentials (can be overridden with EnvironmentFile)
+# Environment=GOVC_URL=https://vcenter.example.com/sdk
+# Environment=GOVC_USERNAME=administrator@vsphere.local
+# Environment=GOVC_PASSWORD=changeme
+
+# Use environment file for sensitive data
+# EnvironmentFile=/etc/transiva/credentials.env
+
+# Security
+User=1000
+Group=1000
+SecurityLabelDisable=false
+
+# Health check
+HealthCmd=curl -f http://localhost:8080/health || exit 1
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=3
+
+# Networking
+Network=transiva-network
+
+# Restart policy
+Restart=always
+
+# Logging
+LogDriver=journald
+
+# Resource limits
+MemoryLimit=2G
+CPUQuota=100%
+
+[Service]
+# Service configuration
+Restart=always
+RestartSec=10s
+TimeoutStartSec=900
+
+# Ensure volumes are created
+ExecStartPre=/usr/bin/podman volume create transiva-data
+ExecStartPre=/usr/bin/podman volume create transiva-exports
+
+# Ensure network exists
+ExecStartPre=/usr/bin/podman network exists transiva-network || /usr/bin/podman network create transiva-network
+
+[Install]
+WantedBy=multi-user.target default.target

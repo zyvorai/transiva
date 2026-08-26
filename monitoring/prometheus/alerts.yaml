@@ -1,0 +1,174 @@
+groups:
+  - name: hypersdk_alerts
+    interval: 30s
+    rules:
+      # Service availability
+      - alert: HyperSDKDown
+        expr: up{job="transiva"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: service
+        annotations:
+          summary: "HyperSDK service is down"
+          description: "HyperSDK service on {{ $labels.instance }} has been down for more than 1 minute"
+
+      # Job failures
+      - alert: HighJobFailureRate
+        expr: rate(hypersdk_job_completions_total{status="failed"}[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: jobs
+        annotations:
+          summary: "High job failure rate detected"
+          description: "Job failure rate is {{ $value | humanizePercentage }} over the last 5 minutes"
+
+      - alert: JobStuckInRunning
+        expr: (time() - hypersdk_job_start_time{status="running"}) > 3600
+        for: 10m
+        labels:
+          severity: warning
+          component: jobs
+        annotations:
+          summary: "Job stuck in running state"
+          description: "Job {{ $labels.job_id }} has been running for more than 1 hour"
+
+      - alert: QueueBacklog
+        expr: hypersdk_job_queue_length > 100
+        for: 10m
+        labels:
+          severity: warning
+          component: jobs
+        annotations:
+          summary: "Large job queue backlog"
+          description: "Job queue has {{ $value }} pending jobs"
+
+      # HTTP performance
+      - alert: HighHTTPLatency
+        expr: histogram_quantile(0.95, rate(hypersdk_http_request_duration_seconds_bucket[5m])) > 5
+        for: 5m
+        labels:
+          severity: warning
+          component: http
+        annotations:
+          summary: "High HTTP request latency"
+          description: "95th percentile HTTP latency is {{ $value }}s for {{ $labels.method }} {{ $labels.path }}"
+
+      - alert: HighHTTPErrorRate
+        expr: rate(hypersdk_http_requests_total{status=~"5.."}[5m]) / rate(hypersdk_http_requests_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          component: http
+        annotations:
+          summary: "High HTTP error rate"
+          description: "HTTP error rate is {{ $value | humanizePercentage }} over the last 5 minutes"
+
+      # Rate limiting
+      - alert: HighRateLimitRejections
+        expr: rate(hypersdk_ratelimit_requests_rejected_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: ratelimit
+        annotations:
+          summary: "High rate limit rejections"
+          description: "Rate limit rejecting {{ $value }} requests/s for user {{ $labels.user }}"
+
+      # Resource usage
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes{job="transiva"} > 2147483648
+        for: 5m
+        labels:
+          severity: warning
+          component: resources
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value | humanize }}B (>2GB)"
+
+      - alert: HighCPUUsage
+        expr: rate(process_cpu_seconds_total{job="transiva"}[5m]) * 100 > 80
+        for: 10m
+        labels:
+          severity: warning
+          component: resources
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value }}%"
+
+      - alert: TooManyGoroutines
+        expr: go_goroutines{job="transiva"} > 10000
+        for: 10m
+        labels:
+          severity: warning
+          component: resources
+        annotations:
+          summary: "Too many goroutines"
+          description: "Number of goroutines is {{ $value }}"
+
+      # Provider-specific
+      - alert: ProviderAPIErrors
+        expr: rate(hypersdk_provider_api_errors_total[5m]) > 1
+        for: 5m
+        labels:
+          severity: warning
+          component: provider
+        annotations:
+          summary: "High provider API error rate"
+          description: "Provider {{ $labels.provider }} API errors: {{ $value }}/s"
+
+      # Disk transfer
+      - alert: SlowVMDKTransfer
+        expr: rate(hypersdk_vmdk_bytes_transferred_total[5m]) < 10485760
+        for: 15m
+        labels:
+          severity: warning
+          component: transfer
+        annotations:
+          summary: "Slow VMDK transfer rate"
+          description: "VMDK transfer rate is {{ $value | humanize }}B/s (<10MB/s) for VM {{ $labels.vm_name }}"
+
+      # Database/Storage
+      - alert: DatabaseConnectionPoolExhausted
+        expr: hypersdk_db_connections_in_use / hypersdk_db_connections_max > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Database connection pool nearly exhausted"
+          description: "Database connection pool usage is {{ $value | humanizePercentage }}"
+
+      # Authentication
+      - alert: HighAuthFailureRate
+        expr: rate(hypersdk_auth_failures_total[5m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+          component: auth
+        annotations:
+          summary: "High authentication failure rate"
+          description: "Authentication failures: {{ $value }}/s"
+
+      # Secrets management
+      - alert: SecretsManagerUnreachable
+        expr: hypersdk_secrets_manager_health == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: secrets
+        annotations:
+          summary: "Secrets manager unreachable"
+          description: "Secrets manager {{ $labels.backend }} is unreachable"
+
+      # Audit logging
+      - alert: AuditLogWriteFailures
+        expr: rate(hypersdk_audit_log_write_failures_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: audit
+        annotations:
+          summary: "Audit log write failures"
+          description: "Audit log write failure rate: {{ $value }}/s"

@@ -1,0 +1,230 @@
+name: Helm Chart Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+      - 'helm-*'
+  workflow_dispatch:
+    inputs:
+      chart_version:
+        description: 'Chart version to release (e.g., 0.3.0)'
+        required: false
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  lint-and-test:
+    name: Lint and Test Chart
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.20.0'
+
+      - name: Run chart tests
+        run: |
+          chmod +x deployments/scripts/test-helm-chart.sh
+          ./deployments/scripts/test-helm-chart.sh
+
+      - name: Helm lint all configurations
+        run: |
+          helm lint deployments/helm/transiva
+          helm lint deployments/helm/transiva --values deployments/helm/transiva/examples/minikube-values.yaml
+          helm lint deployments/helm/transiva --values deployments/helm/transiva/examples/gke-values.yaml
+          helm lint deployments/helm/transiva --values deployments/helm/transiva/examples/eks-values.yaml
+          helm lint deployments/helm/transiva --values deployments/helm/transiva/examples/aks-values.yaml
+
+  package-and-publish:
+    name: Package and Publish Chart
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.20.0'
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Determine chart version
+        id: version
+        run: |
+          if [ -n "${{ github.event.inputs.chart_version }}" ]; then
+            VERSION="${{ github.event.inputs.chart_version }}"
+          elif [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          elif [[ "${GITHUB_REF}" == refs/tags/helm-* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/helm-}"
+          else
+            VERSION=$(grep '^version:' deployments/helm/transiva/Chart.yaml | awk '{print $2}')
+          fi
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Chart version: ${VERSION}"
+
+      - name: Update chart version
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          sed -i "s/^version:.*/version: ${VERSION}/" deployments/helm/transiva/Chart.yaml
+          sed -i "s/^appVersion:.*/appVersion: ${VERSION}/" deployments/helm/transiva/Chart.yaml
+          echo "Updated chart to version ${VERSION}"
+
+      - name: Package chart
+        run: |
+          chmod +x deployments/scripts/package-helm-chart.sh
+          ./deployments/scripts/package-helm-chart.sh \
+            --skip-test \
+            --update-index \
+            --publish
+
+      - name: Commit and push GitHub Pages
+        run: |
+          git add docs/helm-charts
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "helm: Release chart version ${{ steps.version.outputs.version }}"
+            git push origin HEAD:main
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            deployments/helm/packages/*.tgz
+            deployments/helm/packages/*.tgz.prov
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-chart-package
+          path: deployments/helm/packages/
+
+  verify-repository:
+    name: Verify Helm Repository
+    runs-on: ubuntu-latest
+    needs: package-and-publish
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.20.0'
+
+      - name: Wait for GitHub Pages deployment
+        run: sleep 30
+
+      - name: Test repository access
+        run: |
+          # Try to add the repository
+          helm repo add transiva-test https://ssahani.github.io/transiva/helm-charts || true
+          helm repo update transiva-test || true
+
+          # Search for charts
+          helm search repo transiva-test || true
+
+      - name: Verify index.yaml
+        run: |
+          if [ -f docs/helm-charts/index.yaml ]; then
+            echo "Repository index exists"
+            cat docs/helm-charts/index.yaml
+          else
+            echo "Warning: Repository index not found"
+          fi
+
+  deploy-test:
+    name: Test Chart Deployment
+    runs-on: ubuntu-latest
+    needs: package-and-publish
+    strategy:
+      matrix:
+        k8s:
+          - version: v1.31.0
+            name: minikube
+          - version: v1.30.0
+            name: kind
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.20.0'
+
+      - name: Start Minikube
+        if: matrix.k8s.name == 'minikube'
+        uses: medyagh/setup-minikube@latest
+        with:
+          kubernetes-version: ${{ matrix.k8s.version }}
+          driver: docker
+
+      - name: Create KIND cluster
+        if: matrix.k8s.name == 'kind'
+        uses: helm/kind-action@v1
+        with:
+          version: v0.24.0
+          cluster_name: test-cluster
+
+      - name: Wait for cluster
+        run: |
+          kubectl wait --for=condition=Ready nodes --all --timeout=300s
+          kubectl get nodes
+
+      - name: Install from local package
+        run: |
+          PACKAGE_FILE=$(ls -t deployments/helm/packages/transiva-*.tgz | head -1)
+          echo "Installing from: ${PACKAGE_FILE}"
+
+          helm install transiva "${PACKAGE_FILE}" \
+            --namespace transiva \
+            --create-namespace \
+            --set replicaCount=1 \
+            --set resources.requests.memory=256Mi \
+            --set resources.limits.memory=1Gi \
+            --wait \
+            --timeout 5m
+
+      - name: Verify deployment
+        run: |
+          kubectl get all -n transiva
+          kubectl wait --for=condition=available --timeout=300s deployment/transiva -n transiva
+
+      - name: Test health endpoint
+        run: |
+          kubectl port-forward -n transiva svc/transiva 8080:8080 &
+          sleep 5
+          curl -f http://localhost:8080/health || (kubectl logs -n transiva -l app.kubernetes.io/name=transiva && exit 1)
+
+      - name: Cleanup
+        if: always()
+        run: |
+          helm uninstall transiva -n transiva || true
+          kubectl delete namespace transiva || true

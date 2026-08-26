@@ -1,0 +1,171 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: vmsnapshots.transiva.zyvor.ai
+spec:
+  group: transiva.zyvor.ai
+  names:
+    kind: VMSnapshot
+    listKind: VMSnapshotList
+    plural: vmsnapshots
+    singular: vmsnapshot
+    shortNames:
+      - vmsnap
+      - vmsnaps
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required:
+                - vmRef
+              properties:
+                # Source VM
+                vmRef:
+                  type: object
+                  required:
+                    - name
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+
+                # Snapshot Options
+                includeMemory:
+                  type: boolean
+                  default: false
+                  description: "Include VM memory state for live restore"
+                quiesce:
+                  type: boolean
+                  default: true
+                  description: "Quiesce filesystem using guest agent before snapshot"
+                description:
+                  type: string
+                  description: "Snapshot description"
+
+                # Retention Policy
+                retention:
+                  type: object
+                  properties:
+                    keepDays:
+                      type: integer
+                      minimum: 1
+                      description: "Days to keep snapshot"
+                    keepCount:
+                      type: integer
+                      minimum: 1
+                      description: "Number of snapshots to keep (oldest deleted first)"
+                    autoDelete:
+                      type: boolean
+                      default: true
+                      description: "Auto-delete when retention expires"
+                    expiresAt:
+                      type: string
+                      format: date-time
+                      description: "Explicit expiration timestamp"
+
+                # Snapshot Location
+                destination:
+                  type: object
+                  properties:
+                    storageClass:
+                      type: string
+                      description: "Storage class for snapshot"
+                    location:
+                      type: string
+                      description: "Custom storage location (s3://, local:// etc)"
+
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                  enum:
+                    - Pending
+                    - Creating
+                    - Ready
+                    - Failed
+                    - Deleting
+                    - Expired
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                        format: date-time
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                size:
+                  type: string
+                  description: "Total snapshot size"
+                sizeBytes:
+                  type: integer
+                  format: int64
+                  description: "Snapshot size in bytes"
+                creationTime:
+                  type: string
+                  format: date-time
+                readyToRestore:
+                  type: boolean
+                  description: "Snapshot is ready for restore operations"
+                backingFiles:
+                  type: array
+                  items:
+                    type: string
+                  description: "Paths to snapshot backing files"
+                vmState:
+                  type: object
+                  description: "Captured VM state at snapshot time"
+                  properties:
+                    cpus:
+                      type: integer
+                    memory:
+                      type: string
+                    diskCount:
+                      type: integer
+                    running:
+                      type: boolean
+                parentSnapshot:
+                  type: string
+                  description: "Parent snapshot for incremental snapshots"
+                snapshotChain:
+                  type: array
+                  items:
+                    type: string
+                  description: "Full snapshot chain (for incremental snapshots)"
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: VM
+          type: string
+          jsonPath: .spec.vmRef.name
+        - name: Status
+          type: string
+          jsonPath: .status.phase
+        - name: Size
+          type: string
+          jsonPath: .status.size
+        - name: Memory
+          type: boolean
+          jsonPath: .spec.includeMemory
+        - name: Ready
+          type: boolean
+          jsonPath: .status.readyToRestore
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp

@@ -1,0 +1,45 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Production environment overlay
+namespace: transiva
+
+# Base configuration
+bases:
+- ../../base
+
+# Common labels for production
+commonLabels:
+  environment: production
+  app.kubernetes.io/environment: production
+
+# Resources specific to production
+resources:
+- ingress.yaml
+- hpa.yaml
+- networkpolicy.yaml
+
+# Patches for production environment
+patchesStrategicMerge:
+- resources-patch.yaml
+
+# Images (use production tag/version)
+images:
+- name: transiva/hypervisord
+  newName: transiva/hypervisord
+  newTag: v0.2.0  # Use specific version in production
+
+# ConfigMap generator for production-specific config
+configMapGenerator:
+- name: hypervisord-config
+  behavior: merge
+  literals:
+  - log_level=info
+  - download_workers=3
+  - retry_attempts=5
+
+# Common annotations
+commonAnnotations:
+  environment: production
+  managed-by: kustomize
+  contact: ops@example.com

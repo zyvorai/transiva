@@ -1,0 +1,234 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: backupschedules.transiva.zyvor.ai
+spec:
+  group: transiva.zyvor.ai
+  names:
+    kind: BackupSchedule
+    listKind: BackupScheduleList
+    plural: backupschedules
+    singular: backupschedule
+    shortNames:
+      - bs
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required:
+                - schedule
+                - jobTemplate
+              properties:
+                schedule:
+                  type: string
+                  description: Cron expression for backup schedule
+                  pattern: '^(\*|([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9])|\*\/([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9])) (\*|([0-9]|1[0-9]|2[0-3])|\*\/([0-9]|1[0-9]|2[0-3])) (\*|([1-9]|1[0-9]|2[0-9]|3[0-1])|\*\/([1-9]|1[0-9]|2[0-9]|3[0-1])) (\*|([1-9]|1[0-2])|\*\/([1-9]|1[0-2])) (\*|([0-6])|\*\/([0-6]))$'
+                timezone:
+                  type: string
+                  description: Timezone for schedule (e.g., America/Los_Angeles)
+                  default: UTC
+                suspend:
+                  type: boolean
+                  description: Suspend scheduled backups
+                  default: false
+                concurrencyPolicy:
+                  type: string
+                  description: How to handle concurrent backup jobs
+                  enum:
+                    - Allow
+                    - Forbid
+                    - Replace
+                  default: Forbid
+                startingDeadlineSeconds:
+                  type: integer
+                  format: int64
+                  description: Deadline in seconds for starting the job if it misses scheduled time
+                successfulJobsHistoryLimit:
+                  type: integer
+                  minimum: 0
+                  description: Number of successful backup jobs to retain
+                  default: 3
+                failedJobsHistoryLimit:
+                  type: integer
+                  minimum: 0
+                  description: Number of failed backup jobs to retain
+                  default: 1
+                jobTemplate:
+                  type: object
+                  description: Template for BackupJob
+                  required:
+                    - spec
+                  properties:
+                    metadata:
+                      type: object
+                      properties:
+                        labels:
+                          type: object
+                          additionalProperties:
+                            type: string
+                        annotations:
+                          type: object
+                          additionalProperties:
+                            type: string
+                    spec:
+                      type: object
+                      required:
+                        - source
+                        - destination
+                      properties:
+                        source:
+                          type: object
+                          required:
+                            - provider
+                          properties:
+                            provider:
+                              type: string
+                            namespace:
+                              type: string
+                            vmName:
+                              type: string
+                            vmPath:
+                              type: string
+                            vmID:
+                              type: string
+                            tags:
+                              type: object
+                              additionalProperties:
+                                type: string
+                        destination:
+                          type: object
+                          required:
+                            - type
+                          properties:
+                            type:
+                              type: string
+                            bucket:
+                              type: string
+                            prefix:
+                              type: string
+                            region:
+                              type: string
+                            storageClass:
+                              type: string
+                            endpoint:
+                              type: string
+                            credentials:
+                              type: object
+                              properties:
+                                secretRef:
+                                  type: object
+                                  properties:
+                                    name:
+                                      type: string
+                                    namespace:
+                                      type: string
+                        format:
+                          type: object
+                          properties:
+                            type:
+                              type: string
+                            compression:
+                              type: boolean
+                            compressionLevel:
+                              type: integer
+                        incremental:
+                          type: object
+                          properties:
+                            enabled:
+                              type: boolean
+                            baseBackupRef:
+                              type: string
+                        carbonAware:
+                          type: object
+                          properties:
+                            enabled:
+                              type: boolean
+                            zone:
+                              type: string
+                            maxIntensity:
+                              type: number
+                            maxDelayHours:
+                              type: number
+                        retention:
+                          type: object
+                          properties:
+                            keepDaily:
+                              type: integer
+                            keepWeekly:
+                              type: integer
+                            keepMonthly:
+                              type: integer
+                            keepYearly:
+                              type: integer
+                        metadata:
+                          type: object
+                          additionalProperties:
+                            type: string
+            status:
+              type: object
+              properties:
+                active:
+                  type: array
+                  description: List of currently running backup jobs
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                      uid:
+                        type: string
+                lastScheduleTime:
+                  type: string
+                  format: date-time
+                  description: Last time the schedule triggered a backup
+                lastSuccessfulTime:
+                  type: string
+                  format: date-time
+                  description: Last time a backup completed successfully
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                        enum:
+                          - "True"
+                          - "False"
+                          - Unknown
+                      lastTransitionTime:
+                        type: string
+                        format: date-time
+                      reason:
+                        type: string
+                      message:
+                        type: string
+      additionalPrinterColumns:
+        - name: Schedule
+          type: string
+          jsonPath: .spec.schedule
+        - name: Suspend
+          type: boolean
+          jsonPath: .spec.suspend
+        - name: Active
+          type: integer
+          jsonPath: .status.active
+        - name: Last Schedule
+          type: date
+          jsonPath: .status.lastScheduleTime
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      subresources:
+        status: {}

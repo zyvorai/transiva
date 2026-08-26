@@ -1,0 +1,45 @@
+# hyper2kvm Daemon Configuration (vSphere Instance)
+#
+# This file is sourced by the hyper2kvm@vsphere.service unit.
+# Copy to /etc/hyper2kvm/hyper2kvm-vsphere.conf and customize.
+#
+# systemctl daemon-reload
+# systemctl restart hyper2kvm@vsphere.service
+
+# vSphere-specific directories
+WATCH_DIR=/var/lib/hyper2kvm/vsphere/queue
+OUTPUT_DIR=/var/lib/hyper2kvm/vsphere/output
+
+# Log level
+LOG_LEVEL=info
+
+# Higher concurrent conversions for vSphere workloads
+MAX_CONCURRENT=4
+
+# Optimized for VMware VMDK conversion
+QEMU_CONVERT_OPTIONS="-O qcow2 -c -p"
+COMPRESS_LEVEL=6
+
+# vSphere typically exports with snapshots, so cleanup is safe
+CLEANUP_SOURCE=true
+
+# Enable libvirt integration for converted VMs
+LIBVIRT_INTEGRATION=true
+LIBVIRT_URI=qemu:///system
+LIBVIRT_BRIDGE=br-vsphere
+LIBVIRT_POOL=vsphere-vms
+LIBVIRT_AUTOSTART=false
+
+# Longer timeout for large vSphere VMs
+CONVERSION_TIMEOUT=120
+
+# Enable progress logging for monitoring
+VERBOSE_PROGRESS=true
+
+# Notifications
+# NOTIFY_EMAIL=vmware-ops@example.com
+# WEBHOOK_URL=https://hooks.slack.com/services/YOUR/VSPHERE/WEBHOOK
+
+# Retention
+RETENTION_DAYS=14
+FAILED_RETENTION_DAYS=7

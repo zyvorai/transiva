@@ -1,0 +1,101 @@
+# ==============================================================================
+# RBAC Configuration for HyperSDK
+# ==============================================================================
+# These permissions allow hypervisord to interact with Kubernetes API
+# if needed for advanced features (e.g., dynamic configuration, secrets rotation)
+# ==============================================================================
+
+---
+# Role for hypervisord in its namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: hypervisord-role
+  namespace: transiva
+  labels:
+    app: hypervisord
+    app.kubernetes.io/name: hypervisord
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/part-of: transiva
+rules:
+# Allow reading ConfigMaps
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "list", "watch"]
+
+# Allow reading Secrets
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get", "list", "watch"]
+
+# Allow reading own Pod information
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list"]
+
+# Allow creating Events for audit logging
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["create", "patch"]
+
+---
+# RoleBinding to attach Role to ServiceAccount
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: hypervisord-rolebinding
+  namespace: transiva
+  labels:
+    app: hypervisord
+    app.kubernetes.io/name: hypervisord
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/part-of: transiva
+subjects:
+- kind: ServiceAccount
+  name: hypervisord
+  namespace: transiva
+roleRef:
+  kind: Role
+  name: hypervisord-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# Optional: ClusterRole for cross-namespace operations
+# Uncomment if hypervisord needs cluster-wide access
+# apiVersion: rbac.authorization.k8s.io/v1
+# kind: ClusterRole
+# metadata:
+#   name: hypervisord-clusterrole
+#   labels:
+#     app: hypervisord
+#     app.kubernetes.io/name: hypervisord
+#     app.kubernetes.io/component: rbac
+#     app.kubernetes.io/part-of: transiva
+# rules:
+# - apiGroups: [""]
+#   resources: ["nodes"]
+#   verbs: ["get", "list"]
+# - apiGroups: [""]
+#   resources: ["persistentvolumes"]
+#   verbs: ["get", "list"]
+
+---
+# Optional: ClusterRoleBinding
+# Uncomment if using ClusterRole above
+# apiVersion: rbac.authorization.k8s.io/v1
+# kind: ClusterRoleBinding
+# metadata:
+#   name: hypervisord-clusterrolebinding
+#   labels:
+#     app: hypervisord
+#     app.kubernetes.io/name: hypervisord
+#     app.kubernetes.io/component: rbac
+#     app.kubernetes.io/part-of: transiva
+# subjects:
+# - kind: ServiceAccount
+#   name: hypervisord
+#   namespace: transiva
+# roleRef:
+#   kind: ClusterRole
+#   name: hypervisord-clusterrole
+#   apiGroup: rbac.authorization.k8s.io

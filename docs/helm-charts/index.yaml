@@ -1,0 +1,61 @@
+apiVersion: v1
+entries:
+  transiva:
+  - annotations:
+      category: Infrastructure
+      com.redhat.openshift.versions: v4.10-v4.15
+      licenses: Apache-2.0
+      openshift.io/provides: transiva
+    apiVersion: v2
+    appVersion: 2.3.5
+    created: "2026-08-22T18:34:18.399286896Z"
+    description: Multi-cloud VM migration platform for Kubernetes
+    digest: 779e6839c2e520bc2c85e2b42a8bd96c5ca28bd3d7c6f59b19b0d344fa88d5bf
+    home: https://github.com/ssahani/transiva
+    icon: https://raw.githubusercontent.com/ssahani/transiva/main/docs/images/logo.png
+    keywords:
+    - vm-migration
+    - multi-cloud
+    - vsphere
+    - kubernetes
+    - openshift
+    - backup
+    - disaster-recovery
+    maintainers:
+    - email: ssahani@zyvor.dev
+      name: ZyvorAI Labs Private Limited
+    name: transiva
+    sources:
+    - https://github.com/ssahani/transiva
+    type: application
+    urls:
+    - https://ssahani.github.io/transiva/transiva-2.3.5.tgz
+    version: 2.3.5
+  - annotations:
+      category: Infrastructure
+      licenses: LGPL-3.0-or-later
+    apiVersion: v2
+    appVersion: 0.2.0
+    created: "2026-08-22T18:34:18.398251192Z"
+    description: Multi-cloud VM migration platform for Kubernetes
+    digest: 6840f2c84bb3ce5936e277a0bbd696fcf37cee9d0829dcbe36fbdb41fa0478bd
+    home: https://github.com/ssahani/transiva
+    icon: https://raw.githubusercontent.com/ssahani/transiva/main/docs/images/logo.png
+    keywords:
+    - vm-migration
+    - multi-cloud
+    - vsphere
+    - kubernetes
+    - backup
+    - disaster-recovery
+    maintainers:
+    - email: ssahani@example.com
+      name: Susant Sahani
+    name: transiva
+    sources:
+    - https://github.com/ssahani/transiva
+    type: application
+    urls:
+    - https://ssahani.github.io/transiva/transiva-0.2.0.tgz
+    version: 0.2.0
+generated: "2026-08-22T18:34:18.397257943Z"

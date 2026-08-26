@@ -1,0 +1,83 @@
+{{- if .Values.monitoring.prometheusRule.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "transiva.fullname" . }}
+  {{- if .Values.monitoring.prometheusRule.namespace }}
+  namespace: {{ .Values.monitoring.prometheusRule.namespace }}
+  {{- else }}
+  namespace: {{ .Release.Namespace }}
+  {{- end }}
+  labels:
+    {{- include "transiva.labels" . | nindent 4 }}
+    {{- with .Values.monitoring.prometheusRule.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  groups:
+    - name: transiva.rules
+      interval: 30s
+      rules:
+        # Default alerting rules
+        - alert: HyperSDKDown
+          expr: up{job="{{ include "transiva.fullname" . }}"} == 0
+          for: 5m
+          labels:
+            severity: critical
+            component: transiva
+          annotations:
+            summary: "HyperSDK instance is down"
+            description: "HyperSDK instance {{ "{{" }} $labels.instance {{ "}}" }} has been down for more than 5 minutes."
+
+        - alert: HyperSDKHighMemoryUsage
+          expr: |
+            (container_memory_working_set_bytes{pod=~"{{ include "transiva.fullname" . }}-.*"}
+            / container_spec_memory_limit_bytes{pod=~"{{ include "transiva.fullname" . }}-.*"}) * 100 > 90
+          for: 10m
+          labels:
+            severity: warning
+            component: transiva
+          annotations:
+            summary: "HyperSDK high memory usage"
+            description: "HyperSDK pod {{ "{{" }} $labels.pod {{ "}}" }} is using {{ "{{" }} $value | humanizePercentage {{ "}}" }} of memory."
+
+        - alert: HyperSDKHighCPUUsage
+          expr: |
+            (rate(container_cpu_usage_seconds_total{pod=~"{{ include "transiva.fullname" . }}-.*"}[5m])
+            / container_spec_cpu_quota{pod=~"{{ include "transiva.fullname" . }}-.*"}
+            * container_spec_cpu_period{pod=~"{{ include "transiva.fullname" . }}-.*"}) * 100 > 90
+          for: 10m
+          labels:
+            severity: warning
+            component: transiva
+          annotations:
+            summary: "HyperSDK high CPU usage"
+            description: "HyperSDK pod {{ "{{" }} $labels.pod {{ "}}" }} is using {{ "{{" }} $value | humanizePercentage {{ "}}" }} of CPU."
+
+        - alert: HyperSDKPodCrashLooping
+          expr: rate(kube_pod_container_status_restarts_total{pod=~"{{ include "transiva.fullname" . }}-.*"}[15m]) > 0
+          for: 5m
+          labels:
+            severity: critical
+            component: transiva
+          annotations:
+            summary: "HyperSDK pod is crash looping"
+            description: "HyperSDK pod {{ "{{" }} $labels.pod {{ "}}" }} is restarting frequently."
+
+        - alert: HyperSDKPersistentVolumeUsageHigh
+          expr: |
+            (kubelet_volume_stats_used_bytes{persistentvolumeclaim=~"{{ include "transiva.fullname" . }}-.*"}
+            / kubelet_volume_stats_capacity_bytes{persistentvolumeclaim=~"{{ include "transiva.fullname" . }}-.*"}) * 100 > 85
+          for: 10m
+          labels:
+            severity: warning
+            component: transiva
+          annotations:
+            summary: "HyperSDK persistent volume usage high"
+            description: "PVC {{ "{{" }} $labels.persistentvolumeclaim {{ "}}" }} is {{ "{{" }} $value | humanizePercentage {{ "}}" }} full."
+
+        {{- if .Values.monitoring.prometheusRule.rules }}
+        # Custom rules from values
+        {{- toYaml .Values.monitoring.prometheusRule.rules | nindent 8 }}
+        {{- end }}
+{{- end }}

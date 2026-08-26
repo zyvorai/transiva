@@ -1,0 +1,43 @@
+{{- if and .Values.persistence.data.enabled (not .Values.persistence.data.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "transiva.fullname" . }}-data
+  labels:
+    {{- include "transiva.labels" . | nindent 4 }}
+  {{- with .Values.persistence.data.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    - {{ .Values.persistence.data.accessMode }}
+  {{- if .Values.persistence.data.storageClass }}
+  storageClassName: {{ .Values.persistence.data.storageClass | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.data.size | quote }}
+---
+{{- end }}
+{{- if and .Values.persistence.exports.enabled (not .Values.persistence.exports.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "transiva.fullname" . }}-exports
+  labels:
+    {{- include "transiva.labels" . | nindent 4 }}
+  {{- with .Values.persistence.exports.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    - {{ .Values.persistence.exports.accessMode }}
+  {{- if .Values.persistence.exports.storageClass }}
+  storageClassName: {{ .Values.persistence.exports.storageClass | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.exports.size | quote }}
+{{- end }}

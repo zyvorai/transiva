@@ -1,0 +1,23 @@
+apiVersion: transiva.zyvor.ai/v1alpha1
+kind: VMOperation
+metadata:
+  name: clone-ubuntu-vm-1
+  namespace: default
+spec:
+  # Source VM
+  vmRef:
+    name: ubuntu-vm-1
+    namespace: default
+
+  # Operation type
+  operation: clone
+
+  # Clone configuration
+  cloneSpec:
+    targetName: ubuntu-vm-2
+    targetNamespace: default
+    linkedClone: true  # Use backing file (faster, uses less space)
+    startAfterClone: true  # Auto-start the cloned VM
+
+  # Timeout
+  timeout: 15m

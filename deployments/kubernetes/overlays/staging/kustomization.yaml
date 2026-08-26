@@ -1,0 +1,42 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Staging environment overlay
+namespace: transiva
+
+# Base configuration
+bases:
+- ../../base
+
+# Common labels for staging
+commonLabels:
+  environment: staging
+  app.kubernetes.io/environment: staging
+
+# Resources specific to staging
+resources:
+- ingress.yaml
+- hpa.yaml
+
+# Patches for staging environment
+patchesStrategicMerge:
+- resources-patch.yaml
+
+# Images (use staging tag)
+images:
+- name: transiva/hypervisord
+  newName: transiva/hypervisord
+  newTag: staging
+
+# ConfigMap generator for staging-specific config
+configMapGenerator:
+- name: hypervisord-config
+  behavior: merge
+  literals:
+  - log_level=info
+  - download_workers=3
+
+# Common annotations
+commonAnnotations:
+  environment: staging
+  managed-by: kustomize

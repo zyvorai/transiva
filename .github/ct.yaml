@@ -1,0 +1,41 @@
+# chart-testing configuration
+# https://github.com/helm/chart-testing
+
+# The name of the git remote
+remote: origin
+
+# The name of the target branch
+target-branch: main
+
+# Chart directories
+chart-dirs:
+  - deployments/helm
+
+# Excluded charts (comma-separated list)
+excluded-charts: []
+
+# Linting configuration
+lint-conf: .github/lintconf.yaml
+
+# Helm extra arguments
+helm-extra-args: --timeout 600s
+
+# Namespace to use for testing
+namespace: ct-test
+
+# Whether to skip clean up of created resources
+skip-clean-up: false
+
+# Whether to automatically detect changed charts
+check-version-increment: true
+
+# Validate chart version bumps according to SemVer
+validate-chart-schema: true
+
+# Validate maintainer information
+validate-maintainers: true
+
+# Additional arguments for helm install
+helm-extra-set-args: |
+  --set=persistence.data.enabled=true \
+  --set=persistence.exports.enabled=true

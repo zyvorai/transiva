@@ -1,0 +1,302 @@
+/* Kubernetes Dashboard Specific Styles */
+
+:root {
+    --orange: #f97316;
+    --orange-light: #fb923c;
+    --blue: #3b82f6;
+    --green: #10b981;
+    --red: #ef4444;
+    --yellow: #f59e0b;
+    --gray-900: #0f172a;
+    --gray-800: #1e293b;
+    --gray-700: #334155;
+    --gray-600: #475569;
+    --gray-500: #64748b;
+    --gray-400: #94a3b8;
+    --gray-300: #cbd5e1;
+    --gray-200: #e2e8f0;
+}
+
+/* Animations */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.slide-in {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* Status Badges with Icons */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+/* Carbon Awareness Indicator */
+.carbon-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 12px;
+    color: #10b981;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.carbon-badge::before {
+    content: '🌱';
+}
+
+/* Provider Icons */
+.provider-icon {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    vertical-align: middle;
+    margin-right: 6px;
+}
+
+.provider-kubevirt { content: '☸️'; }
+.provider-vsphere { content: '🔷'; }
+.provider-aws { content: '☁️'; }
+.provider-azure { content: '🔵'; }
+.provider-gcp { content: '🟡'; }
+
+/* Interactive Elements */
+button:not(.nav-tab) {
+    padding: 8px 16px;
+    background: var(--orange);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+button:not(.nav-tab):hover {
+    background: var(--orange-light);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+}
+
+button:not(.nav-tab):active {
+    transform: translateY(0);
+}
+
+/* Loading States */
+.loading {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--gray-700);
+    border-top-color: var(--orange);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Tooltips */
+[data-tooltip] {
+    position: relative;
+    cursor: help;
+}
+
+[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 12px;
+    background: var(--gray-900);
+    color: var(--gray-200);
+    border: 1px solid var(--gray-700);
+    border-radius: 6px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    z-index: 1000;
+}
+
+[data-tooltip]:hover::after {
+    opacity: 1;
+}
+
+/* Resource Cards */
+.resource-card {
+    background: var(--gray-800);
+    border: 1px solid var(--gray-700);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    transition: all 0.3s;
+}
+
+.resource-card:hover {
+    border-color: var(--orange);
+    box-shadow: 0 4px 20px rgba(249, 115, 22, 0.2);
+}
+
+.resource-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.resource-card-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--gray-200);
+}
+
+.resource-card-meta {
+    display: flex;
+    gap: 15px;
+    margin-top: 10px;
+    font-size: 0.875rem;
+    color: var(--gray-500);
+}
+
+/* Charts */
+.chart {
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gray-500);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .nav-tabs {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+    }
+
+    .nav-tab {
+        flex-shrink: 0;
+    }
+
+    table {
+        font-size: 0.875rem;
+    }
+
+    th, td {
+        padding: 10px;
+    }
+
+    .resource-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+}
+
+/* Print Styles */
+@media print {
+    header, .nav-tabs, .timestamp {
+        display: none;
+    }
+
+    .tab-content {
+        display: block !important;
+    }
+
+    .stat-card, .table-container, .resource-card {
+        break-inside: avoid;
+    }
+}
+
+/* Dark Mode Support (default) */
+@media (prefers-color-scheme: light) {
+    /* Override for light mode if needed */
+    body {
+        background: #f8fafc;
+        color: #1e293b;
+    }
+
+    .stat-card, .table-container, .cluster-info {
+        background: white;
+        border-color: #e2e8f0;
+    }
+}
+
+/* Accessibility */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* Focus States */
+button:focus, .nav-tab:focus {
+    outline: 2px solid var(--orange);
+    outline-offset: 2px;
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+    .stat-card, .table-container, .cluster-info {
+        border-width: 2px;
+    }
+
+    .badge {
+        border: 1px solid currentColor;
+    }
+}

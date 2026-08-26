@@ -1,0 +1,90 @@
+# Multi-stage Dockerfile for HyperSDK hyperexport CLI tool
+# Standalone VM export tool for interactive and scriptable use
+
+# ==============================================================================
+# Build Stage
+# ==============================================================================
+FROM golang:1.26-alpine AS builder
+
+# Install build dependencies
+RUN apk add --no-cache \
+    git \
+    make \
+    gcc \
+    musl-dev
+
+WORKDIR /build
+
+# Copy go.mod and go.sum for dependency caching
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Build hyperexport with optimizations
+ARG VERSION=dev
+ARG COMMIT_SHA=unknown
+ARG BUILD_DATE
+
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -ldflags="-s -w \
+    -X main.version=${VERSION} \
+    -X main.commitSHA=${COMMIT_SHA} \
+    -X main.buildDate=${BUILD_DATE}" \
+    -o hyperexport \
+    -trimpath \
+    ./cmd/hyperexport
+
+# Verify the binary was built
+RUN ls -lh hyperexport
+
+# ==============================================================================
+# Runtime Stage
+# ==============================================================================
+FROM registry.fedoraproject.org/fedora-minimal:43
+
+LABEL maintainer="HyperSDK Team"
+LABEL org.opencontainers.image.title="HyperSDK hyperexport"
+LABEL org.opencontainers.image.description="Standalone VM export CLI tool for multi-cloud environments"
+LABEL org.opencontainers.image.source="https://github.com/ssahani/transiva"
+LABEL org.opencontainers.image.base.name="registry.fedoraproject.org/fedora-minimal:43"
+
+# Install runtime dependencies
+RUN microdnf install -y \
+    ca-certificates \
+    tzdata \
+    curl \
+    && microdnf clean all
+
+# Create non-root user and group
+RUN groupadd -g 1000 transiva && \
+    useradd -u 1000 -g transiva -m -d /home/transiva -s /sbin/nologin transiva
+
+# Create exports directory
+RUN mkdir -p /exports && \
+    chown -R transiva:transiva /exports
+
+# Copy binary from builder
+COPY --from=builder --chown=transiva:transiva /build/hyperexport /usr/local/bin/hyperexport
+RUN chmod +x /usr/local/bin/hyperexport
+
+# Switch to non-root user
+USER transiva
+
+# Set working directory
+WORKDIR /exports
+
+# Environment variables with defaults
+ENV LOG_LEVEL=info \
+    DOWNLOAD_WORKERS=3 \
+    RETRY_ATTEMPTS=3
+
+# Volume mount for exports
+VOLUME ["/exports"]
+
+# Entrypoint
+ENTRYPOINT ["/usr/local/bin/hyperexport"]
+
+# Default command - show help
+CMD ["--help"]

@@ -1,0 +1,273 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-binaries:
+    name: Build Release Binaries
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+          - goos: windows
+            goarch: amd64
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v6
+      with:
+        go-version: '1.26'
+
+    - name: Get version from tag
+      id: get_version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+    - name: Build binaries
+      env:
+        GOOS: ${{ matrix.goos }}
+        GOARCH: ${{ matrix.goarch }}
+        CGO_ENABLED: 0
+      run: |
+        VERSION=${{ steps.get_version.outputs.VERSION }}
+        LDFLAGS="-X main.version=${VERSION} -s -w"
+
+        # Build binaries
+        go build -ldflags="${LDFLAGS}" -o hyperexport-${{ matrix.goos }}-${{ matrix.goarch }} ./cmd/hyperexport
+        go build -ldflags="${LDFLAGS}" -o hypervisord-${{ matrix.goos }}-${{ matrix.goarch }} ./cmd/hypervisord
+
+        # Add .exe extension for Windows
+        if [ "${{ matrix.goos }}" = "windows" ]; then
+          mv hyperexport-${{ matrix.goos }}-${{ matrix.goarch }} hyperexport-${{ matrix.goos }}-${{ matrix.goarch }}.exe
+          mv hypervisord-${{ matrix.goos }}-${{ matrix.goarch }} hypervisord-${{ matrix.goos }}-${{ matrix.goarch }}.exe
+        fi
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: binaries-${{ matrix.goos }}-${{ matrix.goarch }}
+        path: |
+          hyperexport-*
+          hypervisord-*
+
+  build-customer-bundle:
+    name: Build Customer Bundle (linux-amd64)
+    runs-on: ubuntu-latest
+    env:
+      GOTOOLCHAIN: auto
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v6
+      with:
+        go-version-file: go.mod
+        cache: true
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Get version from tag
+      id: get_version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+    - name: Build and package customer bundle
+      env:
+        GOTOOLCHAIN: auto
+        HYPERSDK_PACKAGE_VERSION: ${{ steps.get_version.outputs.VERSION }}
+      run: |
+        chmod +x scripts/package-binary-release.sh
+        ./scripts/package-binary-release.sh --build --out-dir dist
+
+    - name: Upload customer bundle
+      uses: actions/upload-artifact@v4
+      with:
+        name: customer-bundle-linux-amd64
+        path: |
+          dist/transiva-${{ steps.get_version.outputs.VERSION }}-linux-amd64.tar.gz
+          dist/transiva-${{ steps.get_version.outputs.VERSION }}-linux-amd64.tar.gz.sha256
+
+  build-rpm:
+    name: Build RPM Package
+    runs-on: ubuntu-latest
+    container: fedora:latest
+
+    steps:
+    - name: Install dependencies
+      run: |
+        dnf install -y rpm-build rpmdevtools golang git tar gzip
+
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Get version from tag
+      id: get_version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+    - name: Update version in spec file
+      run: |
+        sed -i "s/^Version:.*/Version:        ${{ steps.get_version.outputs.VERSION }}/" transiva.spec
+
+    - name: Set up RPM build tree
+      run: |
+        rpmdev-setuptree
+        mkdir -p ~/rpmbuild/SOURCES
+
+    - name: Create source tarball
+      run: |
+        VERSION=${{ steps.get_version.outputs.VERSION }}
+        mkdir -p transiva-${VERSION}
+        cp -r * transiva-${VERSION}/ 2>/dev/null || true
+        tar czf ~/rpmbuild/SOURCES/transiva-${VERSION}.tar.gz transiva-${VERSION}
+
+    - name: Build RPM
+      run: |
+        rpmbuild -ba transiva.spec
+
+    - name: Find RPMs
+      run: |
+        find ~/rpmbuild/RPMS/ -name "*.rpm" -exec cp {} . \;
+        find ~/rpmbuild/SRPMS/ -name "*.rpm" -exec cp {} . \;
+        ls -lh *.rpm
+
+    - name: Upload RPM artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: rpm-packages
+        path: "*.rpm"
+
+  build-daemon-rpm:
+    name: Build hyper2kvm-daemon RPM
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - dist: el9
+            image: rockylinux:9
+          - dist: fc41
+            image: fedora:41
+
+    container:
+      image: ${{ matrix.image }}
+
+    steps:
+    - name: Install dependencies
+      run: |
+        if [ -f /etc/fedora-release ]; then
+          dnf install -y rpm-build rpmdevtools git
+        else
+          yum install -y rpm-build rpmdevtools git
+        fi
+
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Get version from tag
+      id: get_version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+    - name: Build hyper2kvm-daemon RPM
+      run: |
+        cd packaging/rpm
+        ./build.sh --version ${{ steps.get_version.outputs.VERSION }} --release 1
+
+    - name: Find and copy RPMs
+      run: |
+        mkdir -p rpms
+        find ~/rpmbuild/RPMS/noarch/ -name "hyper2kvm-daemon-*.rpm" -exec cp {} rpms/ \;
+        find ~/rpmbuild/SRPMS/ -name "hyper2kvm-daemon-*.rpm" -exec cp {} rpms/ \;
+        ls -lh rpms/
+
+    - name: Upload daemon RPM artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: daemon-rpm-${{ matrix.dist }}
+        path: rpms/*.rpm
+        if-no-files-found: ignore
+  create-release:
+    name: Create GitHub Release
+    needs: [build-binaries, build-customer-bundle]
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Get version from tag
+      id: get_version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+    - name: Download customer bundle
+      uses: actions/download-artifact@v4
+      with:
+        name: customer-bundle-linux-amd64
+        path: release
+
+    - name: Download release binaries
+      uses: actions/download-artifact@v4
+      with:
+        pattern: binaries-*
+        path: release
+        merge-multiple: true
+
+    - name: Download RPM packages
+      continue-on-error: true
+      uses: actions/download-artifact@v4
+      with:
+        pattern: rpm-packages
+        path: release
+        merge-multiple: true
+
+    - name: Extract changelog
+      run: |
+        VERSION=${{ steps.get_version.outputs.VERSION }}
+        echo "## transiva ${VERSION}" > release-notes.md
+        echo "" >> release-notes.md
+        echo "Customer install bundle, release binaries, and RPM packages (when available)." >> release-notes.md
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        name: v${{ steps.get_version.outputs.VERSION }}
+        body_path: release-notes.md
+        files: release/*
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+        fail_on_unmatched_files: false
+
+  publish-verification:
+    name: Verify Release
+    needs: create-release
+    if: false
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Download Linux amd64 binary
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/v}
+        wget https://github.com/ssahani/transiva/releases/download/v${VERSION}/hypervisord-linux-amd64
+        chmod +x hypervisord-linux-amd64
+        ./hypervisord-linux-amd64 --version || true
+        file hypervisord-linux-amd64

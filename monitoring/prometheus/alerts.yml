@@ -1,0 +1,159 @@
+# Prometheus alert rules for HyperSDK
+
+groups:
+  - name: hypersdk_alerts
+    interval: 30s
+    rules:
+      # Job failure rate alert
+      - alert: HighJobFailureRate
+        expr: rate(hypersdk_jobs_failed_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: jobs
+        annotations:
+          summary: "High job failure rate detected"
+          description: "More than 10% of jobs are failing (current rate: {{ $value | humanize }})"
+
+      # Memory usage alert
+      - alert: HighMemoryUsage
+        expr: hypersdk_memory_bytes > 2147483648
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage above 2GB (current: {{ $value | humanizeBytes }})"
+
+      # Critical memory usage
+      - alert: CriticalMemoryUsage
+        expr: hypersdk_memory_bytes > 4294967296
+        for: 2m
+        labels:
+          severity: critical
+          component: system
+        annotations:
+          summary: "Critical memory usage"
+          description: "Memory usage above 4GB (current: {{ $value | humanizeBytes }})"
+
+      # Queue backlog alert
+      - alert: QueueBacklog
+        expr: hypersdk_queue_length > 50
+        for: 10m
+        labels:
+          severity: warning
+          component: jobs
+        annotations:
+          summary: "Job queue has significant backlog"
+          description: "Queue has more than 50 pending jobs (current: {{ $value }})"
+
+      # Critical queue backlog
+      - alert: CriticalQueueBacklog
+        expr: hypersdk_queue_length > 100
+        for: 5m
+        labels:
+          severity: critical
+          component: jobs
+        annotations:
+          summary: "Critical job queue backlog"
+          description: "Queue has more than 100 pending jobs (current: {{ $value }})"
+
+      # Service down alert
+      - alert: HyperSDKDown
+        expr: up{job="transiva"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: daemon
+        annotations:
+          summary: "HyperSDK daemon is down"
+          description: "HyperSDK daemon is not responding to scrape requests"
+
+      # High HTTP error rate
+      - alert: HighHTTPErrorRate
+        expr: rate(hypersdk_http_errors_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "High HTTP error rate"
+          description: "More than 10 HTTP errors per second (current: {{ $value | humanize }})"
+
+      # Slow HTTP responses
+      - alert: SlowHTTPResponses
+        expr: hypersdk_http_request_duration_seconds{quantile="0.95"} > 1
+        for: 10m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "Slow HTTP responses detected"
+          description: "95th percentile response time above 1 second (current: {{ $value }}s)"
+
+      # Goroutine leak detection
+      - alert: PossibleGoroutineLeak
+        expr: rate(hypersdk_goroutines[1h]) > 100
+        for: 30m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "Possible goroutine leak detected"
+          description: "Goroutine count increasing rapidly (rate: {{ $value | humanize }}/hour)"
+
+      # No job completions
+      - alert: NoJobCompletions
+        expr: rate(hypersdk_jobs_completed_total[30m]) == 0 and hypersdk_jobs_active > 0
+        for: 30m
+        labels:
+          severity: warning
+          component: jobs
+        annotations:
+          summary: "No jobs completing"
+          description: "Jobs are active but none have completed in 30 minutes"
+
+      # Provider errors
+      - alert: ProviderErrors
+        expr: sum by (provider) (rate(hypersdk_provider_errors_total[5m])) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          component: provider
+        annotations:
+          summary: "High error rate for provider {{ $labels.provider }}"
+          description: "Provider {{ $labels.provider }} experiencing errors (rate: {{ $value | humanize }}/s)"
+
+      # Webhook failures
+      - alert: WebhookDeliveryFailures
+        expr: rate(hypersdk_webhook_failures_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: webhooks
+        annotations:
+          summary: "Webhook delivery failures detected"
+          description: "Webhooks failing to deliver (rate: {{ $value | humanize }}/s)"
+
+      # Connection pool exhaustion
+      - alert: ConnectionPoolExhausted
+        expr: hypersdk_connection_pool_active >= hypersdk_connection_pool_max
+        for: 5m
+        labels:
+          severity: warning
+          component: connection_pool
+        annotations:
+          summary: "Connection pool exhausted"
+          description: "All connections in pool are active ({{ $value }} / {{ hypersdk_connection_pool_max }})"
+
+      # Disk space low (requires node exporter)
+      - alert: LowDiskSpace
+        expr: node_filesystem_avail_bytes{mountpoint="/var/lib/transiva"} / node_filesystem_size_bytes{mountpoint="/var/lib/transiva"} < 0.1
+        for: 10m
+        labels:
+          severity: warning
+          component: storage
+        annotations:
+          summary: "Low disk space on export storage"
+          description: "Less than 10% disk space available on /var/lib/transiva"

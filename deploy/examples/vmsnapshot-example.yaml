@@ -1,0 +1,28 @@
+apiVersion: transiva.zyvor.ai/v1alpha1
+kind: VMSnapshot
+metadata:
+  name: ubuntu-vm-1-snapshot-1
+  namespace: default
+  labels:
+    vm: ubuntu-vm-1
+    type: pre-upgrade
+spec:
+  # Source VM
+  vmRef:
+    name: ubuntu-vm-1
+    namespace: default
+
+  # Snapshot options
+  includeMemory: true  # Include memory state for live restore
+  quiesce: true  # Quiesce filesystem before snapshot
+  description: "Snapshot before OS upgrade to Ubuntu 24.04"
+
+  # Retention policy
+  retention:
+    keepDays: 30  # Keep for 30 days
+    autoDelete: true  # Auto-delete after expiration
+
+  # Destination (optional - uses default if not specified)
+  destination:
+    storageClass: fast-ssd
+    location: "s3://my-snapshots/ubuntu-vm-1/"

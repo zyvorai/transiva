@@ -1,0 +1,99 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hypervisord-config
+  namespace: transiva
+  labels:
+    app: hypervisord
+    app.kubernetes.io/name: hypervisord
+    app.kubernetes.io/component: configuration
+    app.kubernetes.io/part-of: transiva
+data:
+  # Daemon configuration
+  log_level: "info"
+  daemon_addr: "0.0.0.0:8080"
+  download_workers: "3"
+  chunk_size: "33554432"
+  retry_attempts: "3"
+  retry_delay: "5s"
+
+  # Full configuration file
+  config.yaml: |
+    # HyperSDK Daemon Configuration
+    # Kubernetes deployment configuration
+
+    daemon_addr: "0.0.0.0:8080"
+    log_level: "info"
+
+    # Download settings
+    download_workers: 3
+    chunk_size: 33554432  # 32MB
+    retry_attempts: 3
+    retry_delay: 5s
+
+    # Database
+    database_path: "/data/transiva.db"
+
+    # Connection pooling
+    connection_pool:
+      enabled: true
+      max_connections: 5
+      idle_timeout: 5m
+      health_check_interval: 30s
+
+    # Job scheduling
+    scheduler:
+      enabled: true
+      timezone: "UTC"
+      max_concurrent_jobs: 3
+
+    # Webhooks (array of webhook configurations)
+    webhooks: []
+    # Example:
+    # webhooks:
+    #   - url: "https://example.com/webhook"
+    #     events: ["job.completed", "job.failed"]
+    #     timeout: 30s
+    #     retry_attempts: 3
+
+    # Metrics
+    metrics:
+      enabled: true
+      addr: "0.0.0.0:8081"
+      path: "/metrics"
+
+    # Rate limiting
+    rate_limiting:
+      enabled: true
+      requests_per_minute: 100
+      burst: 50
+
+    # Security
+    security:
+      enable_tls: false
+      # tls_cert: "/config/tls/tls.crt"
+      # tls_key: "/config/tls/tls.key"
+
+    # Audit logging
+    audit:
+      enabled: true
+      log_path: "/var/log/transiva/audit.log"
+      max_size: 100  # MB
+      max_backups: 10
+      max_age: 30  # days
+
+    # Provider-specific settings
+    providers:
+      vsphere:
+        timeout: 30m
+        max_concurrent_exports: 2
+
+      aws:
+        region: "us-east-1"
+        timeout: 30m
+
+      azure:
+        timeout: 30m
+
+      gcp:
+        timeout: 30m

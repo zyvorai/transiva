@@ -1,0 +1,32 @@
+apiVersion: v2
+name: transiva
+description: Multi-cloud VM migration platform for Kubernetes
+type: application
+version: 0.2.0
+appVersion: "0.2.0"
+
+keywords:
+  - vm-migration
+  - multi-cloud
+  - vsphere
+  - kubernetes
+  - openshift
+  - backup
+  - disaster-recovery
+
+home: https://github.com/ssahani/transiva
+sources:
+  - https://github.com/ssahani/transiva
+
+maintainers:
+  - name: ZyvorAI Labs Private Limited
+    email: ssahani@zyvor.dev
+
+icon: https://raw.githubusercontent.com/ssahani/transiva/main/docs/images/logo.png
+
+annotations:
+  category: Infrastructure
+  licenses: Apache-2.0
+  # OpenShift compatibility
+  openshift.io/provides: transiva
+  com.redhat.openshift.versions: "v4.10-v4.15"

@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hypervisord-data-pvc
+  namespace: transiva
+  labels:
+    app: hypervisord
+    app.kubernetes.io/name: hypervisord
+    app.kubernetes.io/component: storage
+    app.kubernetes.io/part-of: transiva
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  # Uncomment and modify based on your cluster's storage classes
+  # storageClassName: fast-ssd
+  # For dynamic provisioning, ensure you have a default storage class
+  # or specify one explicitly
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hypervisord-exports-pvc
+  namespace: transiva
+  labels:
+    app: hypervisord
+    app.kubernetes.io/name: hypervisord
+    app.kubernetes.io/component: storage
+    app.kubernetes.io/part-of: transiva
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Gi  # Large storage for VM exports - adjust as needed
+  # For exports, you might prefer cheaper storage
+  # storageClassName: standard-hdd
+
+  # Optional: If you have pre-provisioned PV
+  # selector:
+  #   matchLabels:
+  #     volume-type: vm-exports

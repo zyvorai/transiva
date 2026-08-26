@@ -1,0 +1,54 @@
+---
+# Example RestoreJob to restore a VM from backup
+apiVersion: transiva.zyvor.ai/v1alpha1
+kind: RestoreJob
+metadata:
+  name: restore-ubuntu-vm
+  namespace: default
+  labels:
+    app: transiva
+    restore-type: disaster-recovery
+spec:
+  # Source: Reference to BackupJob
+  source:
+    type: backup-ref
+    backupJobRef:
+      name: ubuntu-vm-backup
+      namespace: default
+
+  # Destination: Restore to KubeVirt
+  destination:
+    provider: kubevirt
+    namespace: default
+    vmName: ubuntu-vm-restored
+    storageClass: fast-ssd
+
+  # Restore options
+  options:
+    # Power on VM after restore
+    powerOnAfterRestore: true
+
+    # Don't overwrite if exists
+    overwrite: false
+
+    # Rename the VM
+    renameVM: ubuntu-vm-restored
+
+    # VM customization
+    customization:
+      # Increase memory
+      memory: "8Gi"
+
+      # Increase CPU
+      cpu: 4
+
+      # Update networks
+      networks:
+        - name: default
+          type: bridge
+
+  # Custom metadata
+  metadata:
+    restored-by: platform-team
+    restore-reason: disaster-recovery
+    original-vm: ubuntu-vm-1

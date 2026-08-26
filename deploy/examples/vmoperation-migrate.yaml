@@ -1,0 +1,24 @@
+apiVersion: transiva.zyvor.ai/v1alpha1
+kind: VMOperation
+metadata:
+  name: migrate-ubuntu-vm-1
+  namespace: default
+spec:
+  # Source VM
+  vmRef:
+    name: ubuntu-vm-1
+    namespace: default
+
+  # Operation type
+  operation: migrate
+
+  # Migration configuration
+  migrateSpec:
+    targetNode: node-2  # Destination node
+    live: true  # Live migration (no downtime)
+    bandwidth: "100Mbps"  # Migration bandwidth limit
+    autoConverge: true  # Auto-slow down VM for convergence
+    postCopy: false  # Don't use post-copy (safer)
+
+  # Timeout
+  timeout: 30m

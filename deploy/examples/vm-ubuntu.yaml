@@ -1,0 +1,92 @@
+apiVersion: transiva.zyvor.ai/v1alpha1
+kind: VirtualMachine
+metadata:
+  name: ubuntu-vm-1
+  namespace: default
+  labels:
+    app: web
+    environment: production
+spec:
+  # VM Resources
+  cpus: 4
+  memory: "8Gi"
+
+  # Desired state
+  running: true
+
+  # Disks
+  disks:
+    - name: root
+      size: "50Gi"
+      storageClass: fast-ssd
+      bootOrder: 1
+      type: disk
+    - name: data
+      size: "100Gi"
+      storageClass: standard
+      type: disk
+
+  # Networks
+  networks:
+    - name: default
+      type: pod-network
+    - name: external
+      type: multus
+      multusNetworkName: external-net
+
+  # Image from S3
+  image:
+    source: "s3://my-bucket/images/ubuntu-22.04-server-cloudimg-amd64.qcow2"
+    checksum:
+      type: sha256
+      value: "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+
+  # Cloud-init configuration
+  cloudInit:
+    userData: |
+      #cloud-config
+      hostname: ubuntu-vm-1
+      users:
+        - name: admin
+          groups: sudo
+          shell: /bin/bash
+          sudo: ['ALL=(ALL) NOPASSWD:ALL']
+          ssh-authorized-keys:
+            - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC... user@host
+      packages:
+        - docker.io
+        - kubectl
+      runcmd:
+        - systemctl enable docker
+        - systemctl start docker
+
+  # Carbon-aware scheduling
+  carbonAware:
+    enabled: true
+    maxIntensity: 200  # gCO2/kWh
+    preferGreenEnergy: true
+    zone: "US-CAL-CISO"
+
+  # Node affinity - prefer nodes with SSD
+  nodeSelector:
+    storage: ssd
+
+  # High Availability
+  highAvailability:
+    enabled: true
+    restartPolicy: Always
+    restartDelay: "30s"
+    maxRestarts: 3
+    evictionStrategy: LiveMigrate
+
+  # Machine type
+  machineType: q35
+
+  # Firmware
+  firmware:
+    bootloader: uefi
+    secureBoot: false
+
+  # Guest agent
+  guestAgent:
+    enabled: true

@@ -1,0 +1,1941 @@
+// SPDX-License-Identifier: Apache-2.0
+
+package main
+
+import (
+	"fmt"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/zyvorai/transiva/providers/vsphere"
+)
+
+// TestGetResponsiveWidth tests terminal width calculations
+func TestGetResponsiveWidth(t *testing.T) {
+	tests := []struct {
+		name      string
+		termWidth int
+		want      int
+	}{
+		{
+			name:      "zero width defaults to 80",
+			termWidth: 0,
+			want:      80,
+		},
+		{
+			name:      "small terminal capped at 40",
+			termWidth: 30,
+			want:      40,
+		},
+		{
+			name:      "normal terminal 100 cols",
+			termWidth: 100,
+			want:      96,
+		},
+		{
+			name:      "large terminal capped at 120",
+			termWidth: 200,
+			want:      120,
+		},
+		{
+			name:      "exactly 80 cols",
+			termWidth: 80,
+			want:      76,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := tuiModel{termWidth: tt.termWidth}
+			got := m.getResponsiveWidth()
+			if got != tt.want {
+				t.Errorf("getResponsiveWidth() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// TestGetBoxWidth tests box width calculations
+func TestGetBoxWidth(t *testing.T) {
+	tests := []struct {
+		name      string
+		termWidth int
+		want      int
+	}{
+		{
+			name:      "default width",
+			termWidth: 0,
+			want:      76, // 80 - 4
+		},
+		{
+			name:      "100 col terminal",
+			termWidth: 100,
+			want:      92, // 96 - 4
+		},
+		{
+			name:      "max width terminal",
+			termWidth: 200,
+			want:      116, // 120 - 4
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := tuiModel{termWidth: tt.termWidth}
+			got := m.getBoxWidth()
+			if got != tt.want {
+				t.Errorf("getBoxWidth() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// TestGetColumnWidth tests multi-column width calculations
+func TestGetColumnWidth(t *testing.T) {
+	tests := []struct {
+		name       string
+		termWidth  int
+		numColumns int
+		want       int
+	}{
+		{
+			name:       "2 columns default width",
+			termWidth:  0,
+			numColumns: 2,
+			want:       39, // (80 - 2) / 2
+		},
+		{
+			name:       "3 columns",
+			termWidth:  100,
+			numColumns: 3,
+			want:       30, // (96 - 4) / 3
+		},
+		{
+			name:       "single column",
+			termWidth:  80,
+			numColumns: 1,
+			want:       76, // (76 - 0) / 1
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := tuiModel{termWidth: tt.termWidth}
+			got := m.getColumnWidth(tt.numColumns)
+			if got != tt.want {
+				t.Errorf("getColumnWidth() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// TestTruncateToWidth tests string truncation
+func TestTruncateToWidth(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		width int
+		want  string
+	}{
+		{
+			name:  "short string unchanged",
+			input: "hello",
+			width: 10,
+			want:  "hello",
+		},
+		{
+			name:  "exact length unchanged",
+			input: "hello",
+			width: 5,
+			want:  "hello",
+		},
+		{
+			name:  "long string truncated",
+			input: "hello world this is a long string",
+			width: 15,
+			want:  "hello world ...",
+		},
+		{
+			name:  "very small width",
+			input: "hello",
+			width: 2,
+			want:  "he",
+		},
+		{
+			name:  "width 3 shows ellipsis",
+			input: "hello world",
+			width: 8,
+			want:  "hello...",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := truncateToWidth(tt.input, tt.width)
+			if got != tt.want {
+				t.Errorf("truncateToWidth() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// TestRenderAnimatedProgressBar tests progress bar rendering
+func TestRenderAnimatedProgressBar(t *testing.T) {
+	tests := []struct {
+		name    string
+		percent float64
+		width   int
+		wantLen int // Check length of rendered string (without ANSI codes)
+	}{
+		{
+			name:    "0 percent",
+			percent: 0,
+			width:   10,
+			wantLen: 10, // All empty chars
+		},
+		{
+			name:    "50 percent",
+			percent: 50,
+			width:   10,
+			wantLen: 10, // Mix of filled and empty
+		},
+		{
+			name:    "100 percent",
+			percent: 100,
+			width:   10,
+			wantLen: 10, // All filled chars
+		},
+		{
+			name:    "too small width",
+			percent: 50,
+			width:   2,
+			wantLen: 0, // Returns empty string
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := renderAnimatedProgressBar(tt.percent, tt.width)
+			// Note: actual string will have ANSI codes, so we can't check exact content
+			// Just verify we got something back for valid widths
+			if tt.width >= 4 && len(got) == 0 {
+				t.Errorf("renderAnimatedProgressBar() returned empty string for valid width")
+			}
+			if tt.width < 4 && len(got) != 0 {
+				t.Errorf("renderAnimatedProgressBar() should return empty for width < 4")
+			}
+		})
+	}
+}
+
+// TestGetSpinnerFrames tests spinner frame arrays
+func TestGetSpinnerFrames(t *testing.T) {
+	frames := getSpinnerFrames()
+	if len(frames) != 10 {
+		t.Errorf("getSpinnerFrames() returned %d frames, want 10", len(frames))
+	}
+	for i, frame := range frames {
+		if frame == "" {
+			t.Errorf("getSpinnerFrames()[%d] is empty", i)
+		}
+	}
+}
+
+func TestGetDotSpinnerFrames(t *testing.T) {
+	frames := getDotSpinnerFrames()
+	if len(frames) != 8 {
+		t.Errorf("getDotSpinnerFrames() returned %d frames, want 8", len(frames))
+	}
+	for i, frame := range frames {
+		if frame == "" {
+			t.Errorf("getDotSpinnerFrames()[%d] is empty", i)
+		}
+	}
+}
+
+func TestGetProgressSpinnerFrames(t *testing.T) {
+	frames := getProgressSpinnerFrames()
+	if len(frames) != 4 {
+		t.Errorf("getProgressSpinnerFrames() returned %d frames, want 4", len(frames))
+	}
+	for i, frame := range frames {
+		if frame == "" {
+			t.Errorf("getProgressSpinnerFrames()[%d] is empty", i)
+		}
+	}
+}
+
+// TestRenderPulsingDot tests pulsing dot animation
+func TestRenderPulsingDot(t *testing.T) {
+	tests := []struct {
+		name  string
+		frame int
+	}{
+		{"frame 0", 0},
+		{"frame 1", 1},
+		{"frame 5", 5},
+		{"frame 10", 10},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := renderPulsingDot(tt.frame)
+			if len(got) == 0 {
+				t.Errorf("renderPulsingDot() returned empty string")
+			}
+		})
+	}
+}
+
+// TestParseInt tests integer parsing
+func TestParseInt(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  int64
+	}{
+		{
+			name:  "valid positive number",
+			input: "42",
+			want:  42,
+		},
+		{
+			name:  "valid zero",
+			input: "0",
+			want:  0,
+		},
+		{
+			name:  "valid negative",
+			input: "-10",
+			want:  -10,
+		},
+		{
+			name:  "invalid string",
+			input: "abc",
+			want:  0,
+		},
+		{
+			name:  "empty string",
+			input: "",
+			want:  0,
+		},
+		{
+			name:  "large number",
+			input: "1000000",
+			want:  1000000,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := parseInt(tt.input)
+			if got != tt.want {
+				t.Errorf("parseInt() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// TestCountEnabledFeatures tests feature counting
+func TestCountEnabledFeatures(t *testing.T) {
+	tests := []struct {
+		name   string
+		config featureConfiguration
+		want   int
+	}{
+		{
+			name:   "no features enabled",
+			config: featureConfiguration{},
+			want:   0,
+		},
+		{
+			name: "snapshot only",
+			config: featureConfiguration{
+				enableSnapshot: true,
+			},
+			want: 1,
+		},
+		{
+			name: "all features enabled",
+			config: featureConfiguration{
+				enableSnapshot:       true,
+				enableBandwidthLimit: true,
+				enableIncremental:    true,
+				enableEmail:          true,
+				enableCleanup:        true,
+			},
+			want: 5,
+		},
+		{
+			name: "some features enabled",
+			config: featureConfiguration{
+				enableSnapshot:    true,
+				enableIncremental: true,
+				enableEmail:       true,
+			},
+			want: 3,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := tuiModel{featureConfig: tt.config}
+			got := m.countEnabledFeatures()
+			if got != tt.want {
+				t.Errorf("countEnabledFeatures() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// TestCountSelected tests VM selection counting
+func TestCountSelected(t *testing.T) {
+	tests := []struct {
+		name string
+		vms  []tuiVMItem
+		want int
+	}{
+		{
+			name: "no VMs",
+			vms:  []tuiVMItem{},
+			want: 0,
+		},
+		{
+			name: "none selected",
+			vms: []tuiVMItem{
+				{selected: false},
+				{selected: false},
+			},
+			want: 0,
+		},
+		{
+			name: "all selected",
+			vms: []tuiVMItem{
+				{selected: true},
+				{selected: true},
+				{selected: true},
+			},
+			want: 3,
+		},
+		{
+			name: "some selected",
+			vms: []tuiVMItem{
+				{selected: true},
+				{selected: false},
+				{selected: true},
+				{selected: false},
+			},
+			want: 2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := tuiModel{vms: tt.vms}
+			got := m.countSelected()
+			if got != tt.want {
+				t.Errorf("countSelected() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// TestMinMax tests min/max helper functions
+func TestMin(t *testing.T) {
+	tests := []struct {
+		name string
+		a, b int
+		want int
+	}{
+		{"a smaller", 5, 10, 5},
+		{"b smaller", 10, 5, 5},
+		{"equal", 7, 7, 7},
+		{"negative", -5, 3, -5},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := min(tt.a, tt.b)
+			if got != tt.want {
+				t.Errorf("min(%d, %d) = %v, want %v", tt.a, tt.b, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestMax(t *testing.T) {
+	tests := []struct {
+		name string
+		a, b int
+		want int
+	}{
+		{"a larger", 10, 5, 10},
+		{"b larger", 5, 10, 10},
+		{"equal", 7, 7, 7},
+		{"negative", -5, 3, 3},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := max(tt.a, tt.b)
+			if got != tt.want {
+				t.Errorf("max(%d, %d) = %v, want %v", tt.a, tt.b, got, tt.want)
+			}
+		})
+	}
+}
+
+// TestConfigPanelCreation tests config panel initialization
+func TestNewConfigPanel(t *testing.T) {
+	m := &tuiModel{
+		outputDir: "/test/output",
+		featureConfig: featureConfiguration{
+			bandwidthLimitMBps: 10,
+			emailSMTPHost:      "smtp.test.com",
+			emailFrom:          "test@example.com",
+			emailTo:            "admin@example.com",
+			keepSnapshots:      5,
+			cleanupMaxAge:      30,
+			cleanupMaxCount:    10,
+		},
+	}
+
+	panel := m.newConfigPanel()
+
+	if panel == nil {
+		t.Fatal("newConfigPanel() returned nil")
+	}
+
+	if panel.focusedField != 0 {
+		t.Errorf("focusedField = %v, want 0", panel.focusedField)
+	}
+
+	if panel.isDirty {
+		t.Errorf("isDirty = true, want false")
+	}
+
+	expectedFields := 8
+	if len(panel.fields) != expectedFields {
+		t.Errorf("got %d fields, want %d", len(panel.fields), expectedFields)
+	}
+
+	// Verify field values are initialized correctly
+	if panel.fields[0].key != "output_dir" {
+		t.Errorf("first field key = %s, want output_dir", panel.fields[0].key)
+	}
+
+	if panel.fields[0].value != "/test/output" {
+		t.Errorf("output_dir value = %s, want /test/output", panel.fields[0].value)
+	}
+}
+
+// TestTickMsg tests animation frame increment
+func TestTickMsgIncrementsFrame(t *testing.T) {
+	m := tuiModel{
+		animFrame: 0,
+		phase:     "validation",
+	}
+
+	// Simulate tick message
+	msg := tickMsg(time.Now())
+	updated, _ := m.Update(msg)
+	updatedModel := updated.(tuiModel)
+
+	if updatedModel.animFrame != 1 {
+		t.Errorf("animFrame = %d, want 1", updatedModel.animFrame)
+	}
+}
+
+// TestStatsCalculations tests statistics dashboard calculations
+func TestStatsCalculations(t *testing.T) {
+	vms := []tuiVMItem{
+		{
+			vm: vsphere.VMInfo{
+				Name:       "VM1",
+				PowerState: "poweredOn",
+				NumCPU:     2,
+				MemoryMB:   4096,
+				Storage:    10 * 1024 * 1024 * 1024, // 10 GB
+			},
+			selected: true,
+		},
+		{
+			vm: vsphere.VMInfo{
+				Name:       "VM2",
+				PowerState: "poweredOff",
+				NumCPU:     4,
+				MemoryMB:   8192,
+				Storage:    20 * 1024 * 1024 * 1024, // 20 GB
+			},
+			selected: false,
+		},
+		{
+			vm: vsphere.VMInfo{
+				Name:       "VM3",
+				PowerState: "poweredOn",
+				NumCPU:     1,
+				MemoryMB:   2048,
+				Storage:    5 * 1024 * 1024 * 1024, // 5 GB
+			},
+			selected: true,
+		},
+	}
+
+	m := tuiModel{vms: vms}
+
+	// Count stats
+	var totalVMs, poweredOn, poweredOff int
+	var totalCPUs int32
+	var totalMemoryMB int32
+	var totalStorageBytes int64
+
+	for _, vm := range m.vms {
+		totalVMs++
+		totalCPUs += vm.vm.NumCPU
+		totalMemoryMB += vm.vm.MemoryMB
+		totalStorageBytes += vm.vm.Storage
+		if vm.vm.PowerState == "poweredOn" {
+			poweredOn++
+		} else {
+			poweredOff++
+		}
+	}
+
+	if totalVMs != 3 {
+		t.Errorf("totalVMs = %d, want 3", totalVMs)
+	}
+	if poweredOn != 2 {
+		t.Errorf("poweredOn = %d, want 2", poweredOn)
+	}
+	if poweredOff != 1 {
+		t.Errorf("poweredOff = %d, want 1", poweredOff)
+	}
+	if totalCPUs != 7 {
+		t.Errorf("totalCPUs = %d, want 7", totalCPUs)
+	}
+	if totalMemoryMB != 14336 {
+		t.Errorf("totalMemoryMB = %d, want 14336", totalMemoryMB)
+	}
+	expectedStorage := int64(35 * 1024 * 1024 * 1024)
+	if totalStorageBytes != expectedStorage {
+		t.Errorf("totalStorageBytes = %d, want %d", totalStorageBytes, expectedStorage)
+	}
+
+	// Test selected stats
+	selected := m.countSelected()
+	if selected != 2 {
+		t.Errorf("countSelected() = %d, want 2", selected)
+	}
+}
+
+// TestPhaseValues tests that phase constants are correctly set
+func TestPhaseValues(t *testing.T) {
+	tests := []struct {
+		name  string
+		phase string
+	}{
+		{"select phase", "select"},
+		{"confirm phase", "confirm"},
+		{"stats phase", "stats"},
+		{"config phase", "config"},
+		{"validation phase", "validation"},
+		{"export phase", "export"},
+		{"cloudupload phase", "cloudupload"},
+		{"done phase", "done"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := tuiModel{phase: tt.phase}
+			if m.phase != tt.phase {
+				t.Errorf("phase = %s, want %s", m.phase, tt.phase)
+			}
+		})
+	}
+}
+
+// TestSplitScreenMode tests split screen mode toggling
+func TestSplitScreenMode(t *testing.T) {
+	m := tuiModel{
+		splitScreenMode: false,
+		focusedPane:     "list",
+	}
+
+	if m.splitScreenMode {
+		t.Error("Expected splitScreenMode to be false initially")
+	}
+
+	// Toggle split screen mode
+	m.splitScreenMode = true
+	if !m.splitScreenMode {
+		t.Error("Expected splitScreenMode to be true after toggle")
+	}
+
+	// Toggle back
+	m.splitScreenMode = false
+	if m.splitScreenMode {
+		t.Error("Expected splitScreenMode to be false after second toggle")
+	}
+}
+
+// TestSwitchPane tests pane switching in split screen mode
+func TestSwitchPane(t *testing.T) {
+	m := tuiModel{
+		splitScreenMode: true,
+		focusedPane:     "list",
+	}
+
+	if m.focusedPane != "list" {
+		t.Errorf("Expected focusedPane to be 'list', got %s", m.focusedPane)
+	}
+
+	// Switch to details
+	m.focusedPane = "details"
+	if m.focusedPane != "details" {
+		t.Errorf("Expected focusedPane to be 'details', got %s", m.focusedPane)
+	}
+
+	// Switch back to list
+	m.focusedPane = "list"
+	if m.focusedPane != "list" {
+		t.Errorf("Expected focusedPane to be 'list', got %s", m.focusedPane)
+	}
+}
+
+// TestRenderSplitScreen tests split screen rendering
+func TestRenderSplitScreen(t *testing.T) {
+	m := tuiModel{
+		vms: []tuiVMItem{
+			{
+				vm: vsphere.VMInfo{
+					Name:       "TestVM1",
+					Path:       "/datacenter/vm/test1",
+					PowerState: "poweredOn",
+					GuestOS:    "Ubuntu",
+					NumCPU:     4,
+					MemoryMB:   8192,
+					Storage:    100 * 1024 * 1024 * 1024, // 100 GB
+				},
+				selected: false,
+			},
+			{
+				vm: vsphere.VMInfo{
+					Name:       "TestVM2",
+					Path:       "/datacenter/vm/test2",
+					PowerState: "poweredOff",
+					GuestOS:    "Windows",
+					NumCPU:     2,
+					MemoryMB:   4096,
+					Storage:    50 * 1024 * 1024 * 1024, // 50 GB
+				},
+				selected: true,
+			},
+		},
+		filteredVMs:     []tuiVMItem{},
+		cursor:          0,
+		splitScreenMode: true,
+		focusedPane:     "list",
+		termWidth:       100,
+		termHeight:      30,
+	}
+
+	// Apply filters to populate filteredVMs
+	m.applyFiltersAndSort()
+
+	output := m.renderSplitScreen()
+
+	if output == "" {
+		t.Error("renderSplitScreen returned empty string")
+	}
+
+	// Check for key elements
+	if !contains(output, "SPLIT VIEW MODE") {
+		t.Error("Output should contain split view mode indicator")
+	}
+
+	if !contains(output, "Tab: Switch Pane") {
+		t.Error("Output should contain tab hint")
+	}
+}
+
+// TestRenderVMListPane tests VM list pane rendering
+func TestRenderVMListPane(t *testing.T) {
+	m := tuiModel{
+		vms: []tuiVMItem{
+			{
+				vm: vsphere.VMInfo{
+					Name:       "TestVM1",
+					Path:       "/datacenter/vm/test1",
+					PowerState: "poweredOn",
+					GuestOS:    "Ubuntu",
+					NumCPU:     4,
+					MemoryMB:   8192,
+					Storage:    100 * 1024 * 1024 * 1024,
+				},
+				selected: true,
+			},
+			{
+				vm: vsphere.VMInfo{
+					Name:       "TestVM2",
+					Path:       "/datacenter/vm/test2",
+					PowerState: "poweredOff",
+					GuestOS:    "Windows",
+					NumCPU:     2,
+					MemoryMB:   4096,
+					Storage:    50 * 1024 * 1024 * 1024,
+				},
+				selected: false,
+			},
+		},
+		filteredVMs: []tuiVMItem{},
+		cursor:      0,
+		focusedPane: "list",
+		termWidth:   80,
+		termHeight:  30,
+	}
+
+	m.applyFiltersAndSort()
+
+	output := m.renderVMListPane(40)
+
+	if output == "" {
+		t.Error("renderVMListPane returned empty string")
+	}
+
+	// Check for VM names
+	if !contains(output, "TestVM1") {
+		t.Error("Output should contain VM1 name")
+	}
+
+	// Check for selection indicators
+	if !contains(output, "[✓]") {
+		t.Error("Output should contain checked box for selected VM")
+	}
+
+	if !contains(output, "[ ]") {
+		t.Error("Output should contain unchecked box for unselected VM")
+	}
+}
+
+// TestRenderDetailsPane tests VM details pane rendering
+func TestRenderDetailsPane(t *testing.T) {
+	m := tuiModel{
+		vms: []tuiVMItem{
+			{
+				vm: vsphere.VMInfo{
+					Name:       "DetailTestVM",
+					Path:       "/datacenter/vm/detail-test",
+					PowerState: "poweredOn",
+					GuestOS:    "Ubuntu 22.04",
+					NumCPU:     8,
+					MemoryMB:   16384,
+					Storage:    200 * 1024 * 1024 * 1024,
+				},
+				selected: false,
+			},
+		},
+		filteredVMs: []tuiVMItem{},
+		cursor:      0,
+		focusedPane: "details",
+		termWidth:   80,
+		termHeight:  30,
+	}
+
+	m.applyFiltersAndSort()
+
+	output := m.renderDetailsPane(50)
+
+	if output == "" {
+		t.Error("renderDetailsPane returned empty string")
+	}
+
+	// Check for VM details
+	if !contains(output, "DetailTestVM") {
+		t.Error("Output should contain VM name")
+	}
+
+	if !contains(output, "Ubuntu 22.04") {
+		t.Error("Output should contain guest OS")
+	}
+
+	if !contains(output, "8 cores") {
+		t.Error("Output should contain CPU count")
+	}
+
+	if !contains(output, "16384 MB") {
+		t.Error("Output should contain memory")
+	}
+
+	if !contains(output, "poweredOn") {
+		t.Error("Output should contain power state")
+	}
+}
+
+// TestRenderVerticalSplit tests vertical split for narrow terminals
+func TestRenderVerticalSplit(t *testing.T) {
+	m := tuiModel{
+		vms: []tuiVMItem{
+			{
+				vm: vsphere.VMInfo{
+					Name:       "TestVM",
+					Path:       "/datacenter/vm/test",
+					PowerState: "poweredOn",
+					GuestOS:    "Linux",
+					NumCPU:     2,
+					MemoryMB:   4096,
+					Storage:    50 * 1024 * 1024 * 1024,
+				},
+				selected: false,
+			},
+		},
+		filteredVMs:     []tuiVMItem{},
+		cursor:          0,
+		splitScreenMode: true,
+		focusedPane:     "list",
+		termWidth:       60, // Narrow terminal
+		termHeight:      30,
+	}
+
+	m.applyFiltersAndSort()
+
+	output := m.renderVerticalSplit()
+
+	if output == "" {
+		t.Error("renderVerticalSplit returned empty string")
+	}
+
+	// Check for vertical split indicator
+	if !contains(output, "SPLIT VIEW (Vertical)") {
+		t.Error("Output should contain vertical split indicator")
+	}
+
+	// Should contain both list and details sections
+	if !contains(output, "TestVM") {
+		t.Error("Output should contain VM name")
+	}
+}
+
+// TestSplitScreenWithNoVMs tests split screen with empty VM list
+func TestSplitScreenWithNoVMs(t *testing.T) {
+	m := tuiModel{
+		vms:             []tuiVMItem{},
+		filteredVMs:     []tuiVMItem{},
+		cursor:          0,
+		splitScreenMode: true,
+		focusedPane:     "list",
+		termWidth:       100,
+		termHeight:      30,
+	}
+
+	m.applyFiltersAndSort()
+
+	output := m.renderSplitScreen()
+
+	if output == "" {
+		t.Error("renderSplitScreen returned empty string even with no VMs")
+	}
+}
+
+// Helper function to check if string contains substring
+func contains(s, substr string) bool {
+	return len(s) > 0 && len(substr) > 0 && (s == substr || (len(s) > len(substr) && anyMatch(s, substr)))
+}
+
+func anyMatch(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
+}
+
+// TestBuildExportQueue tests building export queue from selected VMs
+func TestBuildExportQueue(t *testing.T) {
+	m := tuiModel{
+		vms: []tuiVMItem{
+			{
+				vm: vsphere.VMInfo{
+					Name:    "VM1",
+					Path:    "/dc/vm/vm1",
+					Storage: 50 * 1024 * 1024 * 1024,
+				},
+				selected: true,
+			},
+			{
+				vm: vsphere.VMInfo{
+					Name:    "VM2",
+					Path:    "/dc/vm/vm2",
+					Storage: 100 * 1024 * 1024 * 1024,
+				},
+				selected: false,
+			},
+			{
+				vm: vsphere.VMInfo{
+					Name:    "VM3",
+					Path:    "/dc/vm/vm3",
+					Storage: 75 * 1024 * 1024 * 1024,
+				},
+				selected: true,
+			},
+		},
+	}
+
+	queue := m.buildExportQueue()
+
+	if len(queue) != 2 {
+		t.Errorf("Expected queue length 2, got %d", len(queue))
+	}
+
+	// Check that only selected VMs are in queue
+	if queue[0].vm.Name != "VM1" {
+		t.Errorf("Expected first VM to be VM1, got %s", queue[0].vm.Name)
+	}
+
+	if queue[1].vm.Name != "VM3" {
+		t.Errorf("Expected second VM to be VM3, got %s", queue[1].vm.Name)
+	}
+
+	// Check default priority
+	for i, item := range queue {
+		if item.priority != 2 {
+			t.Errorf("Expected default priority 2 for item %d, got %d", i, item.priority)
+		}
+		if item.status != "pending" {
+			t.Errorf("Expected status 'pending' for item %d, got %s", i, item.status)
+		}
+	}
+}
+
+// TestQueueReordering tests moving items up and down in queue
+func TestQueueReordering(t *testing.T) {
+	m := tuiModel{
+		exportQueue: []queuedExport{
+			{vm: vsphere.VMInfo{Name: "VM1"}, priority: 2, status: "pending"},
+			{vm: vsphere.VMInfo{Name: "VM2"}, priority: 2, status: "pending"},
+			{vm: vsphere.VMInfo{Name: "VM3"}, priority: 2, status: "pending"},
+		},
+		queueCursor: 1,
+	}
+
+	// Test move down
+	if m.queueCursor < len(m.exportQueue)-1 {
+		m.exportQueue[m.queueCursor], m.exportQueue[m.queueCursor+1] =
+			m.exportQueue[m.queueCursor+1], m.exportQueue[m.queueCursor]
+		m.queueCursor++
+	}
+
+	if m.queueCursor != 2 {
+		t.Errorf("Expected cursor at 2 after move down, got %d", m.queueCursor)
+	}
+
+	if m.exportQueue[2].vm.Name != "VM2" {
+		t.Errorf("Expected VM2 at position 2, got %s", m.exportQueue[2].vm.Name)
+	}
+
+	if m.exportQueue[1].vm.Name != "VM3" {
+		t.Errorf("Expected VM3 at position 1, got %s", m.exportQueue[1].vm.Name)
+	}
+
+	// Test move up
+	if m.queueCursor > 0 {
+		m.exportQueue[m.queueCursor], m.exportQueue[m.queueCursor-1] =
+			m.exportQueue[m.queueCursor-1], m.exportQueue[m.queueCursor]
+		m.queueCursor--
+	}
+
+	if m.queueCursor != 1 {
+		t.Errorf("Expected cursor at 1 after move up, got %d", m.queueCursor)
+	}
+
+	if m.exportQueue[1].vm.Name != "VM2" {
+		t.Errorf("Expected VM2 back at position 1, got %s", m.exportQueue[1].vm.Name)
+	}
+}
+
+// TestPriorityChange tests cycling through priority levels
+func TestPriorityChange(t *testing.T) {
+	queue := []queuedExport{
+		{vm: vsphere.VMInfo{Name: "VM1"}, priority: 2, status: "pending"},
+	}
+
+	// Normal (2) -> High (1)
+	current := &queue[0]
+	switch current.priority {
+	case 2:
+		current.priority = 1
+	}
+
+	if current.priority != 1 {
+		t.Errorf("Expected priority 1 (high), got %d", current.priority)
+	}
+
+	// High (1) -> Low (3)
+	switch current.priority {
+	case 1:
+		current.priority = 3
+	}
+
+	if current.priority != 3 {
+		t.Errorf("Expected priority 3 (low), got %d", current.priority)
+	}
+
+	// Low (3) -> Normal (2)
+	switch current.priority {
+	case 3:
+		current.priority = 2
+	}
+
+	if current.priority != 2 {
+		t.Errorf("Expected priority 2 (normal), got %d", current.priority)
+	}
+}
+
+// TestRenderQueue tests queue rendering
+func TestRenderQueue(t *testing.T) {
+	m := tuiModel{
+		exportQueue: []queuedExport{
+			{
+				vm:       vsphere.VMInfo{Name: "HighPriorityVM", Storage: 50 * 1024 * 1024 * 1024},
+				priority: 1,
+				status:   "pending",
+			},
+			{
+				vm:       vsphere.VMInfo{Name: "NormalPriorityVM", Storage: 100 * 1024 * 1024 * 1024},
+				priority: 2,
+				status:   "pending",
+			},
+			{
+				vm:       vsphere.VMInfo{Name: "LowPriorityVM", Storage: 75 * 1024 * 1024 * 1024},
+				priority: 3,
+				status:   "pending",
+			},
+		},
+		queueCursor: 0,
+		termWidth:   100,
+		termHeight:  30,
+	}
+
+	output := m.renderQueue()
+
+	if output == "" {
+		t.Error("renderQueue returned empty string")
+	}
+
+	// Check for key elements
+	if !contains(output, "EXPORT QUEUE MANAGER") {
+		t.Error("Output should contain queue manager header")
+	}
+
+	if !contains(output, "HighPriorityVM") {
+		t.Error("Output should contain high priority VM name")
+	}
+
+	if !contains(output, "NormalPriorityVM") {
+		t.Error("Output should contain normal priority VM name")
+	}
+
+	if !contains(output, "LowPriorityVM") {
+		t.Error("Output should contain low priority VM name")
+	}
+
+	if !contains(output, "[HIGH]") {
+		t.Error("Output should contain HIGH priority indicator")
+	}
+
+	if !contains(output, "[NORM]") {
+		t.Error("Output should contain NORM priority indicator")
+	}
+
+	if !contains(output, "[LOW]") {
+		t.Error("Output should contain LOW priority indicator")
+	}
+
+	if !contains(output, "Summary:") {
+		t.Error("Output should contain summary")
+	}
+
+	if !contains(output, "1 High") {
+		t.Error("Output should show 1 high priority item")
+	}
+
+	if !contains(output, "1 Normal") {
+		t.Error("Output should show 1 normal priority item")
+	}
+
+	if !contains(output, "1 Low") {
+		t.Error("Output should show 1 low priority item")
+	}
+}
+
+// TestQueueWithEmptySelection tests queue with no selected VMs
+func TestQueueWithEmptySelection(t *testing.T) {
+	m := tuiModel{
+		vms: []tuiVMItem{
+			{vm: vsphere.VMInfo{Name: "VM1"}, selected: false},
+			{vm: vsphere.VMInfo{Name: "VM2"}, selected: false},
+		},
+	}
+
+	queue := m.buildExportQueue()
+
+	if len(queue) != 0 {
+		t.Errorf("Expected empty queue, got %d items", len(queue))
+	}
+}
+
+// TestQueueNavigation tests cursor movement in queue
+func TestQueueNavigation(t *testing.T) {
+	m := tuiModel{
+		exportQueue: []queuedExport{
+			{vm: vsphere.VMInfo{Name: "VM1"}, priority: 2},
+			{vm: vsphere.VMInfo{Name: "VM2"}, priority: 2},
+			{vm: vsphere.VMInfo{Name: "VM3"}, priority: 2},
+		},
+		queueCursor: 0,
+	}
+
+	// Move down
+	if m.queueCursor < len(m.exportQueue)-1 {
+		m.queueCursor++
+	}
+
+	if m.queueCursor != 1 {
+		t.Errorf("Expected cursor at 1, got %d", m.queueCursor)
+	}
+
+	// Move down again
+	if m.queueCursor < len(m.exportQueue)-1 {
+		m.queueCursor++
+	}
+
+	if m.queueCursor != 2 {
+		t.Errorf("Expected cursor at 2, got %d", m.queueCursor)
+	}
+
+	// Try to move past end (should stay at 2)
+	if m.queueCursor < len(m.exportQueue)-1 {
+		m.queueCursor++
+	}
+
+	if m.queueCursor != 2 {
+		t.Errorf("Expected cursor to stay at 2, got %d", m.queueCursor)
+	}
+
+	// Move up
+	if m.queueCursor > 0 {
+		m.queueCursor--
+	}
+
+	if m.queueCursor != 1 {
+		t.Errorf("Expected cursor at 1 after moving up, got %d", m.queueCursor)
+	}
+
+	// Move up again
+	if m.queueCursor > 0 {
+		m.queueCursor--
+	}
+
+	if m.queueCursor != 0 {
+		t.Errorf("Expected cursor at 0, got %d", m.queueCursor)
+	}
+
+	// Try to move before start (should stay at 0)
+	if m.queueCursor > 0 {
+		m.queueCursor--
+	}
+
+	if m.queueCursor != 0 {
+		t.Errorf("Expected cursor to stay at 0, got %d", m.queueCursor)
+	}
+}
+
+// TestFilterHistoryByStatus tests filtering history by success/failed status
+func TestFilterHistoryByStatus(t *testing.T) {
+	now := time.Now()
+	m := tuiModel{
+		historyEntries: []ExportHistoryEntry{
+			{Timestamp: now, VMName: "VM1", Success: true},
+			{Timestamp: now, VMName: "VM2", Success: false},
+			{Timestamp: now, VMName: "VM3", Success: true},
+			{Timestamp: now, VMName: "VM4", Success: false},
+		},
+		historyFilter: "all",
+	}
+
+	// Test "all" filter
+	filtered := m.getFilteredHistory()
+	if len(filtered) != 4 {
+		t.Errorf("Expected 4 entries with 'all' filter, got %d", len(filtered))
+	}
+
+	// Test "success" filter
+	m.historyFilter = "success"
+	filtered = m.getFilteredHistory()
+	if len(filtered) != 2 {
+		t.Errorf("Expected 2 entries with 'success' filter, got %d", len(filtered))
+	}
+	for _, entry := range filtered {
+		if !entry.Success {
+			t.Errorf("Expected only successful entries, got failed entry: %s", entry.VMName)
+		}
+	}
+
+	// Test "failed" filter
+	m.historyFilter = "failed"
+	filtered = m.getFilteredHistory()
+	if len(filtered) != 2 {
+		t.Errorf("Expected 2 entries with 'failed' filter, got %d", len(filtered))
+	}
+	for _, entry := range filtered {
+		if entry.Success {
+			t.Errorf("Expected only failed entries, got successful entry: %s", entry.VMName)
+		}
+	}
+}
+
+// TestFilterHistoryByDate tests filtering history by date ranges
+func TestFilterHistoryByDate(t *testing.T) {
+	now := time.Now()
+	yesterday := now.Add(-25 * time.Hour)
+	lastWeek := now.Add(-8 * 24 * time.Hour)
+	lastMonth := now.Add(-31 * 24 * time.Hour)
+
+	m := tuiModel{
+		historyEntries: []ExportHistoryEntry{
+			{Timestamp: now, VMName: "VM1", Success: true},
+			{Timestamp: yesterday, VMName: "VM2", Success: true},
+			{Timestamp: lastWeek, VMName: "VM3", Success: true},
+			{Timestamp: lastMonth, VMName: "VM4", Success: true},
+		},
+		historyDateFilter: "all",
+	}
+
+	// Test "all" filter
+	filtered := m.getFilteredHistory()
+	if len(filtered) != 4 {
+		t.Errorf("Expected 4 entries with 'all' date filter, got %d", len(filtered))
+	}
+
+	// Test "today" filter (last 24 hours)
+	m.historyDateFilter = "today"
+	filtered = m.getFilteredHistory()
+	if len(filtered) != 1 {
+		t.Errorf("Expected 1 entry with 'today' filter, got %d", len(filtered))
+	}
+
+	// Test "week" filter (last 7 days)
+	m.historyDateFilter = "week"
+	filtered = m.getFilteredHistory()
+	if len(filtered) != 2 {
+		t.Errorf("Expected 2 entries with 'week' filter, got %d", len(filtered))
+	}
+
+	// Test "month" filter (last 30 days)
+	m.historyDateFilter = "month"
+	filtered = m.getFilteredHistory()
+	if len(filtered) != 3 {
+		t.Errorf("Expected 3 entries with 'month' filter, got %d", len(filtered))
+	}
+}
+
+// TestRenderHistory tests rendering the history view
+func TestRenderHistory(t *testing.T) {
+	now := time.Now()
+	m := tuiModel{
+		historyEntries: []ExportHistoryEntry{
+			{
+				Timestamp:  now,
+				VMName:     "TestVM1",
+				Success:    true,
+				TotalSize:  1024 * 1024 * 1024, // 1 GB
+				Duration:   30 * time.Minute,
+				Provider:   "vsphere",
+				OutputDir:  "/tmp/exports",
+				FilesCount: 5,
+			},
+			{
+				Timestamp:    now.Add(-1 * time.Hour),
+				VMName:       "TestVM2",
+				Success:      false,
+				ErrorMessage: "Connection timeout",
+				TotalSize:    512 * 1024 * 1024,
+				Duration:     15 * time.Minute,
+				Provider:     "vsphere",
+			},
+		},
+		historyFilter:         "all",
+		historyDateFilter:     "all",
+		historyProviderFilter: "all",
+		historyCursor:         0,
+		termWidth:             100,
+	}
+
+	output := m.renderHistory()
+
+	// Verify output contains expected elements
+	if !strings.Contains(output, "EXPORT HISTORY") {
+		t.Error("Expected history view to contain 'EXPORT HISTORY' header")
+	}
+
+	if !strings.Contains(output, "TestVM1") {
+		t.Error("Expected history view to contain VM name")
+	}
+
+	if !strings.Contains(output, "✓") {
+		t.Error("Expected history view to contain success indicator")
+	}
+
+	if !strings.Contains(output, "F: Filter Status") {
+		t.Error("Expected history view to contain filter instructions")
+	}
+
+	// Verify summary stats (format: "📊 2 Total | ✓ 1 Success | ✗ 1 Failed")
+	if !strings.Contains(output, "Total") {
+		t.Error("Expected history view to contain total count")
+	}
+
+	if !strings.Contains(output, "Success") {
+		t.Error("Expected history view to contain success count")
+	}
+
+	if !strings.Contains(output, "Failed") {
+		t.Error("Expected history view to contain failed count")
+	}
+}
+
+// TestHistoryNavigation tests cursor navigation in history view
+func TestHistoryNavigation(t *testing.T) {
+	now := time.Now()
+	m := tuiModel{
+		historyEntries: []ExportHistoryEntry{
+			{Timestamp: now, VMName: "VM1", Success: true},
+			{Timestamp: now.Add(-1 * time.Hour), VMName: "VM2", Success: true},
+			{Timestamp: now.Add(-2 * time.Hour), VMName: "VM3", Success: true},
+		},
+		historyCursor: 0,
+	}
+
+	// Test moving down
+	if m.historyCursor < len(m.getFilteredHistory())-1 {
+		m.historyCursor++
+	}
+
+	if m.historyCursor != 1 {
+		t.Errorf("Expected cursor at 1, got %d", m.historyCursor)
+	}
+
+	// Move down again
+	if m.historyCursor < len(m.getFilteredHistory())-1 {
+		m.historyCursor++
+	}
+
+	if m.historyCursor != 2 {
+		t.Errorf("Expected cursor at 2, got %d", m.historyCursor)
+	}
+
+	// Try to move past end (should stay at 2)
+	if m.historyCursor < len(m.getFilteredHistory())-1 {
+		m.historyCursor++
+	}
+
+	if m.historyCursor != 2 {
+		t.Errorf("Expected cursor to stay at 2, got %d", m.historyCursor)
+	}
+
+	// Move up
+	if m.historyCursor > 0 {
+		m.historyCursor--
+	}
+
+	if m.historyCursor != 1 {
+		t.Errorf("Expected cursor at 1 after moving up, got %d", m.historyCursor)
+	}
+}
+
+// TestHistoryWithEmptyEntries tests history view with no entries
+func TestHistoryWithEmptyEntries(t *testing.T) {
+	m := tuiModel{
+		historyEntries:    []ExportHistoryEntry{},
+		historyFilter:     "all",
+		historyDateFilter: "all",
+		historyCursor:     0,
+		termWidth:         100,
+	}
+
+	output := m.renderHistory()
+
+	// Should render without error
+	if !strings.Contains(output, "EXPORT HISTORY") {
+		t.Error("Expected history view header even with no entries")
+	}
+
+	// Should show "No export history found" message
+	if !strings.Contains(output, "No export history found") {
+		t.Error("Expected 'No export history found' message in empty history")
+	}
+
+	filtered := m.getFilteredHistory()
+	if len(filtered) != 0 {
+		t.Errorf("Expected 0 filtered entries, got %d", len(filtered))
+	}
+}
+
+// TestHistoryFilterCycling tests cycling through status and date filters
+func TestHistoryFilterCycling(t *testing.T) {
+	m := tuiModel{
+		historyFilter:     "all",
+		historyDateFilter: "all",
+	}
+
+	// Test status filter cycling: all -> success -> failed -> all
+	m.historyFilter = "all"
+	if m.historyFilter != "all" {
+		t.Errorf("Expected initial filter 'all', got %s", m.historyFilter)
+	}
+
+	m.historyFilter = "success"
+	if m.historyFilter != "success" {
+		t.Errorf("Expected filter 'success', got %s", m.historyFilter)
+	}
+
+	m.historyFilter = "failed"
+	if m.historyFilter != "failed" {
+		t.Errorf("Expected filter 'failed', got %s", m.historyFilter)
+	}
+
+	m.historyFilter = "all"
+	if m.historyFilter != "all" {
+		t.Errorf("Expected filter back to 'all', got %s", m.historyFilter)
+	}
+
+	// Test date filter cycling: all -> today -> week -> month -> all
+	m.historyDateFilter = "all"
+	if m.historyDateFilter != "all" {
+		t.Errorf("Expected initial date filter 'all', got %s", m.historyDateFilter)
+	}
+
+	m.historyDateFilter = "today"
+	if m.historyDateFilter != "today" {
+		t.Errorf("Expected date filter 'today', got %s", m.historyDateFilter)
+	}
+
+	m.historyDateFilter = "week"
+	if m.historyDateFilter != "week" {
+		t.Errorf("Expected date filter 'week', got %s", m.historyDateFilter)
+	}
+
+	m.historyDateFilter = "month"
+	if m.historyDateFilter != "month" {
+		t.Errorf("Expected date filter 'month', got %s", m.historyDateFilter)
+	}
+
+	m.historyDateFilter = "all"
+	if m.historyDateFilter != "all" {
+		t.Errorf("Expected date filter back to 'all', got %s", m.historyDateFilter)
+	}
+}
+
+// TestAddLogEntry tests adding log entries
+func TestAddLogEntry(t *testing.T) {
+	m := tuiModel{
+		logEntries:     []logEntry{},
+		autoScrollLogs: true,
+		maxLogEntries:  1000,
+	}
+
+	m.addLogEntry("INFO", "Test message 1", "VM1")
+	if len(m.logEntries) != 1 {
+		t.Errorf("Expected 1 log entry, got %d", len(m.logEntries))
+	}
+
+	entry := m.logEntries[0]
+	if entry.level != "INFO" {
+		t.Errorf("Expected level INFO, got %s", entry.level)
+	}
+	if entry.message != "Test message 1" {
+		t.Errorf("Expected message 'Test message 1', got %s", entry.message)
+	}
+	if entry.vmName != "VM1" {
+		t.Errorf("Expected vmName 'VM1', got %s", entry.vmName)
+	}
+
+	// Add more entries
+	m.addLogEntry("WARN", "Warning message", "VM2")
+	m.addLogEntry("ERROR", "Error message", "VM3")
+
+	if len(m.logEntries) != 3 {
+		t.Errorf("Expected 3 log entries, got %d", len(m.logEntries))
+	}
+}
+
+// TestLogEntryLimit tests that log entries are limited to maxLogEntries
+func TestLogEntryLimit(t *testing.T) {
+	m := tuiModel{
+		logEntries:     []logEntry{},
+		autoScrollLogs: true,
+		maxLogEntries:  100,
+	}
+
+	// Add 150 entries
+	for i := 0; i < 150; i++ {
+		m.addLogEntry("INFO", fmt.Sprintf("Message %d", i), "")
+	}
+
+	if len(m.logEntries) != 100 {
+		t.Errorf("Expected 100 log entries (max limit), got %d", len(m.logEntries))
+	}
+
+	// Verify it kept the most recent entries (50-149)
+	if !strings.Contains(m.logEntries[0].message, "50") {
+		t.Error("Expected oldest entry to be message 50 after pruning")
+	}
+}
+
+// TestFilterLogsByLevel tests filtering logs by level
+func TestFilterLogsByLevel(t *testing.T) {
+	m := tuiModel{
+		logEntries: []logEntry{
+			{level: "INFO", message: "Info 1", vmName: ""},
+			{level: "WARN", message: "Warn 1", vmName: ""},
+			{level: "ERROR", message: "Error 1", vmName: ""},
+			{level: "INFO", message: "Info 2", vmName: ""},
+			{level: "DEBUG", message: "Debug 1", vmName: ""},
+		},
+		logLevelFilter: "all",
+	}
+
+	// Test "all" filter
+	filtered := m.getFilteredLogs()
+	if len(filtered) != 5 {
+		t.Errorf("Expected 5 entries with 'all' filter, got %d", len(filtered))
+	}
+
+	// Test "info" filter
+	m.logLevelFilter = "info"
+	filtered = m.getFilteredLogs()
+	if len(filtered) != 2 {
+		t.Errorf("Expected 2 entries with 'info' filter, got %d", len(filtered))
+	}
+
+	// Test "warn" filter
+	m.logLevelFilter = "warn"
+	filtered = m.getFilteredLogs()
+	if len(filtered) != 1 {
+		t.Errorf("Expected 1 entry with 'warn' filter, got %d", len(filtered))
+	}
+
+	// Test "error" filter
+	m.logLevelFilter = "error"
+	filtered = m.getFilteredLogs()
+	if len(filtered) != 1 {
+		t.Errorf("Expected 1 entry with 'error' filter, got %d", len(filtered))
+	}
+
+	// Test "debug" filter
+	m.logLevelFilter = "debug"
+	filtered = m.getFilteredLogs()
+	if len(filtered) != 1 {
+		t.Errorf("Expected 1 entry with 'debug' filter, got %d", len(filtered))
+	}
+}
+
+// TestAutoScroll tests auto-scroll functionality
+func TestAutoScroll(t *testing.T) {
+	m := tuiModel{
+		logEntries:     []logEntry{},
+		autoScrollLogs: true,
+		maxLogEntries:  1000,
+		logLevelFilter: "all",
+	}
+
+	// Add entries and verify cursor auto-scrolls
+	m.addLogEntry("INFO", "Message 1", "")
+	if m.logCursor != 0 {
+		t.Errorf("Expected cursor at 0, got %d", m.logCursor)
+	}
+
+	m.addLogEntry("INFO", "Message 2", "")
+	if m.logCursor != 1 {
+		t.Errorf("Expected cursor at 1 with auto-scroll, got %d", m.logCursor)
+	}
+
+	m.addLogEntry("INFO", "Message 3", "")
+	if m.logCursor != 2 {
+		t.Errorf("Expected cursor at 2 with auto-scroll, got %d", m.logCursor)
+	}
+
+	// Disable auto-scroll
+	m.autoScrollLogs = false
+	m.addLogEntry("INFO", "Message 4", "")
+	if m.logCursor != 2 {
+		t.Errorf("Expected cursor to stay at 2 with auto-scroll off, got %d", m.logCursor)
+	}
+}
+
+// TestRenderLogs tests rendering the logs view
+func TestRenderLogs(t *testing.T) {
+	now := time.Now()
+	m := tuiModel{
+		logEntries: []logEntry{
+			{
+				timestamp: now,
+				level:     "INFO",
+				message:   "Test info message",
+				vmName:    "TestVM1",
+			},
+			{
+				timestamp: now.Add(1 * time.Second),
+				level:     "WARN",
+				message:   "Test warning message",
+				vmName:    "",
+			},
+			{
+				timestamp: now.Add(2 * time.Second),
+				level:     "ERROR",
+				message:   "Test error message",
+				vmName:    "TestVM2",
+			},
+		},
+		logLevelFilter: "all",
+		autoScrollLogs: true,
+		logCursor:      0,
+		termWidth:      100,
+	}
+
+	output := m.renderLogs()
+
+	// Verify output contains expected elements
+	if !strings.Contains(output, "LIVE LOGS VIEWER") {
+		t.Error("Expected logs view to contain 'LIVE LOGS VIEWER' header")
+	}
+
+	if !strings.Contains(output, "Test info message") {
+		t.Error("Expected logs view to contain info message")
+	}
+
+	if !strings.Contains(output, "Test warning message") {
+		t.Error("Expected logs view to contain warning message")
+	}
+
+	if !strings.Contains(output, "Test error message") {
+		t.Error("Expected logs view to contain error message")
+	}
+
+	if !strings.Contains(output, "L: Filter Level") {
+		t.Error("Expected logs view to contain filter instructions")
+	}
+
+	// Verify summary stats
+	if !strings.Contains(output, "Total") {
+		t.Error("Expected logs view to contain total count")
+	}
+
+	if !strings.Contains(output, "Info") {
+		t.Error("Expected logs view to contain info count")
+	}
+
+	if !strings.Contains(output, "Warn") {
+		t.Error("Expected logs view to contain warn count")
+	}
+
+	if !strings.Contains(output, "Error") {
+		t.Error("Expected logs view to contain error count")
+	}
+}
+
+// TestLogsNavigation tests cursor navigation in logs view
+func TestLogsNavigation(t *testing.T) {
+	m := tuiModel{
+		logEntries: []logEntry{
+			{level: "INFO", message: "Log 1", vmName: ""},
+			{level: "INFO", message: "Log 2", vmName: ""},
+			{level: "INFO", message: "Log 3", vmName: ""},
+		},
+		logCursor:      0,
+		logLevelFilter: "all",
+	}
+
+	// Test moving down
+	if m.logCursor < len(m.getFilteredLogs())-1 {
+		m.logCursor++
+	}
+
+	if m.logCursor != 1 {
+		t.Errorf("Expected cursor at 1, got %d", m.logCursor)
+	}
+
+	// Move down again
+	if m.logCursor < len(m.getFilteredLogs())-1 {
+		m.logCursor++
+	}
+
+	if m.logCursor != 2 {
+		t.Errorf("Expected cursor at 2, got %d", m.logCursor)
+	}
+
+	// Try to move past end (should stay at 2)
+	if m.logCursor < len(m.getFilteredLogs())-1 {
+		m.logCursor++
+	}
+
+	if m.logCursor != 2 {
+		t.Errorf("Expected cursor to stay at 2, got %d", m.logCursor)
+	}
+
+	// Move up
+	if m.logCursor > 0 {
+		m.logCursor--
+	}
+
+	if m.logCursor != 1 {
+		t.Errorf("Expected cursor at 1 after moving up, got %d", m.logCursor)
+	}
+}
+
+// TestLogsWithEmptyEntries tests logs view with no entries
+func TestLogsWithEmptyEntries(t *testing.T) {
+	m := tuiModel{
+		logEntries:     []logEntry{},
+		logLevelFilter: "all",
+		logCursor:      0,
+		termWidth:      100,
+	}
+
+	output := m.renderLogs()
+
+	// Should render without error
+	if !strings.Contains(output, "LIVE LOGS VIEWER") {
+		t.Error("Expected logs view header even with no entries")
+	}
+
+	// Should show "No log entries found" message
+	if !strings.Contains(output, "No log entries found") {
+		t.Error("Expected 'No log entries found' message in empty logs view")
+	}
+
+	filtered := m.getFilteredLogs()
+	if len(filtered) != 0 {
+		t.Errorf("Expected 0 filtered log entries, got %d", len(filtered))
+	}
+}
+
+// TestLogLevelFilterCycling tests cycling through log level filters
+func TestLogLevelFilterCycling(t *testing.T) {
+	m := tuiModel{
+		logLevelFilter: "all",
+	}
+
+	// Test level filter cycling: all -> info -> warn -> error -> debug -> all
+	if m.logLevelFilter != "all" {
+		t.Errorf("Expected initial filter 'all', got %s", m.logLevelFilter)
+	}
+
+	m.logLevelFilter = "info"
+	if m.logLevelFilter != "info" {
+		t.Errorf("Expected filter 'info', got %s", m.logLevelFilter)
+	}
+
+	m.logLevelFilter = "warn"
+	if m.logLevelFilter != "warn" {
+		t.Errorf("Expected filter 'warn', got %s", m.logLevelFilter)
+	}
+
+	m.logLevelFilter = "error"
+	if m.logLevelFilter != "error" {
+		t.Errorf("Expected filter 'error', got %s", m.logLevelFilter)
+	}
+
+	m.logLevelFilter = "debug"
+	if m.logLevelFilter != "debug" {
+		t.Errorf("Expected filter 'debug', got %s", m.logLevelFilter)
+	}
+
+	m.logLevelFilter = "all"
+	if m.logLevelFilter != "all" {
+		t.Errorf("Expected filter back to 'all', got %s", m.logLevelFilter)
+	}
+}
+
+// TestBuildFolderTree tests building folder tree from VM paths
+func TestBuildFolderTree(t *testing.T) {
+	m := tuiModel{
+		vms: []tuiVMItem{
+			{vm: vsphere.VMInfo{Name: "VM1", Path: "/Datacenter/vm/folder1/VM1"}},
+			{vm: vsphere.VMInfo{Name: "VM2", Path: "/Datacenter/vm/folder1/VM2"}},
+			{vm: vsphere.VMInfo{Name: "VM3", Path: "/Datacenter/vm/folder2/VM3"}},
+		},
+	}
+
+	m.buildFolderTree()
+
+	if m.folderTree == nil {
+		t.Error("Expected folder tree to be built")
+	}
+
+	if len(m.treeItems) == 0 {
+		t.Error("Expected tree items to be populated")
+	}
+}
+
+// TestToggleFolderAtCursor tests expand/collapse folder
+func TestToggleFolderAtCursor(t *testing.T) {
+	m := tuiModel{
+		vms: []tuiVMItem{
+			{vm: vsphere.VMInfo{Name: "VM1", Path: "/Datacenter/vm/folder1/VM1"}},
+		},
+	}
+
+	m.buildFolderTree()
+
+	if len(m.treeItems) == 0 {
+		t.Fatal("Expected tree items to be populated")
+	}
+
+	initialCount := len(m.treeItems)
+	m.toggleFolderAtCursor()
+	newCount := len(m.treeItems)
+
+	if folder, ok := m.treeItems[m.treeCursor].(*folderNode); ok {
+		if folder.expanded {
+			if newCount <= initialCount {
+				t.Error("Expected more items when folder is expanded")
+			}
+		} else {
+			if newCount >= initialCount {
+				t.Error("Expected fewer items when folder is collapsed")
+			}
+		}
+	}
+}
+
+// TestRenderTree tests rendering the tree view
+func TestRenderTree(t *testing.T) {
+	m := tuiModel{
+		vms: []tuiVMItem{
+			{vm: vsphere.VMInfo{Name: "TestVM1", Path: "/Datacenter/vm/folder1/TestVM1"}, selected: false},
+			{vm: vsphere.VMInfo{Name: "TestVM2", Path: "/Datacenter/vm/folder1/TestVM2"}, selected: true},
+		},
+		treeCursor: 0,
+		termWidth:  100,
+	}
+
+	m.buildFolderTree()
+	output := m.renderTree()
+
+	// Verify basic tree view elements
+	if !strings.Contains(output, "FOLDER TREE VIEW") {
+		t.Error("Expected tree view to contain 'FOLDER TREE VIEW' header")
+	}
+
+	// Should show folder structure even if folders aren't expanded
+	if !strings.Contains(output, "items") {
+		t.Error("Expected tree view to contain items count")
+	}
+
+	// Should show selected count
+	if !strings.Contains(output, "Selected:") {
+		t.Error("Expected tree view to contain selected count")
+	}
+}

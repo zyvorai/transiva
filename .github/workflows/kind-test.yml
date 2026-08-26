@@ -1,0 +1,266 @@
+name: kind Integration Test
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'deployments/kubernetes/**'
+      - 'deployments/docker/dockerfiles/**'
+      - 'cmd/hypervisord/**'
+      - '.github/workflows/kind-test.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'deployments/kubernetes/**'
+  workflow_dispatch:
+
+jobs:
+  kind-test:
+    name: Test on kind (Upstream Kubernetes)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: transiva-test
+          config: |
+            kind: Cluster
+            apiVersion: kind.x-k8s.io/v1alpha4
+            nodes:
+            - role: control-plane
+              extraPortMappings:
+              - containerPort: 80
+                hostPort: 80
+              - containerPort: 443
+                hostPort: 443
+            - role: worker
+            - role: worker
+
+      - name: Install MetalLB
+        run: |
+          kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.13.12/config/manifests/metallb-native.yaml
+
+          # Wait for MetalLB
+          kubectl wait --namespace metallb-system \
+            --for=condition=ready pod \
+            --selector=app=metallb \
+            --timeout=90s
+
+          # Configure IP pool
+          SUBNET=$(docker network inspect kind | jq -r '.[0].IPAM.Config[0].Subnet')
+          BASE_IP=$(echo "$SUBNET" | cut -d'.' -f1-3)
+
+          kubectl apply -f - <<EOF
+          apiVersion: metallb.io/v1beta1
+          kind: IPAddressPool
+          metadata:
+            name: default
+            namespace: metallb-system
+          spec:
+            addresses:
+            - ${BASE_IP}.200-${BASE_IP}.250
+          ---
+          apiVersion: metallb.io/v1beta1
+          kind: L2Advertisement
+          metadata:
+            name: default
+            namespace: metallb-system
+          spec:
+            ipAddressPools:
+            - default
+          EOF
+
+      - name: Deploy HyperSDK
+        run: |
+          kubectl create namespace transiva
+
+          kubectl create secret generic vsphere-credentials \
+            --from-literal=url="https://vcenter.example.com/sdk" \
+            --from-literal=username="test" \
+            --from-literal=password="test" \
+            --from-literal=insecure="1" \
+            -n transiva
+
+          kubectl apply -k deployments/kubernetes/overlays/development
+
+      - name: Wait for deployment
+        run: |
+          kubectl wait --for=condition=ready pod \
+            -l app=hypervisord \
+            -n transiva \
+            --timeout=300s
+
+      - name: Check deployment
+        run: |
+          echo "=== Nodes ==="
+          kubectl get nodes
+
+          echo ""
+          echo "=== Pods ==="
+          kubectl get pods -n transiva
+
+          echo ""
+          echo "=== Services ==="
+          kubectl get svc -n transiva
+
+          echo ""
+          echo "=== PVCs ==="
+          kubectl get pvc -n transiva
+
+      - name: Test API endpoints
+        run: |
+          # Get LoadBalancer IP
+          LB_IP=$(kubectl get svc hypervisord-external -n transiva \
+            -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+
+          echo "LoadBalancer IP: $LB_IP"
+
+          # Test health
+          curl -f http://$LB_IP/health | jq .
+
+          # Test status
+          curl -f http://$LB_IP/status | jq .
+
+          # Test capabilities
+          curl -f http://$LB_IP/capabilities | jq .
+
+      - name: Check logs on failure
+        if: failure()
+        run: |
+          echo "=== Pod Logs ==="
+          kubectl logs -n transiva -l app=hypervisord --tail=100
+
+          echo ""
+          echo "=== Events ==="
+          kubectl get events -n transiva --sort-by='.lastTimestamp'
+
+  kind-multi-node-test:
+    name: Test Multi-Node Cluster
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create multi-node kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: transiva-multi
+          config: |
+            kind: Cluster
+            apiVersion: kind.x-k8s.io/v1alpha4
+            nodes:
+            - role: control-plane
+            - role: worker
+            - role: worker
+            - role: worker
+
+      - name: Deploy and test
+        run: |
+          # Deploy MetalLB
+          kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.13.12/config/manifests/metallb-native.yaml
+          kubectl wait --namespace metallb-system \
+            --for=condition=ready pod \
+            --selector=app=metallb \
+            --timeout=90s
+
+          # Configure MetalLB
+          SUBNET=$(docker network inspect kind | jq -r '.[0].IPAM.Config[0].Subnet')
+          BASE_IP=$(echo "$SUBNET" | cut -d'.' -f1-3)
+          kubectl apply -f - <<EOF
+          apiVersion: metallb.io/v1beta1
+          kind: IPAddressPool
+          metadata:
+            name: default
+            namespace: metallb-system
+          spec:
+            addresses:
+            - ${BASE_IP}.200-${BASE_IP}.250
+          ---
+          apiVersion: metallb.io/v1beta1
+          kind: L2Advertisement
+          metadata:
+            name: default
+            namespace: metallb-system
+          EOF
+
+          # Deploy HyperSDK
+          kubectl create namespace transiva
+          kubectl create secret generic vsphere-credentials \
+            --from-literal=url="https://test" \
+            --from-literal=username="test" \
+            --from-literal=password="test" \
+            -n transiva
+          kubectl apply -k deployments/kubernetes/overlays/development
+
+          # Wait and verify
+          kubectl wait --for=condition=ready pod \
+            -l app=hypervisord \
+            -n transiva \
+            --timeout=300s
+
+          # Check pod distribution
+          echo "Pod distribution across nodes:"
+          kubectl get pods -n transiva -o wide
+
+  kind-storage-test:
+    name: Test Storage Provisioning
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: transiva-storage
+
+      - name: Deploy with storage
+        run: |
+          kubectl create namespace transiva
+          kubectl create secret generic vsphere-credentials \
+            --from-literal=url="https://test" \
+            --from-literal=username="test" \
+            --from-literal=password="test" \
+            -n transiva
+
+          # Deploy
+          kubectl apply -k deployments/kubernetes/overlays/development
+
+          # Wait for PVCs to bind
+          kubectl wait --for=jsonpath='{.status.phase}'=Bound \
+            pvc/hypervisord-data-pvc \
+            -n transiva \
+            --timeout=60s
+
+          kubectl wait --for=jsonpath='{.status.phase}'=Bound \
+            pvc/hypervisord-exports-pvc \
+            -n transiva \
+            --timeout=60s
+
+          # Show PVC details
+          kubectl get pvc -n transiva
+          kubectl describe pvc -n transiva
+
+          # Verify pod can mount volumes
+          kubectl wait --for=condition=ready pod \
+            -l app=hypervisord \
+            -n transiva \
+            --timeout=300s
+
+          # Test write to volume
+          kubectl exec -n transiva deployment/hypervisord -- \
+            sh -c 'echo "test" > /data/test.txt && cat /data/test.txt'
+
+          kubectl exec -n transiva deployment/hypervisord -- \
+            sh -c 'echo "test" > /exports/test.txt && cat /exports/test.txt'
+
+          echo "Storage test passed!"

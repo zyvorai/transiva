@@ -1,0 +1,32 @@
+apiVersion: v2
+name: transiva-operator
+description: A Helm chart for HyperSDK Kubernetes Operator - Declarative VM backup and restore
+type: application
+version: 2.1.0
+appVersion: "2.1.0"
+
+keywords:
+  - transiva
+  - backup
+  - vm
+  - kubevirt
+  - vsphere
+  - multi-cloud
+  - carbon-aware
+
+home: https://github.com/ssahani/transiva
+sources:
+  - https://github.com/ssahani/transiva
+
+maintainers:
+  - name: ZyvorAI Labs Private Limited
+    email: ssahani@zyvor.dev
+
+icon: https://raw.githubusercontent.com/ssahani/transiva/main/docs/assets/logo.png
+
+# Dependencies (none for now, but could include monitoring, storage, etc.)
+# dependencies: []
+
+annotations:
+  category: Backup
+  licenses: Apache-2.0

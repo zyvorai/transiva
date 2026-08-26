@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VM Console - HyperSDK Dashboard</title>
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+
+        .console-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .console-header {
+            background: #2d2d2d;
+            padding: 15px 20px;
+            border-bottom: 1px solid #444;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .console-header h1 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .console-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .console-controls button {
+            background: #0066cc;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .console-controls button:hover {
+            background: #0052a3;
+        }
+
+        .console-controls button.disconnect {
+            background: #cc0000;
+        }
+
+        .console-controls button.disconnect:hover {
+            background: #990000;
+        }
+
+        .console-info {
+            background: #252525;
+            padding: 10px 20px;
+            border-bottom: 1px solid #444;
+            font-size: 13px;
+            color: #999;
+        }
+
+        .console-main {
+            flex: 1;
+            display: flex;
+            background: #000;
+            overflow: hidden;
+        }
+
+        #console-terminal {
+            flex: 1;
+            padding: 10px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            line-height: 1.4;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            color: #0f0;
+        }
+
+        .console-input-container {
+            background: #1a1a1a;
+            border-top: 1px solid #444;
+            padding: 10px 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        #console-input {
+            flex: 1;
+            background: #2d2d2d;
+            border: 1px solid #444;
+            color: #e0e0e0;
+            padding: 8px 12px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            border-radius: 4px;
+        }
+
+        #console-input:focus {
+            outline: none;
+            border-color: #0066cc;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-connected {
+            background: #00cc00;
+        }
+
+        .status-disconnected {
+            background: #cc0000;
+        }
+
+        .status-connecting {
+            background: #ffaa00;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .console-tabs {
+            display: flex;
+            gap: 5px;
+            padding: 10px 20px 0 20px;
+            background: #2d2d2d;
+        }
+
+        .console-tab {
+            background: #1a1a1a;
+            color: #999;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px 4px 0 0;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .console-tab.active {
+            background: #000;
+            color: #0f0;
+        }
+
+        .console-tab:hover {
+            background: #252525;
+        }
+    </style>
+</head>
+<body>
+    <div class="console-container">
+        <div class="console-header">
+            <h1>🖥️ VM Console</h1>
+            <div class="console-controls">
+                <button id="connect-btn" onclick="connect()">Connect</button>
+                <button id="disconnect-btn" class="disconnect" onclick="disconnect()" style="display: none;">Disconnect</button>
+                <button onclick="clearConsole()">Clear</button>
+                <button onclick="window.close()">Close</button>
+            </div>
+        </div>
+
+        <div class="console-info">
+            <span class="status-indicator status-disconnected" id="status-indicator"></span>
+            <span id="status-text">Disconnected</span>
+            <span style="margin-left: 20px;">VM: <strong id="vm-name">-</strong></span>
+            <span style="margin-left: 20px;">Namespace: <strong id="vm-namespace">-</strong></span>
+            <span style="margin-left: 20px;">Type: <strong id="console-type">-</strong></span>
+        </div>
+
+        <div class="console-tabs">
+            <button class="console-tab active" onclick="switchType('serial')">Serial Console</button>
+            <button class="console-tab" onclick="switchType('vnc')">VNC Console</button>
+        </div>
+
+        <div class="console-main">
+            <div id="console-terminal"></div>
+        </div>
+
+        <div class="console-input-container">
+            <input type="text" id="console-input" placeholder="Type command and press Enter..." disabled>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let vmName = '';
+        let vmNamespace = 'default';
+        let consoleType = 'serial';
+
+        // Parse URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        vmName = urlParams.get('vm') || '';
+        vmNamespace = urlParams.get('namespace') || 'default';
+        consoleType = urlParams.get('type') || 'serial';
+
+        // Update UI
+        document.getElementById('vm-name').textContent = vmName || 'Not specified';
+        document.getElementById('vm-namespace').textContent = vmNamespace;
+        document.getElementById('console-type').textContent = consoleType;
+
+        function connect() {
+            if (!vmName) {
+                appendToConsole('Error: VM name not specified\n', 'error');
+                return;
+            }
+
+            updateStatus('connecting', 'Connecting...');
+
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws/console?namespace=${vmNamespace}&vm=${vmName}&type=${consoleType}`;
+
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = function() {
+                updateStatus('connected', 'Connected');
+                document.getElementById('console-input').disabled = false;
+                document.getElementById('connect-btn').style.display = 'none';
+                document.getElementById('disconnect-btn').style.display = 'inline-block';
+                appendToConsole(`Connected to ${consoleType} console for ${vmNamespace}/${vmName}\n`, 'success');
+            };
+
+            ws.onmessage = function(event) {
+                if (typeof event.data === 'string') {
+                    appendToConsole(event.data);
+                } else if (event.data instanceof Blob) {
+                    event.data.text().then(text => appendToConsole(text));
+                } else {
+                    appendToConsole(event.data);
+                }
+            };
+
+            ws.onerror = function(error) {
+                appendToConsole(`WebSocket error: ${error}\n`, 'error');
+                updateStatus('disconnected', 'Connection error');
+            };
+
+            ws.onclose = function() {
+                updateStatus('disconnected', 'Disconnected');
+                document.getElementById('console-input').disabled = true;
+                document.getElementById('connect-btn').style.display = 'inline-block';
+                document.getElementById('disconnect-btn').style.display = 'none';
+                appendToConsole('\nConnection closed\n', 'info');
+            };
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+
+        function switchType(type) {
+            consoleType = type;
+            document.getElementById('console-type').textContent = type;
+
+            // Update active tab
+            document.querySelectorAll('.console-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Reconnect if already connected
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                disconnect();
+                setTimeout(connect, 500);
+            }
+        }
+
+        function updateStatus(status, text) {
+            const indicator = document.getElementById('status-indicator');
+            const statusText = document.getElementById('status-text');
+
+            indicator.className = 'status-indicator status-' + status;
+            statusText.textContent = text;
+        }
+
+        function appendToConsole(text, type) {
+            const terminal = document.getElementById('console-terminal');
+            const span = document.createElement('span');
+
+            if (type === 'error') {
+                span.style.color = '#ff0000';
+            } else if (type === 'success') {
+                span.style.color = '#00ff00';
+            } else if (type === 'info') {
+                span.style.color = '#00aaff';
+            }
+
+            span.textContent = text;
+            terminal.appendChild(span);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        function clearConsole() {
+            document.getElementById('console-terminal').innerHTML = '';
+        }
+
+        // Handle input
+        document.getElementById('console-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && ws && ws.readyState === WebSocket.OPEN) {
+                const input = this.value;
+                ws.send(input + '\n');
+                this.value = '';
+            }
+        });
+
+        // Auto-connect if VM name is provided
+        if (vmName) {
+            setTimeout(connect, 500);
+        }
+    </script>
+</body>
+</html>

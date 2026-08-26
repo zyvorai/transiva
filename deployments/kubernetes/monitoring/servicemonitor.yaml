@@ -1,0 +1,53 @@
+# ServiceMonitor for Prometheus Operator
+# Configures Prometheus to scrape metrics from hypervisord
+
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: hypervisord
+  namespace: transiva
+  labels:
+    app: hypervisord
+    app.kubernetes.io/name: hypervisord
+    app.kubernetes.io/component: monitoring
+    app.kubernetes.io/part-of: transiva
+    # Label required by Prometheus Operator to discover this ServiceMonitor
+    prometheus: kube-prometheus
+spec:
+  # Select the service to monitor
+  selector:
+    matchLabels:
+      app: hypervisord
+      app.kubernetes.io/name: hypervisord
+
+  # Namespace where the service resides
+  namespaceSelector:
+    matchNames:
+    - transiva
+
+  # Endpoints to scrape
+  endpoints:
+  # Scrape metrics endpoint
+  - port: metrics
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 10s
+    scheme: http
+    # Relabel configurations
+    relabelings:
+    - sourceLabels: [__meta_kubernetes_pod_name]
+      targetLabel: pod
+    - sourceLabels: [__meta_kubernetes_pod_node_name]
+      targetLabel: node
+    - sourceLabels: [__meta_kubernetes_namespace]
+      targetLabel: namespace
+    metricRelabelings:
+    # Drop high-cardinality metrics if needed
+    # - sourceLabels: [__name__]
+    #   regex: 'go_.*'
+    #   action: drop
+
+  # Optional: Scrape service labels
+  targetLabels:
+  - app
+  - environment

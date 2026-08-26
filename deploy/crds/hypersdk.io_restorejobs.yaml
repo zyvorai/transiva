@@ -1,0 +1,246 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: restorejobs.transiva.zyvor.ai
+spec:
+  group: transiva.zyvor.ai
+  names:
+    kind: RestoreJob
+    listKind: RestoreJobList
+    plural: restorejobs
+    singular: restorejob
+    shortNames:
+      - rj
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required:
+                - source
+                - destination
+              properties:
+                source:
+                  type: object
+                  required:
+                    - type
+                  properties:
+                    type:
+                      type: string
+                      enum:
+                        - s3
+                        - azure-blob
+                        - gcs
+                        - local
+                        - nfs
+                        - backup-ref
+                    bucket:
+                      type: string
+                      description: S3/GCS bucket or Azure container name
+                    path:
+                      type: string
+                      description: Path to backup file/directory
+                    region:
+                      type: string
+                      description: Cloud region
+                    endpoint:
+                      type: string
+                      description: Custom endpoint URL
+                    backupJobRef:
+                      type: object
+                      description: Reference to BackupJob resource
+                      properties:
+                        name:
+                          type: string
+                        namespace:
+                          type: string
+                    credentials:
+                      type: object
+                      properties:
+                        secretRef:
+                          type: object
+                          required:
+                            - name
+                          properties:
+                            name:
+                              type: string
+                            namespace:
+                              type: string
+                destination:
+                  type: object
+                  required:
+                    - provider
+                  properties:
+                    provider:
+                      type: string
+                      enum:
+                        - kubevirt
+                        - vsphere
+                        - aws
+                        - azure
+                        - gcp
+                        - hyperv
+                        - proxmox
+                    namespace:
+                      type: string
+                      description: Kubernetes namespace for KubeVirt VMs
+                    vmName:
+                      type: string
+                      description: Name for restored VM
+                    datacenter:
+                      type: string
+                      description: Datacenter for vSphere
+                    resourcePool:
+                      type: string
+                      description: Resource pool for vSphere
+                    datastore:
+                      type: string
+                      description: Datastore for vSphere
+                    network:
+                      type: string
+                      description: Network to attach VM to
+                    folder:
+                      type: string
+                      description: Folder path for VM
+                    storageClass:
+                      type: string
+                      description: Storage class for KubeVirt PVCs
+                options:
+                  type: object
+                  properties:
+                    powerOnAfterRestore:
+                      type: boolean
+                      description: Power on VM after successful restore
+                      default: false
+                    overwrite:
+                      type: boolean
+                      description: Overwrite existing VM with same name
+                      default: false
+                    renameVM:
+                      type: string
+                      description: Rename VM during restore
+                    convertFormat:
+                      type: string
+                      description: Convert to different format during restore
+                      enum:
+                        - ovf
+                        - ova
+                        - raw
+                        - qcow2
+                        - vmdk
+                        - vhd
+                        - vhdx
+                    customization:
+                      type: object
+                      description: VM customization options
+                      properties:
+                        memory:
+                          type: string
+                          description: Override memory (e.g., "8Gi")
+                        cpu:
+                          type: integer
+                          description: Override CPU count
+                        networks:
+                          type: array
+                          description: Network configurations
+                          items:
+                            type: object
+                            properties:
+                              name:
+                                type: string
+                              type:
+                                type: string
+                metadata:
+                  type: object
+                  additionalProperties:
+                    type: string
+                  description: Custom metadata for the restore
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                  enum:
+                    - Pending
+                    - Running
+                    - Completed
+                    - Failed
+                    - Cancelled
+                startTime:
+                  type: string
+                  format: date-time
+                completionTime:
+                  type: string
+                  format: date-time
+                progress:
+                  type: object
+                  properties:
+                    percentage:
+                      type: number
+                      format: float
+                      minimum: 0
+                      maximum: 100
+                    bytesTransferred:
+                      type: integer
+                      format: int64
+                    totalBytes:
+                      type: integer
+                      format: int64
+                    currentPhase:
+                      type: string
+                    estimatedCompletion:
+                      type: string
+                      format: date-time
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                        enum:
+                          - "True"
+                          - "False"
+                          - Unknown
+                      lastTransitionTime:
+                        type: string
+                        format: date-time
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                restoredVMName:
+                  type: string
+                  description: Name of the restored VM
+                restoredVMID:
+                  type: string
+                  description: ID of the restored VM
+                error:
+                  type: string
+                  description: Error message if restore failed
+      additionalPrinterColumns:
+        - name: Phase
+          type: string
+          jsonPath: .status.phase
+        - name: Progress
+          type: string
+          jsonPath: .status.progress.percentage
+        - name: VM Name
+          type: string
+          jsonPath: .status.restoredVMName
+        - name: Provider
+          type: string
+          jsonPath: .spec.destination.provider
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      subresources:
+        status: {}

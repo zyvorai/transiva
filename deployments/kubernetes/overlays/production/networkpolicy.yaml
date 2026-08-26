@@ -1,0 +1,108 @@
+# Network Policies for production security
+# Restricts network traffic to/from hypervisord pods
+
+---
+# Default deny all ingress traffic
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: hypervisord-deny-all-ingress
+  namespace: transiva
+spec:
+  podSelector:
+    matchLabels:
+      app: hypervisord
+  policyTypes:
+  - Ingress
+
+---
+# Allow ingress from Ingress controller
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: hypervisord-allow-ingress-controller
+  namespace: transiva
+spec:
+  podSelector:
+    matchLabels:
+      app: hypervisord
+  policyTypes:
+  - Ingress
+  ingress:
+  # Allow from Ingress controller namespace
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 8080
+
+---
+# Allow ingress from Prometheus for metrics scraping
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: hypervisord-allow-prometheus
+  namespace: transiva
+spec:
+  podSelector:
+    matchLabels:
+      app: hypervisord
+  policyTypes:
+  - Ingress
+  ingress:
+  # Allow from Prometheus namespace
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    - podSelector:
+        matchLabels:
+          app: prometheus
+    ports:
+    - protocol: TCP
+      port: 8081
+
+---
+# Allow egress to external services
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: hypervisord-allow-external-egress
+  namespace: transiva
+spec:
+  podSelector:
+    matchLabels:
+      app: hypervisord
+  policyTypes:
+  - Egress
+  egress:
+  # Allow DNS resolution
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+  # Allow HTTPS to external cloud providers
+  - to:
+    - podSelector: {}
+    ports:
+    - protocol: TCP
+      port: 443
+  # Allow HTTP (for some APIs)
+  - to:
+    - podSelector: {}
+    ports:
+    - protocol: TCP
+      port: 80
+  # Allow Redis if deployed in same namespace
+  - to:
+    - podSelector:
+        matchLabels:
+          app: redis
+    ports:
+    - protocol: TCP
+      port: 6379

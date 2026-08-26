@@ -1,0 +1,206 @@
+suite: test deployment
+templates:
+  - deployment.yaml
+tests:
+  - it: should create a deployment with default values
+    asserts:
+      - isKind:
+          of: Deployment
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-transiva
+      - equal:
+          path: spec.replicas
+          value: 1
+
+  - it: should set replicas from values
+    set:
+      replicaCount: 3
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 3
+
+  - it: should use correct image with tag
+    set:
+      image:
+        repository: ghcr.io/ssahani/transiva
+        tag: "1.0.0"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: ghcr.io/ssahani/transiva:1.0.0
+
+  - it: should use appVersion as tag when not specified
+    chart:
+      appVersion: 0.2.0
+    set:
+      image:
+        tag: ""
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: ":0.2.0$"
+
+  - it: should set resource requests and limits
+    set:
+      resources:
+        requests:
+          memory: "512Mi"
+          cpu: "250m"
+        limits:
+          memory: "2Gi"
+          cpu: "1000m"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.memory
+          value: "512Mi"
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.cpu
+          value: "250m"
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.memory
+          value: "2Gi"
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.cpu
+          value: "1000m"
+
+  - it: should configure security context as non-root
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext.runAsNonRoot
+          value: true
+      - equal:
+          path: spec.template.spec.securityContext.runAsUser
+          value: 1000
+      - equal:
+          path: spec.template.spec.securityContext.fsGroup
+          value: 1000
+
+  - it: should mount data and exports volumes
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: data
+            persistentVolumeClaim:
+              claimName: RELEASE-NAME-transiva-data
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: exports
+            persistentVolumeClaim:
+              claimName: RELEASE-NAME-transiva-exports
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: data
+            mountPath: /data
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: exports
+            mountPath: /exports
+
+  - it: should configure liveness and readiness probes
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet.path
+          value: /health
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet.port
+          value: http
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet.path
+          value: /health
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet.port
+          value: http
+
+  - it: should add prometheus annotations when enabled
+    set:
+      monitoring.serviceMonitor.enabled: true
+    asserts:
+      - equal:
+          path: spec.template.metadata.annotations["prometheus.io/scrape"]
+          value: "true"
+      - equal:
+          path: spec.template.metadata.annotations["prometheus.io/port"]
+          value: "8081"
+      - equal:
+          path: spec.template.metadata.annotations["prometheus.io/path"]
+          value: "/metrics"
+
+  - it: should set node selector when specified
+    set:
+      nodeSelector:
+        disktype: ssd
+    asserts:
+      - equal:
+          path: spec.template.spec.nodeSelector.disktype
+          value: ssd
+
+  - it: should set tolerations when specified
+    set:
+      tolerations:
+        - key: "dedicated"
+          operator: "Equal"
+          value: "transiva"
+          effect: "NoSchedule"
+    asserts:
+      - contains:
+          path: spec.template.spec.tolerations
+          content:
+            key: "dedicated"
+            operator: "Equal"
+            value: "transiva"
+            effect: "NoSchedule"
+
+  - it: should set affinity when specified
+    set:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: transiva
+                topologyKey: kubernetes.io/hostname
+    asserts:
+      - isNotNull:
+          path: spec.template.spec.affinity.podAntiAffinity
+
+  - it: should add custom environment variables
+    set:
+      env:
+        - name: CUSTOM_VAR
+          value: "custom-value"
+        - name: LOG_LEVEL
+          value: "debug"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CUSTOM_VAR
+            value: "custom-value"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: LOG_LEVEL
+            value: "debug"
+
+  - it: should reference secrets for credentials
+    set:
+      vsphere:
+        enabled: true
+        secretName: vsphere-credentials
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: GOVC_URL
+            valueFrom:
+              secretKeyRef:
+                name: vsphere-credentials
+                key: url

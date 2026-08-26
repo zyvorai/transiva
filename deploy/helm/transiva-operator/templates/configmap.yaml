@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "transiva-operator.fullname" . }}-config
+  namespace: {{ include "transiva-operator.namespace" . }}
+  labels:
+    {{- include "transiva-operator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: operator
+data:
+  # Carbon-aware defaults
+  carbon-aware.yaml: |
+    enabled: {{ .Values.carbonAware.defaultEnabled }}
+    zone: {{ .Values.carbonAware.defaultZone | quote }}
+    maxIntensity: {{ .Values.carbonAware.defaultMaxIntensity }}
+    maxDelayHours: {{ .Values.carbonAware.defaultMaxDelayHours }}
+
+  # Backup defaults
+  backup-defaults.yaml: |
+    format: {{ .Values.backupDefaults.format | quote }}
+    compression: {{ .Values.backupDefaults.compression }}
+    compressionLevel: {{ .Values.backupDefaults.compressionLevel }}
+    retention:
+      keepDaily: {{ .Values.backupDefaults.retention.keepDaily }}
+      keepWeekly: {{ .Values.backupDefaults.retention.keepWeekly }}
+      keepMonthly: {{ .Values.backupDefaults.retention.keepMonthly }}
+      keepYearly: {{ .Values.backupDefaults.retention.keepYearly }}
+
+  # Schedule defaults
+  schedule-defaults.yaml: |
+    concurrencyPolicy: {{ .Values.scheduleDefaults.concurrencyPolicy | quote }}
+    successfulJobsHistoryLimit: {{ .Values.scheduleDefaults.successfulJobsHistoryLimit }}
+    failedJobsHistoryLimit: {{ .Values.scheduleDefaults.failedJobsHistoryLimit }}
+    timezone: {{ .Values.scheduleDefaults.timezone | quote }}
+
+  # Provider configuration
+  providers.yaml: |
+    vsphere:
+      enabled: {{ .Values.providers.vsphere.enabled }}
+    kubevirt:
+      enabled: {{ .Values.providers.kubevirt.enabled }}
+    aws:
+      enabled: {{ .Values.providers.aws.enabled }}
+    azure:
+      enabled: {{ .Values.providers.azure.enabled }}
+    gcp:
+      enabled: {{ .Values.providers.gcp.enabled }}
+
+  # Feature gates
+  feature-gates.yaml: |
+    incrementalBackups: {{ .Values.featureGates.incrementalBackups }}
+    vmCloning: {{ .Values.featureGates.vmCloning }}
+    liveMigration: {{ .Values.featureGates.liveMigration }}
+    webhookValidation: {{ .Values.featureGates.webhookValidation }}

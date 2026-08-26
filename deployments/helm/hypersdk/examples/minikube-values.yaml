@@ -1,0 +1,37 @@
+# Minikube/Local Development Values
+
+replicaCount: 1
+
+# Use default storage class
+persistence:
+  data:
+    size: 5Gi
+  exports:
+    size: 20Gi
+
+# NodePort service for local access
+externalService:
+  enabled: true
+  type: NodePort
+
+# Minimal resources
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "100m"
+  limits:
+    memory: "1Gi"
+    cpu: "500m"
+
+# Debug logging
+config:
+  logLevel: debug
+
+# vSphere credentials
+credentials:
+  vsphere:
+    enabled: true
+    url: "https://vcenter.example.com/sdk"
+    username: "admin"
+    password: "change-me"
+    insecure: "1"

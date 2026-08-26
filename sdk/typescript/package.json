@@ -1,0 +1,66 @@
+{
+  "name": "@transiva/client",
+  "version": "2.0.0",
+  "description": "TypeScript client library for HyperSDK VM migration platform with carbon-aware scheduling",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build",
+    "test": "jest",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write 'src/**/*.ts'"
+  },
+  "keywords": [
+    "transiva",
+    "vm",
+    "migration",
+    "export",
+    "vmware",
+    "vsphere",
+    "aws",
+    "azure",
+    "gcp",
+    "hypervisor",
+    "kvm",
+    "libvirt",
+    "hyper2kvm",
+    "carbon-aware",
+    "sustainability",
+    "green-computing",
+    "carbon-emissions"
+  ],
+  "author": "HyperSDK Contributors",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ssahani/transiva.git",
+    "directory": "sdk/typescript"
+  },
+  "bugs": {
+    "url": "https://github.com/ssahani/transiva/issues"
+  },
+  "homepage": "https://github.com/ssahani/transiva#readme",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "jest": "^29.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "cross-fetch": "^4.0.0"
+  }
+}

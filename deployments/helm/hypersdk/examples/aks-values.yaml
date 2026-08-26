@@ -1,0 +1,66 @@
+# AKS Production Values
+# For Azure Kubernetes Service deployment
+
+# Use Azure Pod Identity
+serviceAccount:
+  create: true
+  labels:
+    aadpodidbinding: transiva-identity
+
+# Production replicas
+replicaCount: 3
+
+# Use Azure Disk
+persistence:
+  data:
+    storageClass: "managed-premium"  # Premium SSD
+    size: 20Gi
+  exports:
+    storageClass: "managed-premium"
+    size: 1Ti
+
+# Azure LoadBalancer
+externalService:
+  enabled: true
+  type: LoadBalancer
+  annotations:
+    service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+
+# Production resources
+resources:
+  requests:
+    memory: "1Gi"
+    cpu: "500m"
+  limits:
+    memory: "4Gi"
+    cpu: "2000m"
+
+# Enable autoscaling
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+
+# Enable monitoring
+monitoring:
+  serviceMonitor:
+    enabled: true
+
+# Enable NetworkPolicy
+networkPolicy:
+  enabled: true
+
+# Spread across zones
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: ScheduleAnyway
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: transiva
+
+# vSphere credentials
+credentials:
+  vsphere:
+    enabled: true
+    existingSecret: "vsphere-credentials"

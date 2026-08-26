@@ -1,0 +1,79 @@
+global:
+  resolve_timeout: 5m
+  # SMTP configuration for email alerts
+  # smtp_smarthost: 'smtp.gmail.com:587'
+  # smtp_from: 'alerts@transiva.example.com'
+  # smtp_auth_username: 'your-email@gmail.com'
+  # smtp_auth_password: 'your-app-password'
+
+# Templates for alert messages
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# Default route
+route:
+  receiver: 'default'
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
+  routes:
+    # Critical alerts go to multiple channels
+    - receiver: 'critical'
+      match:
+        severity: critical
+      continue: true
+
+    # Warning alerts
+    - receiver: 'warning'
+      match:
+        severity: warning
+
+# Alert receivers/notification channels
+receivers:
+  # Default receiver (logs only)
+  - name: 'default'
+    webhook_configs:
+      - url: 'http://localhost:9093/api/v1/alerts'
+        send_resolved: true
+
+  # Critical alerts receiver
+  - name: 'critical'
+    # Email notifications
+    # email_configs:
+    #   - to: 'oncall@example.com'
+    #     headers:
+    #       Subject: '[CRITICAL] HyperSDK Alert: {{ .GroupLabels.alertname }}'
+    #     html: '{{ template "email.default.html" . }}'
+
+    # Slack notifications
+    # slack_configs:
+    #   - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+    #     channel: '#transiva-alerts'
+    #     title: '[CRITICAL] {{ .GroupLabels.alertname }}'
+    #     text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+    #     send_resolved: true
+
+    # PagerDuty integration
+    # pagerduty_configs:
+    #   - service_key: 'YOUR_PAGERDUTY_SERVICE_KEY'
+    #     description: '{{ .GroupLabels.alertname }}: {{ .CommonAnnotations.summary }}'
+
+  # Warning alerts receiver
+  - name: 'warning'
+    # Slack notifications (different channel)
+    # slack_configs:
+    #   - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+    #     channel: '#transiva-warnings'
+    #     title: '[WARNING] {{ .GroupLabels.alertname }}'
+    #     text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+    #     send_resolved: true
+
+# Inhibition rules - suppress certain alerts when others are firing
+inhibit_rules:
+  # Suppress warning if critical is firing for same alert
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'cluster', 'service']

@@ -1,0 +1,66 @@
+# Helm chart linting configuration
+# https://github.com/helm/chart-testing/blob/main/doc/ct_lint.md
+
+rules:
+  # Require all charts to have a CHANGELOG
+  changelog-required: false
+
+  # Require all charts to have a README
+  readme-required: true
+
+  # Require Chart.yaml to have maintainers
+  maintainers-required: false
+
+  # Require Chart.yaml to have a description
+  description-required: true
+
+  # Require Chart.yaml to have a home URL
+  home-required: false
+
+  # Require Chart.yaml to have sources
+  sources-required: false
+
+  # Require Chart.yaml to have keywords
+  keywords-required: false
+
+  # Validate chart version follows SemVer
+  semver-required: true
+
+  # Validate apiVersion is v2
+  api-version-required: true
+
+  # Validate Chart.yaml has appVersion
+  app-version-required: true
+
+  # Validate dependencies are locked
+  dependencies-locked: false
+
+# YAML linting rules
+yaml-lint-conf:
+  # Maximum line length
+  line-length:
+    max: 120
+    level: warning
+
+  # Indentation rules
+  indentation:
+    spaces: 2
+    indent-sequences: true
+
+  # Trailing spaces
+  trailing-spaces: enable
+
+  # Document start (---) required
+  document-start: disable
+
+  # Comments
+  comments:
+    min-spaces-from-content: 1
+
+  # Empty lines
+  empty-lines:
+    max: 2
+
+  # Truthy values (yes/no vs true/false)
+  truthy:
+    level: warning

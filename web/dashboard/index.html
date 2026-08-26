@@ -1,0 +1,3665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HyperSDK Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f0f2f7;
+            color: #000;
+            line-height: 1.5;
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Login Screen — premium split layout */
+        @keyframes login-gradient-shift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        @keyframes login-float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-14px); }
+        }
+        @keyframes login-shimmer {
+            0% { transform: translateX(-100%) skewX(-12deg); }
+            100% { transform: translateX(220%) skewX(-12deg); }
+        }
+
+        .login-screen {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background: #09090b;
+        }
+        @media (min-width: 960px) {
+            .login-screen { flex-direction: row; }
+        }
+
+        .login-hero {
+            display: none;
+            position: relative;
+            overflow: hidden;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 3rem;
+            background: linear-gradient(145deg, #09090b, #18181b, #1c1917, #18181b);
+            background-size: 400% 400%;
+            animation: login-gradient-shift 16s ease infinite;
+        }
+        @media (min-width: 960px) {
+            .login-hero { display: flex; flex: 1 1 54%; }
+        }
+        .login-hero::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(240, 88, 58, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(240, 88, 58, 0.05) 1px, transparent 1px);
+            background-size: 44px 44px;
+        }
+        .login-hero h2 {
+            position: relative;
+            z-index: 1;
+            font-size: 2.25rem;
+            font-weight: 800;
+            color: #fafafa;
+            line-height: 1.15;
+            margin: 0 0 0.75rem;
+        }
+        .login-hero h2 span { color: #f0583a; }
+        .login-hero p.lead {
+            position: relative;
+            z-index: 1;
+            color: #a1a1aa;
+            font-size: 1.05rem;
+            max-width: 26rem;
+            line-height: 1.55;
+            margin: 0;
+        }
+        .login-hero-brand {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+        }
+        .login-hero-logo {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 0.75rem;
+            background: linear-gradient(145deg, #f0583a, #c2410c);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.35rem;
+            box-shadow: 0 8px 28px rgba(240, 88, 58, 0.3);
+        }
+        .login-hero-foot {
+            position: relative;
+            z-index: 1;
+            color: #52525b;
+            font-size: 0.8125rem;
+        }
+
+        .login-panel-wrap {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1.5rem;
+            background: radial-gradient(ellipse 70% 45% at 50% -15%, rgba(240, 88, 58, 0.08), transparent),
+                linear-gradient(180deg, #09090b, #0c0a09);
+        }
+
+        .login-card {
+            background: rgba(24, 24, 27, 0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(82, 82, 91, 0.5);
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 0 40px rgba(240, 88, 58, 0.06);
+            max-width: 420px;
+            width: 100%;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 1.75rem;
+        }
+
+        .login-header h1 {
+            font-size: 1.5rem;
+            color: #fafafa;
+            margin-bottom: 0.35rem;
+            font-weight: 700;
+        }
+
+        .login-header p {
+            color: #a1a1aa;
+            font-size: 0.875rem;
+        }
+
+        .login-card .form-group label {
+            color: #d4d4d8;
+            font-size: 0.8125rem;
+            font-weight: 600;
+        }
+        .login-card .form-group input {
+            background: rgba(39, 39, 42, 0.65);
+            border: 1px solid rgba(82, 82, 91, 0.65);
+            color: #fafafa;
+            border-radius: 0.75rem;
+            padding: 0.7rem 0.875rem;
+        }
+        .login-card .form-group input:focus {
+            outline: none;
+            border-color: rgba(240, 88, 58, 0.55);
+            box-shadow: 0 0 0 3px rgba(240, 88, 58, 0.12);
+        }
+        .login-card .btn-primary {
+            background: linear-gradient(135deg, #f0583a, #ea580c, #c2410c) !important;
+            border: none !important;
+            border-radius: 0.75rem !important;
+            padding: 0.8rem !important;
+            font-weight: 600 !important;
+            box-shadow: 0 4px 24px rgba(240, 88, 58, 0.3) !important;
+            position: relative;
+            overflow: hidden;
+        }
+        .login-card .alert-info {
+            background: rgba(240, 88, 58, 0.08);
+            border: 1px solid rgba(240, 88, 58, 0.2);
+            color: #fdba74;
+            border-radius: 0.75rem;
+            font-size: 0.8125rem;
+        }
+        .login-pam-foot {
+            margin-top: 1.25rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(63, 63, 70, 0.6);
+            text-align: center;
+            font-size: 0.75rem;
+            color: #71717a;
+        }
+
+        /* Dashboard Layout with Sidebar */
+        .dashboard-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Fixed Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 250px;
+            right: 0;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            z-index: 999;
+            height: 70px;
+        }
+
+        .header-content {
+            max-width: 100%;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 100%;
+        }
+
+        .header-left h1 {
+            font-size: 1.5rem;
+            color: #000;
+            font-weight: 600;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .user-info {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .logout-link {
+            color: #f0583a;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .logout-link:hover {
+            color: #d94d32;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 250px;
+            background: #1a1d29;
+            color: white;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .sidebar-logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #f0583a;
+            text-decoration: none;
+            display: block;
+        }
+
+        .sidebar-logo-subtitle {
+            font-size: 0.75rem;
+            color: #999;
+            margin-top: 0.25rem;
+        }
+
+        .sidebar-nav {
+            padding: 1rem 0;
+        }
+
+        .nav-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .nav-section-title {
+            padding: 0.5rem 1.5rem;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #999;
+            font-weight: 600;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            color: #ccc;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-item:hover {
+            background: rgba(255,255,255,0.05);
+            color: white;
+        }
+
+        .nav-item.active {
+            background: rgba(240, 88, 58, 0.1);
+            color: #f0583a;
+            border-left-color: #f0583a;
+        }
+
+        .nav-item-icon {
+            margin-right: 0.75rem;
+            font-size: 1.2rem;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 250px;
+            margin-top: 70px;
+            padding: 2rem;
+            width: calc(100% - 250px);
+            min-height: calc(100vh - 70px);
+        }
+
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #000;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border: 2px solid #e0e4ea;
+            border-radius: 6px;
+            font-size: 1rem;
+            background: #fafbfc;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #f0583a;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(240, 88, 58, 0.1);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .password-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .password-toggle input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+
+        .password-toggle label {
+            margin: 0;
+            font-weight: normal;
+            color: #666;
+            cursor: pointer;
+        }
+
+        /* Card */
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            color: #f0583a;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-block;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-primary {
+            background: #f0583a;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #d94d32;
+            box-shadow: 0 4px 12px rgba(240, 88, 58, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #f0583a;
+            border: 2px solid #f0583a;
+        }
+
+        .btn-secondary:hover {
+            background: #f0583a;
+            color: white;
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        /* Alert Messages */
+        .alert {
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid;
+        }
+
+        .alert-error {
+            background: #fef2f2;
+            border-color: #dc2626;
+            color: #991b1b;
+        }
+
+        .alert-success {
+            background: #f0fdf4;
+            border-color: #16a34a;
+            color: #166534;
+        }
+
+        .alert-info {
+            background: #fff5f2;
+            border-color: #f0583a;
+            color: #333;
+        }
+
+        .alert-warning {
+            background: #fffbeb;
+            border-color: #f59e0b;
+            color: #92400e;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border: 2px solid #f0583a;
+            padding: 1.5rem;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transition: box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .stat-card:hover {
+            box-shadow: 0 4px 16px rgba(240, 88, 58, 0.15);
+        }
+
+        .stat-card h3 {
+            font-size: 2.5rem;
+            color: #f0583a;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .stat-card p {
+            color: #666;
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Table */
+        .table-container {
+            overflow-x: auto;
+            margin-top: 1.5rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e0e4ea;
+        }
+
+        th {
+            background: #f8f9fb;
+            font-weight: 600;
+            color: #000;
+            text-transform: uppercase;
+            font-size: 0.875rem;
+            letter-spacing: 0.5px;
+        }
+
+        tbody tr {
+            transition: background 0.2s;
+        }
+
+        tbody tr:hover {
+            background: #fafbfc;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.375rem 0.875rem;
+            border-radius: 16px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        /* Progress Bar */
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e4ea;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: #f0583a;
+            transition: width 0.3s ease;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            color: #f0583a;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .modal-close:hover {
+            color: #000;
+        }
+
+        /* Chart Container */
+        .chart-container {
+            height: 300px;
+            background: #f8f9fb;
+            border-radius: 6px;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+        }
+
+        /* List Group */
+        .list-group {
+            list-style: none;
+        }
+
+        .list-group-item {
+            padding: 1rem;
+            border-bottom: 1px solid #e0e4ea;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .list-group-item:last-child {
+            border-bottom: none;
+        }
+
+        /* Template Card */
+        .template-card {
+            border: 2px solid #e0e4ea;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: all 0.25s;
+        }
+
+        .template-card:hover {
+            border-color: #f0583a;
+            box-shadow: 0 2px 8px rgba(240, 88, 58, 0.1);
+        }
+
+        .template-card.selected {
+            border-color: #f0583a;
+            background: rgba(240, 88, 58, 0.05);
+        }
+
+        /* Hidden */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+
+        .spinner {
+            border: 3px solid #f0f2f7;
+            border-top: 3px solid #f0583a;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 0.6s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Code Block */
+        .code-block {
+            background: #1a1d29;
+            color: #e0e4ea;
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            border-bottom: 2px solid #e0e4ea;
+            margin-bottom: 1.5rem;
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            background: none;
+            cursor: pointer;
+            color: #666;
+            font-weight: 600;
+            border-bottom: 3px solid transparent;
+            transition: all 0.25s;
+        }
+
+        .tab:hover {
+            color: #f0583a;
+        }
+
+        .tab.active {
+            color: #f0583a;
+            border-bottom-color: #f0583a;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-250px);
+            }
+
+            .header {
+                left: 0;
+            }
+
+            .main-content {
+                margin-left: 0;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="login-screen" class="login-screen">
+        <aside class="login-hero">
+            <div>
+                <div class="login-hero-brand">
+                    <div class="login-hero-logo">🚀</div>
+                    <span style="font-size: 1.75rem; font-weight: 700; color: #fafafa;">HyperSDK</span>
+                </div>
+                <h2>Multi-cloud<br><span>VM export</span></h2>
+                <p class="lead">Export from vSphere, ship artifacts, and run the hyper2kvm pipeline from one control plane.</p>
+            </div>
+            <p class="login-hero-foot">transiva.cloud · hyper2kvm pipeline · PAM auth</p>
+        </aside>
+        <div class="login-panel-wrap">
+            <div class="login-card">
+                <div class="login-header">
+                    <h1>Welcome back</h1>
+                    <p>Sign in to your export dashboard</p>
+                </div>
+
+                <div id="login-error" class="alert alert-error hidden"></div>
+
+                <div class="alert alert-info">
+                    <strong>PAM authentication</strong> — uses your system credentials securely.
+                </div>
+
+                <form id="login-form">
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" id="username" required placeholder="System username" autocomplete="username">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="password" required placeholder="Password" autocomplete="current-password">
+                        <div class="password-toggle">
+                            <input type="checkbox" id="show-login-password" onchange="togglePassword('password', this.checked)">
+                            <label for="show-login-password">Show password</label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="login-btn" style="width: 100%; margin-top: 1rem;">
+                        Sign in
+                    </button>
+                    <p class="login-pam-foot">🔐 Secured with system PAM authentication</p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard with Sidebar -->
+    <div id="dashboard" class="dashboard-layout hidden">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="#" class="sidebar-logo">🚀 HyperSDK</a>
+                <div class="sidebar-logo-subtitle">Multi-Cloud VM Export</div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">Main</div>
+                    <a class="nav-item active" onclick="showSection('overview')" data-section="overview">
+                        <span class="nav-item-icon">📊</span>
+                        <span>Dashboard</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">vCenter</div>
+                    <a class="nav-item" onclick="showSection('vcenter-connect')" data-section="vcenter-connect">
+                        <span class="nav-item-icon">🔌</span>
+                        <span>Connect to vCenter</span>
+                    </a>
+                    <a class="nav-item" onclick="showSection('vm-list')" data-section="vm-list">
+                        <span class="nav-item-icon">💻</span>
+                        <span>Virtual Machines</span>
+                    </a>
+                    <a class="nav-item" onclick="showSection('vm-details')" data-section="vm-details">
+                        <span class="nav-item-icon">📋</span>
+                        <span>VM Details</span>
+                    </a>
+                    <a class="nav-item" onclick="showSection('bulk-ops')" data-section="bulk-ops">
+                        <span class="nav-item-icon">⚡</span>
+                        <span>Bulk Operations</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">Export & Import</div>
+                    <a class="nav-item" onclick="showSection('job-submit')" data-section="job-submit">
+                        <span class="nav-item-icon">📤</span>
+                        <span>Submit Export Job</span>
+                    </a>
+                    <a class="nav-item" onclick="showSection('job-monitor')" data-section="job-monitor">
+                        <span class="nav-item-icon">📈</span>
+                        <span>Job Monitor</span>
+                    </a>
+                    <a class="nav-item" onclick="showSection('job-query')" data-section="job-query">
+                        <span class="nav-item-icon">🔍</span>
+                        <span>Query Jobs</span>
+                    </a>
+                    <a class="nav-item" onclick="showSection('job-history')" data-section="job-history">
+                        <span class="nav-item-icon">📜</span>
+                        <span>Export History</span>
+                    </a>
+                    <a class="nav-item" onclick="showSection('import-jobs')" data-section="import-jobs">
+                        <span class="nav-item-icon">📥</span>
+                        <span>Import to KVM</span>
+                    </a>
+                    <a class="nav-item" onclick="showSection('templates')" data-section="templates">
+                        <span class="nav-item-icon">📝</span>
+                        <span>Job Templates</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">VM Operations</div>
+                    <a class="nav-item" onclick="showSection('vm-search')" data-section="vm-search">
+                        <span class="nav-item-icon">🔎</span>
+                        <span>Search VMs</span>
+                    </a>
+                    <a class="nav-item" onclick="showSection('vm-operations')" data-section="vm-operations">
+                        <span class="nav-item-icon">⚙️</span>
+                        <span>VM Actions</span>
+                    </a>
+                    <a class="nav-item" onclick="showSection('snapshots')" data-section="snapshots">
+                        <span class="nav-item-icon">📸</span>
+                        <span>Snapshots</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">Analytics</div>
+                    <a class="nav-item" onclick="showSection('storage-analytics')" data-section="storage-analytics">
+                        <span class="nav-item-icon">💾</span>
+                        <span>Storage Analytics</span>
+                    </a>
+                    <a class="nav-item" onclick="showSection('reports')" data-section="reports">
+                        <span class="nav-item-icon">📊</span>
+                        <span>Reports</span>
+                    </a>
+                    <a class="nav-item" onclick="showSection('activity-logs')" data-section="activity-logs">
+                        <span class="nav-item-icon">📋</span>
+                        <span>Activity Logs</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">Scheduling</div>
+                    <a class="nav-item" onclick="showSection('job-scheduler')" data-section="job-scheduler">
+                        <span class="nav-item-icon">🕐</span>
+                        <span>Job Scheduler</span>
+                    </a>
+                    <a class="nav-item" onclick="showSection('backup-policies')" data-section="backup-policies">
+                        <span class="nav-item-icon">🔄</span>
+                        <span>Backup Policies</span>
+                    </a>
+                    <a class="nav-item" onclick="showSection('workflows')" data-section="workflows">
+                        <span class="nav-item-icon">🔀</span>
+                        <span>Workflows</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">Users & Access</div>
+                    <a class="nav-item" onclick="showSection('user-management')" data-section="user-management">
+                        <span class="nav-item-icon">👥</span>
+                        <span>User Management</span>
+                    </a>
+                    <a class="nav-item" onclick="showSection('roles-permissions')" data-section="roles-permissions">
+                        <span class="nav-item-icon">🔐</span>
+                        <span>Roles & Permissions</span>
+                    </a>
+                    <a class="nav-item" onclick="showSection('api-keys')" data-section="api-keys">
+                        <span class="nav-item-icon">🔑</span>
+                        <span>API Keys</span>
+                    </a>
+                    <a class="nav-item" onclick="showSection('sessions')" data-section="sessions">
+                        <span class="nav-item-icon">🖥️</span>
+                        <span>Active Sessions</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">Notifications</div>
+                    <a class="nav-item" onclick="showSection('notifications')" data-section="notifications">
+                        <span class="nav-item-icon">🔔</span>
+                        <span>Notification Center</span>
+                    </a>
+                    <a class="nav-item" onclick="showSection('alert-rules')" data-section="alert-rules">
+                        <span class="nav-item-icon">⚠️</span>
+                        <span>Alert Rules</span>
+                    </a>
+                    <a class="nav-item" onclick="showSection('webhooks')" data-section="webhooks">
+                        <span class="nav-item-icon">🪝</span>
+                        <span>Webhooks</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">Migration</div>
+                    <a class="nav-item" onclick="showSection('migration-wizard')" data-section="migration-wizard">
+                        <span class="nav-item-icon">🧙</span>
+                        <span>Migration Wizard</span>
+                    </a>
+                    <a class="nav-item" onclick="showSection('compatibility-checker')" data-section="compatibility-checker">
+                        <span class="nav-item-icon">✅</span>
+                        <span>Compatibility Checker</span>
+                    </a>
+                    <a class="nav-item" onclick="showSection('rollback')" data-section="rollback">
+                        <span class="nav-item-icon">↩️</span>
+                        <span>Rollback</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">Cloud & Integration</div>
+                    <a class="nav-item" onclick="showSection('multi-vcenter')" data-section="multi-vcenter">
+                        <span class="nav-item-icon">🌐</span>
+                        <span>Multi-vCenter</span>
+                    </a>
+                    <a class="nav-item" onclick="showSection('cloud-export')" data-section="cloud-export">
+                        <span class="nav-item-icon">☁️</span>
+                        <span>Cloud Export</span>
+                    </a>
+                    <a class="nav-item" onclick="showSection('integrations')" data-section="integrations">
+                        <span class="nav-item-icon">🔗</span>
+                        <span>Integrations</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">Cost & Budget</div>
+                    <a class="nav-item" onclick="showSection('cost-management')" data-section="cost-management">
+                        <span class="nav-item-icon">💰</span>
+                        <span>Cost Management</span>
+                    </a>
+                    <a class="nav-item" onclick="showSection('budget-alerts')" data-section="budget-alerts">
+                        <span class="nav-item-icon">💵</span>
+                        <span>Budget & Alerts</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">Organization</div>
+                    <a class="nav-item" onclick="showSection('tags-labels')" data-section="tags-labels">
+                        <span class="nav-item-icon">🏷️</span>
+                        <span>Tags & Labels</span>
+                    </a>
+                    <a class="nav-item" onclick="showSection('collections')" data-section="collections">
+                        <span class="nav-item-icon">📁</span>
+                        <span>Collections</span>
+                    </a>
+                    <a class="nav-item" onclick="showSection('saved-searches')" data-section="saved-searches">
+                        <span class="nav-item-icon">⭐</span>
+                        <span>Saved Searches</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">Security</div>
+                    <a class="nav-item" onclick="showSection('encryption')" data-section="encryption">
+                        <span class="nav-item-icon">🔒</span>
+                        <span>Encryption</span>
+                    </a>
+                    <a class="nav-item" onclick="showSection('compliance')" data-section="compliance">
+                        <span class="nav-item-icon">📜</span>
+                        <span>Compliance</span>
+                    </a>
+                    <a class="nav-item" onclick="showSection('audit-trail')" data-section="audit-trail">
+                        <span class="nav-item-icon">🔍</span>
+                        <span>Audit Trail</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">System</div>
+                    <a class="nav-item" onclick="showSection('daemon-status')" data-section="daemon-status">
+                        <span class="nav-item-icon">💚</span>
+                        <span>Daemon Status</span>
+                    </a>
+                    <a class="nav-item" onclick="showSection('api-docs')" data-section="api-docs">
+                        <span class="nav-item-icon">📚</span>
+                        <span>API Documentation</span>
+                    </a>
+                    <a class="nav-item" onclick="showSection('settings')" data-section="settings">
+                        <span class="nav-item-icon">⚙️</span>
+                        <span>Settings</span>
+                    </a>
+                    <a class="nav-item" onclick="showSection('help-support')" data-section="help-support">
+                        <span class="nav-item-icon">❓</span>
+                        <span>Help & Support</span>
+                    </a>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="header-left">
+                    <h1 id="page-title">Dashboard</h1>
+                </div>
+                <div class="header-right">
+                    <span class="user-info" id="user-display">Guest User</span>
+                    <a href="#" class="logout-link" onclick="logout(); return false;">Logout</a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Overview Section -->
+            <div id="section-overview" class="content-section active">
+                <div class="card">
+                    <h2 class="card-title">Welcome to HyperSDK</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">HyperSDK is a powerful multi-cloud VM export platform that enables seamless migration of virtual machines from VMware vCenter to KVM, Hyper-V, and other hypervisors.</p>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h3 id="stat-total-jobs">0</h3>
+                            <p>Total Jobs</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3 id="stat-running-jobs">0</h3>
+                            <p>Running Jobs</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3 id="stat-completed-jobs">0</h3>
+                            <p>Completed Jobs</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3 id="stat-total-vms">0</h3>
+                            <p>Discovered VMs</p>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <strong>Getting Started:</strong> Connect to your vCenter server to discover and export virtual machines. Use the sidebar navigation to access different features.
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 style="color: #f0583a; margin-bottom: 1rem;">Recent Activity</h3>
+                    <ul class="list-group">
+                        <li class="list-group-item">
+                            <span>🔌 Connected to vCenter</span>
+                            <span style="color: #999; font-size: 0.875rem;">2 mins ago</span>
+                        </li>
+                        <li class="list-group-item">
+                            <span>📤 Export job completed</span>
+                            <span style="color: #999; font-size: 0.875rem;">15 mins ago</span>
+                        </li>
+                        <li class="list-group-item">
+                            <span>💻 Discovered 12 VMs</span>
+                            <span style="color: #999; font-size: 0.875rem;">1 hour ago</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- vCenter Connect Section -->
+            <div id="section-vcenter-connect" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Connect to vCenter</h2>
+
+                    <div id="vcenter-error" class="alert alert-error hidden"></div>
+                    <div id="vcenter-success" class="alert alert-success hidden"></div>
+
+                    <form id="vcenter-form">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>vCenter Server</label>
+                                <input type="text" id="vcenter-server" required placeholder="vcenter.example.com">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Username</label>
+                                <input type="text" id="vcenter-username" required placeholder="administrator@vsphere.local">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Password</label>
+                                <input type="password" id="vcenter-password" required placeholder="Enter vCenter password">
+                                <div class="password-toggle">
+                                    <input type="checkbox" id="show-vcenter-password" onchange="togglePassword('vcenter-password', this.checked)">
+                                    <label for="show-vcenter-password">Show password</label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Datacenter (optional)</label>
+                                <input type="text" id="vcenter-datacenter" placeholder="Leave empty for all datacenters">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" id="vcenter-btn">
+                            Connect & Discover VMs
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- VM List Section -->
+            <div id="section-vm-list" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Virtual Machines</h2>
+
+                    <div id="vm-error" class="alert alert-error hidden"></div>
+                    <div id="vm-success" class="alert alert-success hidden"></div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h3 id="total-vms">0</h3>
+                            <p>Total VMs</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3 id="selected-vms">0</h3>
+                            <p>Selected VMs</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3 id="running-vms">0</h3>
+                            <p>Running VMs</p>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th><input type="checkbox" id="select-all" onclick="toggleSelectAll()"></th>
+                                    <th>Name</th>
+                                    <th>Power State</th>
+                                    <th>Guest OS</th>
+                                    <th>CPUs</th>
+                                    <th>Memory</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="vm-tbody">
+                                <tr>
+                                    <td colspan="7" style="text-align: center; padding: 2rem; color: #999;">
+                                        Connect to vCenter to discover VMs
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div style="margin-top: 2rem;">
+                        <button class="btn btn-primary" onclick="exportSelectedVMs()" id="export-btn" disabled>
+                            Export Selected VMs
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VM Details Section -->
+            <div id="section-vm-details" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">VM Details</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">View detailed information about virtual machines including hardware, network, and storage configuration.</p>
+
+                    <div class="form-group">
+                        <label>Select VM</label>
+                        <select id="vm-details-select">
+                            <option value="">Select a VM to view details...</option>
+                        </select>
+                    </div>
+
+                    <div id="vm-details-content" class="hidden">
+                        <div class="tabs">
+                            <button class="tab active" onclick="switchTab('hardware')">Hardware</button>
+                            <button class="tab" onclick="switchTab('network')">Network</button>
+                            <button class="tab" onclick="switchTab('storage')">Storage</button>
+                        </div>
+
+                        <div id="tab-hardware" class="tab-content">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>CPU</label>
+                                    <input type="text" id="detail-cpu" readonly>
+                                </div>
+                                <div class="form-group">
+                                    <label>Memory</label>
+                                    <input type="text" id="detail-memory" readonly>
+                                </div>
+                                <div class="form-group">
+                                    <label>Guest OS</label>
+                                    <input type="text" id="detail-os" readonly>
+                                </div>
+                                <div class="form-group">
+                                    <label>Power State</label>
+                                    <input type="text" id="detail-power" readonly>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="tab-network" class="tab-content hidden">
+                            <p style="color: #666;">Network adapter information will be displayed here.</p>
+                        </div>
+
+                        <div id="tab-storage" class="tab-content hidden">
+                            <p style="color: #666;">Storage and disk information will be displayed here.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bulk Operations Section -->
+            <div id="section-bulk-ops" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Bulk Operations</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Perform operations on multiple VMs at once.</p>
+
+                    <div class="alert alert-warning">
+                        <strong>Warning:</strong> Bulk operations will affect multiple VMs. Please ensure you have selected the correct VMs before proceeding.
+                    </div>
+
+                    <div class="form-group">
+                        <label>Operation</label>
+                        <select id="bulk-operation">
+                            <option value="">Select operation...</option>
+                            <option value="export">Export All</option>
+                            <option value="shutdown">Shutdown All</option>
+                            <option value="poweroff">Power Off All</option>
+                            <option value="snapshot">Create Snapshots</option>
+                            <option value="tag">Add Tags</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>VM Selection</label>
+                        <textarea id="bulk-vm-list" rows="10" placeholder="Enter VM names, one per line..."></textarea>
+                    </div>
+
+                    <button class="btn btn-primary" onclick="executeBulkOperation()">
+                        Execute Bulk Operation
+                    </button>
+                </div>
+            </div>
+
+            <!-- Job Submit Section -->
+            <div id="section-job-submit" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Submit Export Job</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Create a new VM export job by providing the details below.</p>
+
+                    <div id="job-submit-error" class="alert alert-error hidden"></div>
+                    <div id="job-submit-success" class="alert alert-success hidden"></div>
+
+                    <form id="job-submit-form">
+                        <div class="form-group">
+                            <label>Job Name</label>
+                            <input type="text" id="job-name" required placeholder="My Export Job">
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>VM Path</label>
+                                <input type="text" id="job-vm-path" required placeholder="/datacenter/vm/myvm">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Output Directory</label>
+                                <input type="text" id="job-output-dir" required placeholder="/tmp/exports">
+                            </div>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Output Format</label>
+                                <select id="job-format">
+                                    <option value="qcow2">qcow2</option>
+                                    <option value="raw">raw</option>
+                                    <option value="vmdk">vmdk</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Compression</label>
+                                <select id="job-compression">
+                                    <option value="none">None</option>
+                                    <option value="gzip">gzip</option>
+                                    <option value="xz">xz</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            Submit Job
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Job Monitor Section -->
+            <div id="section-job-monitor" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Real-Time Job Monitor</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Monitor running export jobs with live progress updates.</p>
+
+                    <div style="margin-bottom: 2rem;">
+                        <button class="btn btn-primary" onclick="refreshJobMonitor()">
+                            Refresh
+                        </button>
+                    </div>
+
+                    <div id="job-monitor-content">
+                        <div class="alert alert-info">
+                            No active jobs. Click "Refresh" to check for running jobs.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Job Query Section -->
+            <div id="section-job-query" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Query Jobs</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">View and monitor the status of your export jobs.</p>
+
+                    <div id="job-query-error" class="alert alert-error hidden"></div>
+
+                    <div style="margin-bottom: 2rem;">
+                        <button class="btn btn-primary" onclick="queryAllJobs()">
+                            Refresh Jobs
+                        </button>
+                    </div>
+
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Job ID</th>
+                                    <th>Name</th>
+                                    <th>Status</th>
+                                    <th>Progress</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="jobs-tbody">
+                                <tr>
+                                    <td colspan="6" style="text-align: center; padding: 2rem; color: #999;">
+                                        No jobs found. Click "Refresh Jobs" to load.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Job History Section -->
+            <div id="section-job-history" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Export History</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">View historical export jobs and their outcomes.</p>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h3>127</h3>
+                            <p>Total Exports</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>98%</h3>
+                            <p>Success Rate</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>2.4 TB</h3>
+                            <p>Data Exported</p>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>VM Name</th>
+                                    <th>Size</th>
+                                    <th>Duration</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>2026-01-19 14:32</td>
+                                    <td>web-server-01</td>
+                                    <td>45 GB</td>
+                                    <td>23 mins</td>
+                                    <td><span class="badge badge-success">Completed</span></td>
+                                </tr>
+                                <tr>
+                                    <td>2026-01-19 13:15</td>
+                                    <td>db-server-02</td>
+                                    <td>120 GB</td>
+                                    <td>1h 12m</td>
+                                    <td><span class="badge badge-success">Completed</span></td>
+                                </tr>
+                                <tr>
+                                    <td>2026-01-19 11:45</td>
+                                    <td>app-server-03</td>
+                                    <td>80 GB</td>
+                                    <td>-</td>
+                                    <td><span class="badge badge-danger">Failed</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Import Jobs Section -->
+            <div id="section-import-jobs" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Import to KVM/Libvirt</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Import exported VMs to KVM/libvirt hypervisor.</p>
+
+                    <div id="import-error" class="alert alert-error hidden"></div>
+                    <div id="import-success" class="alert alert-success hidden"></div>
+
+                    <form id="import-form">
+                        <div class="form-group">
+                            <label>Exported VM Image Path</label>
+                            <input type="text" id="import-image-path" required placeholder="/tmp/exports/vm.qcow2">
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>VM Name</label>
+                                <input type="text" id="import-vm-name" required placeholder="imported-vm">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Memory (MB)</label>
+                                <input type="number" id="import-memory" value="2048" min="512">
+                            </div>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>CPUs</label>
+                                <input type="number" id="import-cpus" value="2" min="1">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Network</label>
+                                <select id="import-network">
+                                    <option value="default">Default</option>
+                                    <option value="bridge">Bridge</option>
+                                    <option value="nat">NAT</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            Import to KVM
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Templates Section -->
+            <div id="section-templates" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Job Templates</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Use predefined templates for common export scenarios.</p>
+
+                    <div class="template-card" onclick="selectTemplate('production')">
+                        <h3 style="color: #f0583a; margin-bottom: 0.5rem;">📦 Production Export</h3>
+                        <p style="color: #666;">Export production VMs with full settings and snapshots. Format: qcow2, Compression: xz</p>
+                    </div>
+
+                    <div class="template-card" onclick="selectTemplate('development')">
+                        <h3 style="color: #f0583a; margin-bottom: 0.5rem;">🔧 Development Export</h3>
+                        <p style="color: #666;">Quick export for development VMs. Format: qcow2, Compression: gzip</p>
+                    </div>
+
+                    <div class="template-card" onclick="selectTemplate('backup')">
+                        <h3 style="color: #f0583a; margin-bottom: 0.5rem;">💾 Backup Template</h3>
+                        <p style="color: #666;">Create compressed backups. Format: raw, Compression: xz</p>
+                    </div>
+
+                    <div class="template-card" onclick="selectTemplate('migration')">
+                        <h3 style="color: #f0583a; margin-bottom: 0.5rem;">🚀 Migration Template</h3>
+                        <p style="color: #666;">Migrate VMs to new infrastructure. Format: qcow2, No compression</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VM Search Section -->
+            <div id="section-vm-search" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Search VMs</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Search for virtual machines using grep or ripgrep-like patterns.</p>
+
+                    <div id="vm-search-error" class="alert alert-error hidden"></div>
+
+                    <form id="vm-search-form">
+                        <div class="form-group">
+                            <label>Search Pattern</label>
+                            <input type="text" id="search-pattern" required placeholder="Enter search pattern">
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Search Type</label>
+                                <select id="search-type">
+                                    <option value="grep">grep (basic)</option>
+                                    <option value="rg">ripgrep (advanced)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Search Field</label>
+                                <select id="search-field">
+                                    <option value="all">All Fields</option>
+                                    <option value="name">Name</option>
+                                    <option value="path">Path</option>
+                                    <option value="os">Operating System</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            Search
+                        </button>
+                    </form>
+
+                    <div id="search-results" class="hidden" style="margin-top: 2rem;">
+                        <h3 style="margin-bottom: 1rem;">Search Results</h3>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Path</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="search-results-tbody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VM Operations Section -->
+            <div id="section-vm-operations" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">VM Actions</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Perform operations on individual virtual machines.</p>
+
+                    <div id="vm-op-error" class="alert alert-error hidden"></div>
+                    <div id="vm-op-success" class="alert alert-success hidden"></div>
+
+                    <form id="vm-op-form">
+                        <div class="form-group">
+                            <label>VM Path</label>
+                            <input type="text" id="vm-op-path" required placeholder="/datacenter/vm/myvm">
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Operation</label>
+                                <select id="vm-operation">
+                                    <option value="info">Get Info</option>
+                                    <option value="shutdown">Shutdown</option>
+                                    <option value="poweroff">Power Off</option>
+                                    <option value="remove-cdrom">Remove CD-ROM</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Timeout (seconds)</label>
+                                <input type="number" id="vm-op-timeout" value="60" min="1">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            Execute Operation
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Snapshots Section -->
+            <div id="section-snapshots" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">VM Snapshots</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Manage VM snapshots before export.</p>
+
+                    <div class="alert alert-info">
+                        <strong>Info:</strong> Snapshots can be used to capture VM state before export operations.
+                    </div>
+
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>VM Name</th>
+                                    <th>Snapshot Name</th>
+                                    <th>Created</th>
+                                    <th>Size</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>web-server-01</td>
+                                    <td>pre-export-snapshot</td>
+                                    <td>2026-01-19 10:30</td>
+                                    <td>8.5 GB</td>
+                                    <td>
+                                        <button class="btn btn-small btn-secondary">Revert</button>
+                                        <button class="btn btn-small btn-secondary">Delete</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Storage Analytics Section -->
+            <div id="section-storage-analytics" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Storage Analytics</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Analyze storage usage and capacity across your VMs.</p>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h3>4.2 TB</h3>
+                            <p>Total Storage</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>2.8 TB</h3>
+                            <p>Used Storage</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>1.4 TB</h3>
+                            <p>Free Storage</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>67%</h3>
+                            <p>Utilization</p>
+                        </div>
+                    </div>
+
+                    <div class="chart-container">
+                        <p>Storage utilization chart would be displayed here</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 style="color: #f0583a; margin-bottom: 1rem;">Top 5 VMs by Storage</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>VM Name</th>
+                                    <th>Provisioned</th>
+                                    <th>Used</th>
+                                    <th>Utilization</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>db-server-01</td>
+                                    <td>500 GB</td>
+                                    <td>387 GB</td>
+                                    <td>77%</td>
+                                </tr>
+                                <tr>
+                                    <td>file-server-01</td>
+                                    <td>1 TB</td>
+                                    <td>856 GB</td>
+                                    <td>86%</td>
+                                </tr>
+                                <tr>
+                                    <td>backup-server-01</td>
+                                    <td>750 GB</td>
+                                    <td>623 GB</td>
+                                    <td>83%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reports Section -->
+            <div id="section-reports" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Reports & Analytics</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Generate comprehensive reports for export operations.</p>
+
+                    <div class="form-group">
+                        <label>Report Type</label>
+                        <select id="report-type">
+                            <option value="export-summary">Export Summary</option>
+                            <option value="vm-inventory">VM Inventory</option>
+                            <option value="storage-usage">Storage Usage</option>
+                            <option value="job-performance">Job Performance</option>
+                            <option value="error-logs">Error Logs</option>
+                        </select>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Date Range</label>
+                            <select>
+                                <option value="today">Today</option>
+                                <option value="week">Last 7 Days</option>
+                                <option value="month">Last 30 Days</option>
+                                <option value="custom">Custom Range</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Format</label>
+                            <select>
+                                <option value="pdf">PDF</option>
+                                <option value="csv">CSV</option>
+                                <option value="json">JSON</option>
+                                <option value="html">HTML</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary">
+                        Generate Report
+                    </button>
+                </div>
+            </div>
+
+            <!-- Activity Logs Section -->
+            <div id="section-activity-logs" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Activity Logs</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">View system activity and audit logs.</p>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Filter by Level</label>
+                            <select id="log-level">
+                                <option value="all">All Levels</option>
+                                <option value="info">Info</option>
+                                <option value="warning">Warning</option>
+                                <option value="error">Error</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Search</label>
+                            <input type="text" placeholder="Search logs...">
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>Level</th>
+                                    <th>Event</th>
+                                    <th>User</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>2026-01-19 15:42:13</td>
+                                    <td><span class="badge badge-info">INFO</span></td>
+                                    <td>Export job started for VM: web-server-01</td>
+                                    <td>admin</td>
+                                </tr>
+                                <tr>
+                                    <td>2026-01-19 15:41:55</td>
+                                    <td><span class="badge badge-success">INFO</span></td>
+                                    <td>Connected to vCenter: vcenter.example.com</td>
+                                    <td>admin</td>
+                                </tr>
+                                <tr>
+                                    <td>2026-01-19 15:40:12</td>
+                                    <td><span class="badge badge-warning">WARN</span></td>
+                                    <td>Retry attempt 2/3 for vCenter connection</td>
+                                    <td>admin</td>
+                                </tr>
+                                <tr>
+                                    <td>2026-01-19 15:38:45</td>
+                                    <td><span class="badge badge-danger">ERROR</span></td>
+                                    <td>Failed to export VM: disk-error</td>
+                                    <td>admin</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Daemon Status Section -->
+            <div id="section-daemon-status" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Daemon Status</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Check the health and status of the HyperSDK daemon.</p>
+
+                    <div id="status-error" class="alert alert-error hidden"></div>
+
+                    <div style="margin-bottom: 2rem;">
+                        <button class="btn btn-primary" onclick="checkDaemonStatus()">
+                            Refresh Status
+                        </button>
+                    </div>
+
+                    <div id="status-content">
+                        <div class="alert alert-info">
+                            Click "Refresh Status" to check daemon health.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- API Documentation Section -->
+            <div id="section-api-docs" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">API Documentation</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">REST API endpoints for HyperSDK integration.</p>
+
+                    <div class="tabs">
+                        <button class="tab active" onclick="switchAPITab('vms')">VMs</button>
+                        <button class="tab" onclick="switchAPITab('jobs')">Jobs</button>
+                        <button class="tab" onclick="switchAPITab('health')">Health</button>
+                    </div>
+
+                    <div id="api-tab-vms" class="api-tab-content">
+                        <h3 style="color: #f0583a; margin: 1.5rem 0 1rem;">GET /vms/list</h3>
+                        <p style="color: #666; margin-bottom: 1rem;">List all VMs from vCenter</p>
+
+                        <h4 style="margin: 1rem 0 0.5rem;">Query Parameters:</h4>
+                        <div class="code-block">server=vcenter.example.com
+username=admin@vsphere.local
+password=secret
+insecure=true</div>
+
+                        <h4 style="margin: 1rem 0 0.5rem;">Example Response:</h4>
+                        <div class="code-block">{
+  "vms": [
+    {
+      "name": "web-server-01",
+      "power_state": "poweredOn",
+      "guest_os": "Ubuntu Linux (64-bit)",
+      "cpus": 4,
+      "memory": "8192 MB"
+    }
+  ],
+  "total": 1
+}</div>
+                    </div>
+
+                    <div id="api-tab-jobs" class="api-tab-content hidden">
+                        <h3 style="color: #f0583a; margin: 1.5rem 0 1rem;">POST /jobs/submit</h3>
+                        <p style="color: #666; margin-bottom: 1rem;">Submit a new export job</p>
+
+                        <h4 style="margin: 1rem 0 0.5rem;">Request Body:</h4>
+                        <div class="code-block">{
+  "jobs": [
+    {
+      "name": "export-web-server",
+      "vm_path": "/datacenter/vm/web-server-01",
+      "output_dir": "/tmp/exports",
+      "format": "qcow2"
+    }
+  ]
+}</div>
+
+                        <h3 style="color: #f0583a; margin: 1.5rem 0 1rem;">GET /jobs/query</h3>
+                        <p style="color: #666;">Query job status</p>
+                    </div>
+
+                    <div id="api-tab-health" class="api-tab-content hidden">
+                        <h3 style="color: #f0583a; margin: 1.5rem 0 1rem;">GET /health</h3>
+                        <p style="color: #666; margin-bottom: 1rem;">Health check endpoint</p>
+
+                        <h4 style="margin: 1rem 0 0.5rem;">Response:</h4>
+                        <div class="code-block">{
+  "status": "healthy",
+  "version": "1.0.0",
+  "uptime": "24h 15m"
+}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Section -->
+            <div id="section-settings" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Settings</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Configure HyperSDK dashboard preferences.</p>
+
+                    <div class="form-group">
+                        <label>Theme</label>
+                        <select>
+                            <option value="light">Light (Default)</option>
+                            <option value="dark">Dark</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Daemon URL</label>
+                        <input type="text" value="http://localhost:8080" placeholder="http://localhost:8080">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Auto-refresh Interval (seconds)</label>
+                        <input type="number" value="30" min="5">
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" checked> Enable notifications
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox"> Enable auto-connect on login
+                        </label>
+                    </div>
+
+                    <button class="btn btn-primary">
+                        Save Settings
+                    </button>
+                </div>
+            </div>
+
+            <!-- Job Scheduler Section -->
+            <div id="section-job-scheduler" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Job Scheduler</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Schedule automated export jobs using cron-like expressions.</p>
+
+                    <button class="btn btn-primary" style="margin-bottom: 2rem;" onclick="alert('Create new schedule')">
+                        Create New Schedule
+                    </button>
+
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Schedule</th>
+                                    <th>Next Run</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Daily Backup</td>
+                                    <td>0 2 * * *</td>
+                                    <td>Tomorrow 02:00</td>
+                                    <td><span class="badge badge-success">Active</span></td>
+                                    <td><button class="btn btn-small btn-secondary">Edit</button></td>
+                                </tr>
+                                <tr>
+                                    <td>Weekly Full Export</td>
+                                    <td>0 0 * * 0</td>
+                                    <td>Sunday 00:00</td>
+                                    <td><span class="badge badge-success">Active</span></td>
+                                    <td><button class="btn btn-small btn-secondary">Edit</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Backup Policies Section -->
+            <div id="section-backup-policies" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Automated Backup Policies</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Define and manage automated backup policies for your VMs.</p>
+
+                    <div class="alert alert-info">
+                        <strong>3-2-1 Rule:</strong> Keep 3 copies of data, on 2 different media, with 1 copy offsite.
+                    </div>
+
+                    <div class="form-group">
+                        <label>Policy Name</label>
+                        <input type="text" placeholder="Production Backup Policy">
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Frequency</label>
+                            <select>
+                                <option>Daily</option>
+                                <option>Weekly</option>
+                                <option>Monthly</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Retention (days)</label>
+                            <input type="number" value="30">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Target VMs (tags)</label>
+                        <input type="text" placeholder="production, critical">
+                    </div>
+
+                    <button class="btn btn-primary">Create Policy</button>
+                </div>
+            </div>
+
+            <!-- Workflows Section -->
+            <div id="section-workflows" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Workflow Automation</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Chain multiple operations together in automated workflows.</p>
+
+                    <div class="template-card">
+                        <h3 style="color: #f0583a; margin-bottom: 0.5rem;">🔄 Export → Convert → Import</h3>
+                        <p style="color: #666;">Export VM from vCenter, convert to qcow2, import to KVM</p>
+                    </div>
+
+                    <div class="template-card">
+                        <h3 style="color: #f0583a; margin-bottom: 0.5rem;">📸 Snapshot → Export → Verify</h3>
+                        <p style="color: #666;">Create snapshot, export, verify integrity</p>
+                    </div>
+
+                    <div class="template-card">
+                        <h3 style="color: #f0583a; margin-bottom: 0.5rem;">🧪 Export → Test → Notify</h3>
+                        <p style="color: #666;">Export, boot test, send notification</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Management Section -->
+            <div id="section-user-management" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">User Management</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Manage user accounts and access control.</p>
+
+                    <button class="btn btn-primary" style="margin-bottom: 2rem;">Add New User</button>
+
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Status</th>
+                                    <th>Last Login</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>admin</td>
+                                    <td>admin@example.com</td>
+                                    <td><span class="badge badge-danger">Administrator</span></td>
+                                    <td><span class="badge badge-success">Active</span></td>
+                                    <td>2026-01-19 15:30</td>
+                                    <td><button class="btn btn-small btn-secondary">Edit</button></td>
+                                </tr>
+                                <tr>
+                                    <td>operator1</td>
+                                    <td>operator@example.com</td>
+                                    <td><span class="badge badge-info">Operator</span></td>
+                                    <td><span class="badge badge-success">Active</span></td>
+                                    <td>2026-01-19 14:15</td>
+                                    <td><button class="btn btn-small btn-secondary">Edit</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Roles & Permissions Section -->
+            <div id="section-roles-permissions" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Roles & Permissions (RBAC)</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Configure role-based access control.</p>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h3>4</h3>
+                            <p>Roles Defined</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>12</h3>
+                            <p>Users</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>25</h3>
+                            <p>Permissions</p>
+                        </div>
+                    </div>
+
+                    <h3 style="margin: 2rem 0 1rem;">Available Roles</h3>
+
+                    <div class="template-card">
+                        <h3 style="color: #f0583a; margin-bottom: 0.5rem;">👑 Administrator</h3>
+                        <p style="color: #666;">Full system access, user management, all operations</p>
+                    </div>
+
+                    <div class="template-card">
+                        <h3 style="color: #f0583a; margin-bottom: 0.5rem;">⚙️ Operator</h3>
+                        <p style="color: #666;">Export/import VMs, manage jobs, view reports</p>
+                    </div>
+
+                    <div class="template-card">
+                        <h3 style="color: #f0583a; margin-bottom: 0.5rem;">👁️ Viewer</h3>
+                        <p style="color: #666;">Read-only access, view VMs and job status</p>
+                    </div>
+
+                    <div class="template-card">
+                        <h3 style="color: #f0583a; margin-bottom: 0.5rem;">🔧 Auditor</h3>
+                        <p style="color: #666;">Access to logs, reports, and compliance data</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- API Keys Section -->
+            <div id="section-api-keys" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">API Key Management</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Generate and manage API keys for programmatic access.</p>
+
+                    <div class="alert alert-warning">
+                        <strong>Security:</strong> API keys provide full access to your account. Keep them secure and rotate regularly.
+                    </div>
+
+                    <button class="btn btn-primary" style="margin-bottom: 2rem;">Generate New API Key</button>
+
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Key</th>
+                                    <th>Created</th>
+                                    <th>Last Used</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Production API</td>
+                                    <td><code>hsd_abc123***</code></td>
+                                    <td>2026-01-15</td>
+                                    <td>2 hours ago</td>
+                                    <td><button class="btn btn-small btn-secondary">Revoke</button></td>
+                                </tr>
+                                <tr>
+                                    <td>CI/CD Pipeline</td>
+                                    <td><code>hsd_xyz789***</code></td>
+                                    <td>2026-01-10</td>
+                                    <td>1 day ago</td>
+                                    <td><button class="btn btn-small btn-secondary">Revoke</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Sessions Section -->
+            <div id="section-sessions" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Active Sessions</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Monitor and manage active user sessions.</p>
+
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>IP Address</th>
+                                    <th>Location</th>
+                                    <th>Login Time</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>admin</td>
+                                    <td>192.168.1.100</td>
+                                    <td>New York, US</td>
+                                    <td>15 minutes ago</td>
+                                    <td><button class="btn btn-small btn-secondary">Terminate</button></td>
+                                </tr>
+                                <tr>
+                                    <td>operator1</td>
+                                    <td>192.168.1.101</td>
+                                    <td>San Francisco, US</td>
+                                    <td>1 hour ago</td>
+                                    <td><button class="btn btn-small btn-secondary">Terminate</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notifications Section -->
+            <div id="section-notifications" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Notification Center</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Configure email, Slack, and webhook notifications.</p>
+
+                    <div class="tabs">
+                        <button class="tab active">Email</button>
+                        <button class="tab">Slack</button>
+                        <button class="tab">Webhooks</button>
+                        <button class="tab">SMS</button>
+                    </div>
+
+                    <h3 style="margin-bottom: 1rem;">Email Notifications</h3>
+
+                    <div class="form-group">
+                        <label>SMTP Server</label>
+                        <input type="text" placeholder="smtp.gmail.com">
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Port</label>
+                            <input type="number" value="587">
+                        </div>
+                        <div class="form-group">
+                            <label>Username</label>
+                            <input type="text" placeholder="your@email.com">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" checked> Notify on job completion
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" checked> Notify on job failure
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox"> Daily summary report
+                        </label>
+                    </div>
+
+                    <button class="btn btn-primary">Save Notification Settings</button>
+                </div>
+            </div>
+
+            <!-- Alert Rules Section -->
+            <div id="section-alert-rules" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Alert Rules</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Define custom alert rules based on thresholds and conditions.</p>
+
+                    <button class="btn btn-primary" style="margin-bottom: 2rem;">Create Alert Rule</button>
+
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Rule Name</th>
+                                    <th>Condition</th>
+                                    <th>Threshold</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Storage Almost Full</td>
+                                    <td>Storage Usage</td>
+                                    <td>&gt; 90%</td>
+                                    <td><span class="badge badge-success">Active</span></td>
+                                    <td><button class="btn btn-small btn-secondary">Edit</button></td>
+                                </tr>
+                                <tr>
+                                    <td>Job Failure Rate High</td>
+                                    <td>Failed Jobs</td>
+                                    <td>&gt; 5 in 1 hour</td>
+                                    <td><span class="badge badge-success">Active</span></td>
+                                    <td><button class="btn btn-small btn-secondary">Edit</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Webhooks Section -->
+            <div id="section-webhooks" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Webhook Configuration</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Send events to external systems via webhooks.</p>
+
+                    <div class="form-group">
+                        <label>Webhook URL</label>
+                        <input type="url" placeholder="https://hooks.slack.com/services/...">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Events to Trigger</label>
+                        <div>
+                            <label><input type="checkbox" checked> Job Started</label><br>
+                            <label><input type="checkbox" checked> Job Completed</label><br>
+                            <label><input type="checkbox" checked> Job Failed</label><br>
+                            <label><input type="checkbox"> VM Discovered</label><br>
+                            <label><input type="checkbox"> Export Progress (every 10%)</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Custom Headers (JSON)</label>
+                        <textarea rows="4" placeholder='{"Authorization": "Bearer token123"}'></textarea>
+                    </div>
+
+                    <button class="btn btn-primary">Save Webhook</button>
+                    <button class="btn btn-secondary">Test Webhook</button>
+                </div>
+            </div>
+
+            <!-- Migration Wizard Section -->
+            <div id="section-migration-wizard" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Migration Wizard</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Step-by-step guided VM migration process.</p>
+
+                    <div class="alert alert-info">
+                        <strong>Step 1 of 5:</strong> Select Source and Destination
+                    </div>
+
+                    <h3 style="margin: 1.5rem 0 1rem;">Source</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Source Type</label>
+                            <select>
+                                <option>VMware vCenter</option>
+                                <option>Hyper-V</option>
+                                <option>KVM/Libvirt</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Select VMs</label>
+                            <select multiple size="5">
+                                <option>web-server-01</option>
+                                <option>db-server-01</option>
+                                <option>app-server-01</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <h3 style="margin: 1.5rem 0 1rem;">Destination</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Destination Type</label>
+                            <select>
+                                <option>KVM/Libvirt</option>
+                                <option>AWS EC2</option>
+                                <option>Azure VMs</option>
+                                <option>Google Compute Engine</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Target Location</label>
+                            <input type="text" placeholder="/var/lib/libvirt/images">
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 2rem;">
+                        <button class="btn btn-secondary">Previous</button>
+                        <button class="btn btn-primary">Next: Pre-Flight Check</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Compatibility Checker Section -->
+            <div id="section-compatibility-checker" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Compatibility Checker</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Validate VM compatibility before migration.</p>
+
+                    <div class="form-group">
+                        <label>Select VM to Check</label>
+                        <select>
+                            <option>web-server-01</option>
+                            <option>db-server-01</option>
+                            <option>app-server-01</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Target Platform</label>
+                        <select>
+                            <option>KVM/Libvirt</option>
+                            <option>AWS EC2</option>
+                            <option>Azure</option>
+                        </select>
+                    </div>
+
+                    <button class="btn btn-primary" style="margin-bottom: 2rem;">Run Compatibility Check</button>
+
+                    <h3 style="margin-bottom: 1rem;">Check Results</h3>
+
+                    <ul class="list-group">
+                        <li class="list-group-item">
+                            <span>✅ Guest OS Supported</span>
+                            <span class="badge badge-success">Pass</span>
+                        </li>
+                        <li class="list-group-item">
+                            <span>✅ Disk Format Compatible</span>
+                            <span class="badge badge-success">Pass</span>
+                        </li>
+                        <li class="list-group-item">
+                            <span>⚠️ VMware Tools Needs Removal</span>
+                            <span class="badge badge-warning">Warning</span>
+                        </li>
+                        <li class="list-group-item">
+                            <span>✅ Network Adapters Supported</span>
+                            <span class="badge badge-success">Pass</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Rollback Section -->
+            <div id="section-rollback" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Rollback Management</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Rollback failed migrations to previous state.</p>
+
+                    <div class="alert alert-warning">
+                        <strong>Warning:</strong> Rollback will restore the VM to its pre-migration state.
+                    </div>
+
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>VM Name</th>
+                                    <th>Migration Date</th>
+                                    <th>Backup Available</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>web-server-01</td>
+                                    <td>2026-01-19 14:30</td>
+                                    <td><span class="badge badge-success">Yes</span></td>
+                                    <td><span class="badge badge-danger">Failed</span></td>
+                                    <td><button class="btn btn-small btn-primary">Rollback</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Multi-vCenter Section -->
+            <div id="section-multi-vcenter" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Multi-vCenter Management</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Manage multiple vCenter servers from a single interface.</p>
+
+                    <button class="btn btn-primary" style="margin-bottom: 2rem;">Add vCenter Server</button>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h3>3</h3>
+                            <p>vCenter Servers</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>245</h3>
+                            <p>Total VMs</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>12</h3>
+                            <p>Datacenters</p>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>vCenter Name</th>
+                                    <th>Hostname</th>
+                                    <th>VMs</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Production vCenter</td>
+                                    <td>vcenter-prod.example.com</td>
+                                    <td>145</td>
+                                    <td><span class="badge badge-success">Connected</span></td>
+                                    <td><button class="btn btn-small btn-secondary">Manage</button></td>
+                                </tr>
+                                <tr>
+                                    <td>Dev vCenter</td>
+                                    <td>vcenter-dev.example.com</td>
+                                    <td>67</td>
+                                    <td><span class="badge badge-success">Connected</span></td>
+                                    <td><button class="btn btn-small btn-secondary">Manage</button></td>
+                                </tr>
+                                <tr>
+                                    <td>DR vCenter</td>
+                                    <td>vcenter-dr.example.com</td>
+                                    <td>33</td>
+                                    <td><span class="badge badge-warning">Disconnected</span></td>
+                                    <td><button class="btn btn-small btn-secondary">Manage</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cloud Export Section -->
+            <div id="section-cloud-export" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Cloud Platform Export</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Export VMs directly to cloud platforms.</p>
+
+                    <div class="template-card">
+                        <h3 style="color: #f0583a; margin-bottom: 0.5rem;">☁️ Amazon Web Services (AWS)</h3>
+                        <p style="color: #666;">Export to EC2 instances or S3 buckets</p>
+                        <button class="btn btn-small btn-primary" style="margin-top: 1rem;">Configure AWS</button>
+                    </div>
+
+                    <div class="template-card">
+                        <h3 style="color: #f0583a; margin-bottom: 0.5rem;">☁️ Microsoft Azure</h3>
+                        <p style="color: #666;">Export to Azure Virtual Machines</p>
+                        <button class="btn btn-small btn-primary" style="margin-top: 1rem;">Configure Azure</button>
+                    </div>
+
+                    <div class="template-card">
+                        <h3 style="color: #f0583a; margin-bottom: 0.5rem;">☁️ Google Cloud Platform (GCP)</h3>
+                        <p style="color: #666;">Export to Google Compute Engine</p>
+                        <button class="btn btn-small btn-primary" style="margin-top: 1rem;">Configure GCP</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Integrations Section -->
+            <div id="section-integrations" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Integrations</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Connect with external tools and services.</p>
+
+                    <h3 style="margin-bottom: 1rem;">Available Integrations</h3>
+
+                    <div class="template-card">
+                        <h3 style="color: #f0583a; margin-bottom: 0.5rem;">🔧 Jenkins CI/CD</h3>
+                        <p style="color: #666;">Trigger exports from Jenkins pipelines</p>
+                        <button class="btn btn-small btn-secondary" style="margin-top: 1rem;">Connect</button>
+                    </div>
+
+                    <div class="template-card">
+                        <h3 style="color: #f0583a; margin-bottom: 0.5rem;">📝 Ansible</h3>
+                        <p style="color: #666;">Ansible playbook integration</p>
+                        <button class="btn btn-small btn-secondary" style="margin-top: 1rem;">Connect</button>
+                    </div>
+
+                    <div class="template-card">
+                        <h3 style="color: #f0583a; margin-bottom: 0.5rem;">🏗️ Terraform</h3>
+                        <p style="color: #666;">Infrastructure as Code integration</p>
+                        <button class="btn btn-small btn-secondary" style="margin-top: 1rem;">Connect</button>
+                    </div>
+
+                    <div class="template-card">
+                        <h3 style="color: #f0583a; margin-bottom: 0.5rem;">📊 Grafana</h3>
+                        <p style="color: #666;">Metrics and dashboards</p>
+                        <button class="btn btn-small btn-secondary" style="margin-top: 1rem;">Connect</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cost Management Section -->
+            <div id="section-cost-management" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Cost Management</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Track and optimize costs for VM exports and storage.</p>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h3>$2,450</h3>
+                            <p>This Month</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>$1,890</h3>
+                            <p>Last Month</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>+29%</h3>
+                            <p>Change</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>$28,500</h3>
+                            <p>Annual Projected</p>
+                        </div>
+                    </div>
+
+                    <h3 style="margin: 2rem 0 1rem;">Cost Breakdown</h3>
+
+                    <div class="chart-container">
+                        <p>Cost breakdown chart would be displayed here</p>
+                    </div>
+
+                    <h3 style="margin: 2rem 0 1rem;">Top Cost Drivers</h3>
+
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th>This Month</th>
+                                    <th>Last Month</th>
+                                    <th>Trend</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Storage</td>
+                                    <td>$1,200</td>
+                                    <td>$980</td>
+                                    <td><span style="color: #dc2626;">↑ 22%</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Network Transfer</td>
+                                    <td>$850</td>
+                                    <td>$720</td>
+                                    <td><span style="color: #dc2626;">↑ 18%</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Compute</td>
+                                    <td>$400</td>
+                                    <td>$190</td>
+                                    <td><span style="color: #dc2626;">↑ 110%</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Budget Alerts Section -->
+            <div id="section-budget-alerts" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Budget & Alerts</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Set budgets and get alerted when thresholds are reached.</p>
+
+                    <div class="form-group">
+                        <label>Monthly Budget ($)</label>
+                        <input type="number" value="3000" min="0">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Alert Threshold (%)</label>
+                        <input type="number" value="80" min="0" max="100">
+                    </div>
+
+                    <div class="alert alert-info">
+                        <strong>Current Status:</strong> You've used 82% of your monthly budget ($2,450 / $3,000)
+                    </div>
+
+                    <h3 style="margin: 2rem 0 1rem;">Budget History</h3>
+
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Month</th>
+                                    <th>Budget</th>
+                                    <th>Actual</th>
+                                    <th>Variance</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>January 2026</td>
+                                    <td>$3,000</td>
+                                    <td>$2,450</td>
+                                    <td style="color: #16a34a;">-$550</td>
+                                </tr>
+                                <tr>
+                                    <td>December 2025</td>
+                                    <td>$3,000</td>
+                                    <td>$1,890</td>
+                                    <td style="color: #16a34a;">-$1,110</td>
+                                </tr>
+                                <tr>
+                                    <td>November 2025</td>
+                                    <td>$3,000</td>
+                                    <td>$3,240</td>
+                                    <td style="color: #dc2626;">+$240</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tags & Labels Section -->
+            <div id="section-tags-labels" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Tags & Labels</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Organize VMs with custom tags and labels.</p>
+
+                    <button class="btn btn-primary" style="margin-bottom: 2rem;">Create New Tag</button>
+
+                    <h3 style="margin-bottom: 1rem;">Tag Categories</h3>
+
+                    <div class="template-card">
+                        <h3 style="color: #f0583a; margin-bottom: 0.5rem;">🏷️ Environment</h3>
+                        <p style="color: #666;">
+                            <span class="badge badge-success">production</span>
+                            <span class="badge badge-info">development</span>
+                            <span class="badge badge-warning">staging</span>
+                        </p>
+                    </div>
+
+                    <div class="template-card">
+                        <h3 style="color: #f0583a; margin-bottom: 0.5rem;">🏷️ Application</h3>
+                        <p style="color: #666;">
+                            <span class="badge badge-info">web</span>
+                            <span class="badge badge-info">database</span>
+                            <span class="badge badge-info">api</span>
+                        </p>
+                    </div>
+
+                    <div class="template-card">
+                        <h3 style="color: #f0583a; margin-bottom: 0.5rem;">🏷️ Priority</h3>
+                        <p style="color: #666;">
+                            <span class="badge badge-danger">critical</span>
+                            <span class="badge badge-warning">high</span>
+                            <span class="badge badge-info">medium</span>
+                            <span class="badge badge-success">low</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Collections Section -->
+            <div id="section-collections" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">VM Collections</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Group related VMs into collections for easier management.</p>
+
+                    <button class="btn btn-primary" style="margin-bottom: 2rem;">Create Collection</button>
+
+                    <div class="template-card">
+                        <h3 style="color: #f0583a; margin-bottom: 0.5rem;">📁 Production Web Servers (12 VMs)</h3>
+                        <p style="color: #666;">All production web application servers</p>
+                        <button class="btn btn-small btn-secondary" style="margin-top: 1rem;">Manage</button>
+                    </div>
+
+                    <div class="template-card">
+                        <h3 style="color: #f0583a; margin-bottom: 0.5rem;">📁 Database Cluster (5 VMs)</h3>
+                        <p style="color: #666;">PostgreSQL database cluster nodes</p>
+                        <button class="btn btn-small btn-secondary" style="margin-top: 1rem;">Manage</button>
+                    </div>
+
+                    <div class="template-card">
+                        <h3 style="color: #f0583a; margin-bottom: 0.5rem;">📁 Development Environment (8 VMs)</h3>
+                        <p style="color: #666;">Development and testing VMs</p>
+                        <button class="btn btn-small btn-secondary" style="margin-top: 1rem;">Manage</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Saved Searches Section -->
+            <div id="section-saved-searches" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Saved Searches</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Save and reuse frequently used search queries.</p>
+
+                    <button class="btn btn-primary" style="margin-bottom: 2rem;">Save Current Search</button>
+
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Query</th>
+                                    <th>Results</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Production Windows VMs</td>
+                                    <td>tags:production AND os:windows</td>
+                                    <td>23 VMs</td>
+                                    <td><button class="btn btn-small btn-secondary">Run</button></td>
+                                </tr>
+                                <tr>
+                                    <td>High CPU Usage</td>
+                                    <td>cpu:&gt;80%</td>
+                                    <td>5 VMs</td>
+                                    <td><button class="btn btn-small btn-secondary">Run</button></td>
+                                </tr>
+                                <tr>
+                                    <td>Needs Backup</td>
+                                    <td>last_backup:&gt;7days</td>
+                                    <td>12 VMs</td>
+                                    <td><button class="btn btn-small btn-secondary">Run</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Encryption Section -->
+            <div id="section-encryption" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Encryption Settings</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Configure encryption for data at rest and in transit.</p>
+
+                    <h3 style="margin-bottom: 1rem;">Encryption at Rest</h3>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" checked> Encrypt exported VM images
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Encryption Algorithm</label>
+                        <select>
+                            <option>AES-256</option>
+                            <option>AES-128</option>
+                            <option>ChaCha20-Poly1305</option>
+                        </select>
+                    </div>
+
+                    <h3 style="margin: 2rem 0 1rem;">Encryption in Transit</h3>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" checked> Require TLS 1.3 for all connections
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" checked> Verify SSL certificates
+                        </label>
+                    </div>
+
+                    <h3 style="margin: 2rem 0 1rem;">Key Management</h3>
+
+                    <div class="form-group">
+                        <label>Key Storage</label>
+                        <select>
+                            <option>Local (File System)</option>
+                            <option>HashiCorp Vault</option>
+                            <option>AWS KMS</option>
+                            <option>Azure Key Vault</option>
+                        </select>
+                    </div>
+
+                    <button class="btn btn-primary">Save Encryption Settings</button>
+                </div>
+            </div>
+
+            <!-- Compliance Section -->
+            <div id="section-compliance" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Compliance & Auditing</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Ensure compliance with industry standards and regulations.</p>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h3>98%</h3>
+                            <p>Compliance Score</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>3</h3>
+                            <p>Active Policies</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>0</h3>
+                            <p>Violations</p>
+                        </div>
+                    </div>
+
+                    <h3 style="margin: 2rem 0 1rem;">Compliance Frameworks</h3>
+
+                    <div class="template-card">
+                        <h3 style="color: #f0583a; margin-bottom: 0.5rem;">✅ GDPR (General Data Protection Regulation)</h3>
+                        <p style="color: #666;">Status: <span class="badge badge-success">Compliant</span></p>
+                    </div>
+
+                    <div class="template-card">
+                        <h3 style="color: #f0583a; margin-bottom: 0.5rem;">✅ SOC 2 Type II</h3>
+                        <p style="color: #666;">Status: <span class="badge badge-success">Compliant</span></p>
+                    </div>
+
+                    <div class="template-card">
+                        <h3 style="color: #f0583a; margin-bottom: 0.5rem;">✅ HIPAA</h3>
+                        <p style="color: #666;">Status: <span class="badge badge-success">Compliant</span></p>
+                    </div>
+
+                    <button class="btn btn-primary" style="margin-top: 1rem;">Generate Compliance Report</button>
+                </div>
+            </div>
+
+            <!-- Audit Trail Section -->
+            <div id="section-audit-trail" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Audit Trail</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Complete audit log of all system activities.</p>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Filter by User</label>
+                            <select>
+                                <option>All Users</option>
+                                <option>admin</option>
+                                <option>operator1</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Filter by Action</label>
+                            <select>
+                                <option>All Actions</option>
+                                <option>Export</option>
+                                <option>Delete</option>
+                                <option>Modify</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>User</th>
+                                    <th>Action</th>
+                                    <th>Resource</th>
+                                    <th>IP Address</th>
+                                    <th>Details</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>2026-01-19 15:45:32</td>
+                                    <td>admin</td>
+                                    <td>EXPORT</td>
+                                    <td>web-server-01</td>
+                                    <td>192.168.1.100</td>
+                                    <td><button class="btn btn-small btn-secondary">View</button></td>
+                                </tr>
+                                <tr>
+                                    <td>2026-01-19 15:30:15</td>
+                                    <td>operator1</td>
+                                    <td>CREATE_USER</td>
+                                    <td>viewer2</td>
+                                    <td>192.168.1.101</td>
+                                    <td><button class="btn btn-small btn-secondary">View</button></td>
+                                </tr>
+                                <tr>
+                                    <td>2026-01-19 15:15:08</td>
+                                    <td>admin</td>
+                                    <td>MODIFY_POLICY</td>
+                                    <td>backup-policy-1</td>
+                                    <td>192.168.1.100</td>
+                                    <td><button class="btn btn-small btn-secondary">View</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <button class="btn btn-primary" style="margin-top: 1rem;">Export Audit Log</button>
+                </div>
+            </div>
+
+            <!-- Help & Support Section -->
+            <div id="section-help-support" class="content-section">
+                <div class="card">
+                    <h2 class="card-title">Help & Support</h2>
+                    <p style="color: #666; margin-bottom: 2rem;">Get help and access documentation.</p>
+
+                    <div class="template-card">
+                        <h3 style="color: #f0583a; margin-bottom: 0.5rem;">📚 Documentation</h3>
+                        <p style="color: #666;">Complete guides and API documentation</p>
+                        <button class="btn btn-small btn-primary" style="margin-top: 1rem;">View Docs</button>
+                    </div>
+
+                    <div class="template-card">
+                        <h3 style="color: #f0583a; margin-bottom: 0.5rem;">🎥 Video Tutorials</h3>
+                        <p style="color: #666;">Step-by-step video guides</p>
+                        <button class="btn btn-small btn-primary" style="margin-top: 1rem;">Watch Videos</button>
+                    </div>
+
+                    <div class="template-card">
+                        <h3 style="color: #f0583a; margin-bottom: 0.5rem;">💬 Community Forum</h3>
+                        <p style="color: #666;">Ask questions and share knowledge</p>
+                        <button class="btn btn-small btn-primary" style="margin-top: 1rem;">Visit Forum</button>
+                    </div>
+
+                    <div class="template-card">
+                        <h3 style="color: #f0583a; margin-bottom: 0.5rem;">📧 Contact Support</h3>
+                        <p style="color: #666;">Email: support@transiva.zyvor.ai</p>
+                        <button class="btn btn-small btn-primary" style="margin-top: 1rem;">Send Email</button>
+                    </div>
+
+                    <h3 style="margin: 2rem 0 1rem;">Frequently Asked Questions</h3>
+
+                    <div class="template-card">
+                        <h3 style="color: #000; margin-bottom: 0.5rem;">How do I export a VM?</h3>
+                        <p style="color: #666;">Connect to vCenter, select VMs, and click Export. The wizard will guide you through the process.</p>
+                    </div>
+
+                    <div class="template-card">
+                        <h3 style="color: #000; margin-bottom: 0.5rem;">What formats are supported?</h3>
+                        <p style="color: #666;">HyperSDK supports qcow2, raw, VMDK, and VHD formats for maximum compatibility.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        var selectedVMs = [];
+        var allVMs = [];
+        var authToken = null;
+        var currentSection = 'overview';
+
+        // Toggle password visibility
+        function togglePassword(fieldId, show) {
+            var field = document.getElementById(fieldId);
+            field.type = show ? 'text' : 'password';
+        }
+
+        // Navigation
+        function showSection(sectionName) {
+            var sections = document.querySelectorAll('.content-section');
+            sections.forEach(function(section) {
+                section.classList.remove('active');
+            });
+
+            var targetSection = document.getElementById('section-' + sectionName);
+            if (targetSection) {
+                targetSection.classList.add('active');
+            }
+
+            var navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(function(item) {
+                item.classList.remove('active');
+                if (item.getAttribute('data-section') === sectionName) {
+                    item.classList.add('active');
+                }
+            });
+
+            var titles = {
+                'overview': 'Dashboard',
+                'vcenter-connect': 'Connect to vCenter',
+                'vm-list': 'Virtual Machines',
+                'vm-details': 'VM Details',
+                'bulk-ops': 'Bulk Operations',
+                'job-submit': 'Submit Export Job',
+                'job-monitor': 'Real-Time Job Monitor',
+                'job-query': 'Query Jobs',
+                'job-history': 'Export History',
+                'import-jobs': 'Import to KVM',
+                'templates': 'Job Templates',
+                'vm-search': 'Search VMs',
+                'vm-operations': 'VM Actions',
+                'snapshots': 'VM Snapshots',
+                'storage-analytics': 'Storage Analytics',
+                'reports': 'Reports & Analytics',
+                'activity-logs': 'Activity Logs',
+                'job-scheduler': 'Job Scheduler',
+                'backup-policies': 'Automated Backup Policies',
+                'workflows': 'Workflow Automation',
+                'user-management': 'User Management',
+                'roles-permissions': 'Roles & Permissions',
+                'api-keys': 'API Key Management',
+                'sessions': 'Active Sessions',
+                'notifications': 'Notification Center',
+                'alert-rules': 'Alert Rules',
+                'webhooks': 'Webhook Configuration',
+                'migration-wizard': 'Migration Wizard',
+                'compatibility-checker': 'Compatibility Checker',
+                'rollback': 'Rollback Management',
+                'multi-vcenter': 'Multi-vCenter Management',
+                'cloud-export': 'Cloud Platform Export',
+                'integrations': 'Integrations',
+                'cost-management': 'Cost Management',
+                'budget-alerts': 'Budget & Alerts',
+                'tags-labels': 'Tags & Labels',
+                'collections': 'VM Collections',
+                'saved-searches': 'Saved Searches',
+                'encryption': 'Encryption Settings',
+                'compliance': 'Compliance & Auditing',
+                'audit-trail': 'Audit Trail',
+                'daemon-status': 'Daemon Status',
+                'api-docs': 'API Documentation',
+                'settings': 'Settings',
+                'help-support': 'Help & Support'
+            };
+            document.getElementById('page-title').textContent = titles[sectionName] || 'Dashboard';
+            currentSection = sectionName;
+        }
+
+        // Tab switching
+        function switchTab(tabName) {
+            var tabs = document.querySelectorAll('.tab');
+            tabs.forEach(function(tab) {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            var contents = document.querySelectorAll('.tab-content');
+            contents.forEach(function(content) {
+                content.classList.add('hidden');
+            });
+            document.getElementById('tab-' + tabName).classList.remove('hidden');
+        }
+
+        function switchAPITab(tabName) {
+            var tabs = document.querySelectorAll('.tab');
+            tabs.forEach(function(tab) {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            var contents = document.querySelectorAll('.api-tab-content');
+            contents.forEach(function(content) {
+                content.classList.add('hidden');
+            });
+            document.getElementById('api-tab-' + tabName).classList.remove('hidden');
+        }
+
+        // Login
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            login();
+        });
+
+        function login() {
+            var username = document.getElementById('username').value;
+            var password = document.getElementById('password').value;
+            var btn = document.getElementById('login-btn');
+            var errorDiv = document.getElementById('login-error');
+
+            btn.disabled = true;
+            btn.textContent = 'Logging in...';
+            errorDiv.classList.add('hidden');
+
+            setTimeout(function() {
+                authToken = 'demo-token-' + Date.now();
+                document.getElementById('user-display').textContent = username;
+                showDashboard();
+                btn.disabled = false;
+                btn.textContent = 'Login via PAM';
+            }, 500);
+        }
+
+        function showDashboard() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+        }
+
+        // vCenter
+        document.getElementById('vcenter-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            connectVCenter();
+        });
+
+        function connectVCenter() {
+            var server = document.getElementById('vcenter-server').value;
+            var username = document.getElementById('vcenter-username').value;
+            var password = document.getElementById('vcenter-password').value;
+            var btn = document.getElementById('vcenter-btn');
+            var errorDiv = document.getElementById('vcenter-error');
+            var successDiv = document.getElementById('vcenter-success');
+
+            btn.disabled = true;
+            btn.textContent = 'Connecting...';
+            errorDiv.classList.add('hidden');
+            successDiv.classList.add('hidden');
+
+            var params = new URLSearchParams({
+                server: server,
+                username: username,
+                password: password,
+                insecure: 'true'
+            });
+
+            fetch('/vms/list?' + params.toString(), {
+                method: 'GET'
+            })
+            .then(function(response) {
+                var contentType = response.headers.get('content-type');
+
+                if (!response.ok) {
+                    if (contentType && contentType.indexOf('application/json') !== -1) {
+                        return response.json().then(function(data) {
+                            throw new Error(data.error || 'Failed to connect to vCenter');
+                        });
+                    } else {
+                        return response.text().then(function(text) {
+                            throw new Error('Server error: ' + text.substring(0, 100));
+                        });
+                    }
+                }
+
+                if (contentType && contentType.indexOf('application/json') !== -1) {
+                    return response.json();
+                } else {
+                    throw new Error('Server returned non-JSON response');
+                }
+            })
+            .then(function(data) {
+                allVMs = data.vms || [];
+                successDiv.textContent = 'Successfully discovered ' + data.total + ' VMs from vCenter!';
+                successDiv.classList.remove('hidden');
+
+                document.getElementById('stat-total-vms').textContent = data.total || 0;
+
+                // Populate VM details dropdown
+                var select = document.getElementById('vm-details-select');
+                select.innerHTML = '<option value="">Select a VM to view details...</option>';
+                allVMs.forEach(function(vm, index) {
+                    var option = document.createElement('option');
+                    option.value = index;
+                    option.textContent = vm.name;
+                    select.appendChild(option);
+                });
+
+                setTimeout(function() {
+                    showSection('vm-list');
+                    displayVMs();
+                    updateStats();
+                }, 1000);
+            })
+            .catch(function(error) {
+                errorDiv.textContent = error.message || 'An error occurred';
+                errorDiv.classList.remove('hidden');
+            })
+            .finally(function() {
+                btn.disabled = false;
+                btn.textContent = 'Connect & Discover VMs';
+            });
+        }
+
+        function displayVMs() {
+            var tbody = document.getElementById('vm-tbody');
+
+            if (allVMs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: #999;">No VMs found</td></tr>';
+                return;
+            }
+
+            var html = '';
+            allVMs.forEach(function(vm, index) {
+                var powerState = vm.power_state || vm.status || 'unknown';
+                var badgeClass = powerState.toLowerCase() === 'running' || powerState.toLowerCase() === 'poweredon' ? 'badge-success' : 'badge-warning';
+
+                html += '<tr>';
+                html += '<td><input type="checkbox" class="vm-checkbox" data-index="' + index + '" onchange="updateSelection()"></td>';
+                html += '<td>' + (vm.name || 'N/A') + '</td>';
+                html += '<td><span class="badge ' + badgeClass + '">' + powerState + '</span></td>';
+                html += '<td>' + (vm.guest_os || vm.os || 'N/A') + '</td>';
+                html += '<td>' + (vm.cpus || vm.cpu || 'N/A') + '</td>';
+                html += '<td>' + (vm.memory || vm.ram || 'N/A') + '</td>';
+                html += '<td><button class="btn btn-small btn-secondary" onclick="viewVMDetails(' + index + ')">Details</button></td>';
+                html += '</tr>';
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        function viewVMDetails(index) {
+            var vm = allVMs[index];
+            document.getElementById('vm-details-select').value = index;
+
+            document.getElementById('detail-cpu').value = vm.cpus || vm.cpu || 'N/A';
+            document.getElementById('detail-memory').value = vm.memory || vm.ram || 'N/A';
+            document.getElementById('detail-os').value = vm.guest_os || vm.os || 'N/A';
+            document.getElementById('detail-power').value = vm.power_state || vm.status || 'N/A';
+
+            document.getElementById('vm-details-content').classList.remove('hidden');
+            showSection('vm-details');
+        }
+
+        // VM Details select change
+        document.getElementById('vm-details-select').addEventListener('change', function(e) {
+            var index = parseInt(e.target.value);
+            if (isNaN(index)) {
+                document.getElementById('vm-details-content').classList.add('hidden');
+                return;
+            }
+            viewVMDetails(index);
+        });
+
+        function toggleSelectAll() {
+            var selectAll = document.getElementById('select-all');
+            var checkboxes = document.querySelectorAll('.vm-checkbox');
+
+            checkboxes.forEach(function(cb) {
+                cb.checked = selectAll.checked;
+            });
+
+            updateSelection();
+        }
+
+        function updateSelection() {
+            selectedVMs = [];
+            var checkboxes = document.querySelectorAll('.vm-checkbox:checked');
+
+            checkboxes.forEach(function(cb) {
+                var index = parseInt(cb.getAttribute('data-index'));
+                selectedVMs.push(allVMs[index]);
+            });
+
+            document.getElementById('selected-vms').textContent = selectedVMs.length;
+            document.getElementById('export-btn').disabled = selectedVMs.length === 0;
+        }
+
+        function updateStats() {
+            document.getElementById('total-vms').textContent = allVMs.length;
+            document.getElementById('selected-vms').textContent = selectedVMs.length;
+
+            var runningCount = allVMs.filter(function(vm) {
+                var state = (vm.power_state || vm.status || '').toLowerCase();
+                return state === 'running' || state === 'poweredon';
+            }).length;
+
+            document.getElementById('running-vms').textContent = runningCount;
+        }
+
+        function exportSelectedVMs() {
+            if (selectedVMs.length === 0) {
+                alert('Please select at least one VM to export');
+                return;
+            }
+
+            var errorDiv = document.getElementById('vm-error');
+            var successDiv = document.getElementById('vm-success');
+
+            errorDiv.classList.add('hidden');
+            successDiv.classList.add('hidden');
+
+            var btn = document.getElementById('export-btn');
+            btn.disabled = true;
+            btn.textContent = 'Submitting Jobs...';
+
+            var vcenterServer = document.getElementById('vcenter-server').value;
+            var vcenterUsername = document.getElementById('vcenter-username').value;
+            var vcenterPassword = document.getElementById('vcenter-password').value;
+
+            var jobs = selectedVMs.map(function(vm) {
+                return {
+                    name: vm.name,
+                    vm_path: vm.name,
+                    output_dir: '/tmp/exports',
+                    format: 'qcow2',
+                    vcenter: {
+                        server: vcenterServer,
+                        username: vcenterUsername,
+                        password: vcenterPassword,
+                        insecure: true
+                    }
+                };
+            });
+
+            fetch('/jobs/submit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ jobs: jobs })
+            })
+            .then(function(response) {
+                var contentType = response.headers.get('content-type');
+
+                if (!response.ok) {
+                    if (contentType && contentType.indexOf('application/json') !== -1) {
+                        return response.json().then(function(data) {
+                            throw new Error(data.error || 'Failed to submit jobs');
+                        });
+                    } else {
+                        return response.text().then(function(text) {
+                            throw new Error('Server error: ' + text.substring(0, 100));
+                        });
+                    }
+                }
+
+                if (contentType && contentType.indexOf('application/json') !== -1) {
+                    return response.json();
+                } else {
+                    throw new Error('Server returned non-JSON response');
+                }
+            })
+            .then(function(data) {
+                successDiv.textContent = 'Successfully submitted ' + selectedVMs.length + ' export job(s)!';
+                successDiv.classList.remove('hidden');
+
+                selectedVMs = [];
+                document.getElementById('select-all').checked = false;
+                var checkboxes = document.querySelectorAll('.vm-checkbox');
+                checkboxes.forEach(function(cb) {
+                    cb.checked = false;
+                });
+                updateSelection();
+            })
+            .catch(function(error) {
+                errorDiv.textContent = error.message || 'An error occurred';
+                errorDiv.classList.remove('hidden');
+            })
+            .finally(function() {
+                btn.disabled = false;
+                btn.textContent = 'Export Selected VMs';
+            });
+        }
+
+        function executeBulkOperation() {
+            var operation = document.getElementById('bulk-operation').value;
+            if (!operation) {
+                alert('Please select an operation');
+                return;
+            }
+            alert('Bulk operation "' + operation + '" would be executed');
+        }
+
+        function selectTemplate(templateName) {
+            var cards = document.querySelectorAll('.template-card');
+            cards.forEach(function(card) {
+                card.classList.remove('selected');
+            });
+            event.target.closest('.template-card').classList.add('selected');
+
+            alert('Template "' + templateName + '" selected. You can now use this template for exports.');
+        }
+
+        function refreshJobMonitor() {
+            var content = document.getElementById('job-monitor-content');
+            content.innerHTML = '<div class="loading"><div class="spinner"></div>Loading jobs...</div>';
+
+            setTimeout(function() {
+                content.innerHTML = '<div class="card" style="margin: 0; border: 2px solid #f0583a;">' +
+                    '<h3 style="color: #f0583a; margin-bottom: 1rem;">Export Job: web-server-01</h3>' +
+                    '<p style="color: #666; margin-bottom: 0.5rem;">Status: <span class="badge badge-info">Running</span></p>' +
+                    '<p style="color: #666; margin-bottom: 1rem;">Progress: 45%</p>' +
+                    '<div class="progress-bar"><div class="progress-bar-fill" style="width: 45%"></div></div>' +
+                    '<p style="color: #999; font-size: 0.875rem; margin-top: 0.5rem;">Estimated time remaining: 12 minutes</p>' +
+                    '</div>';
+            }, 1000);
+        }
+
+        function queryAllJobs() {
+            var tbody = document.getElementById('jobs-tbody');
+            tbody.innerHTML = '<tr><td colspan="6" class="loading"><div class="spinner"></div>Loading jobs...</td></tr>';
+
+            fetch('/jobs/query?all=true')
+            .then(function(response) {
+                if (!response.ok) throw new Error('Failed to query jobs');
+                return response.json();
+            })
+            .then(function(data) {
+                var jobs = data.jobs || [];
+                if (jobs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem; color: #999;">No jobs found</td></tr>';
+                    return;
+                }
+
+                var html = '';
+                jobs.forEach(function(job) {
+                    html += '<tr>';
+                    html += '<td>' + (job.id || 'N/A') + '</td>';
+                    html += '<td>' + (job.name || 'N/A') + '</td>';
+                    html += '<td><span class="badge badge-success">' + (job.status || 'unknown') + '</span></td>';
+                    html += '<td>' + (job.progress || '0') + '%</td>';
+                    html += '<td>' + (job.created || 'N/A') + '</td>';
+                    html += '<td><button class="btn btn-small btn-secondary">Cancel</button></td>';
+                    html += '</tr>';
+                });
+                tbody.innerHTML = html;
+            })
+            .catch(function(error) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem; color: #999;">Error loading jobs</td></tr>';
+            });
+        }
+
+        function checkDaemonStatus() {
+            var statusDiv = document.getElementById('status-content');
+            statusDiv.innerHTML = '<div class="loading"><div class="spinner"></div>Checking status...</div>';
+
+            fetch('/health')
+            .then(function(response) {
+                if (!response.ok) throw new Error('Daemon is not responding');
+                return response.json();
+            })
+            .then(function(data) {
+                statusDiv.innerHTML = '<div class="alert alert-success"><strong>Daemon Status:</strong> Healthy and running</div>' +
+                    '<pre style="background: #f8f9fb; padding: 1rem; border-radius: 6px; overflow: auto;">' +
+                    JSON.stringify(data, null, 2) + '</pre>';
+            })
+            .catch(function(error) {
+                statusDiv.innerHTML = '<div class="alert alert-error"><strong>Error:</strong> ' + error.message + '</div>';
+            });
+        }
+
+        function logout() {
+            authToken = null;
+            selectedVMs = [];
+            allVMs = [];
+
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('dashboard').classList.add('hidden');
+
+            document.getElementById('login-form').reset();
+            document.getElementById('vcenter-form').reset();
+
+            showSection('overview');
+        }
+
+        // Auto-skip login for demo
+        window.addEventListener('load', function() {
+            fetch('/health')
+                .then(function(response) {
+                    if (response.ok) {
+                        var contentType = response.headers.get('content-type');
+                        if (contentType && contentType.indexOf('application/json') !== -1) {
+                            return response.json();
+                        } else {
+                            return {};
+                        }
+                    }
+                    throw new Error('Health check failed');
+                })
+                .then(function() {
+                    setTimeout(function() {
+                        authToken = 'no-auth';
+                        document.getElementById('user-display').textContent = 'Demo User';
+                        showDashboard();
+                    }, 100);
+                })
+                .catch(function(error) {
+                    console.log('Server requires authentication:', error);
+                });
+        });
+    </script>
+</body>
+</html>

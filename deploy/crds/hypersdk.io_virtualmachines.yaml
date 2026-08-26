@@ -1,0 +1,362 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: virtualmachines.transiva.zyvor.ai
+spec:
+  group: transiva.zyvor.ai
+  names:
+    kind: VirtualMachine
+    listKind: VirtualMachineList
+    plural: virtualmachines
+    singular: virtualmachine
+    shortNames:
+      - vm
+      - vms
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required:
+                - cpus
+                - memory
+              properties:
+                # VM Resources
+                cpus:
+                  type: integer
+                  minimum: 1
+                  maximum: 128
+                  description: "Number of virtual CPUs"
+                memory:
+                  type: string
+                  pattern: '^[0-9]+[KMGT]i$'
+                  description: "Memory size (e.g., 4Gi, 8Gi, 16Gi)"
+
+                # Disks
+                disks:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - name
+                      - size
+                    properties:
+                      name:
+                        type: string
+                      size:
+                        type: string
+                        pattern: '^[0-9]+[KMGT]i$'
+                      storageClass:
+                        type: string
+                        default: standard
+                      bootOrder:
+                        type: integer
+                        minimum: 1
+                      type:
+                        type: string
+                        enum:
+                          - disk
+                          - cdrom
+                        default: disk
+                      source:
+                        type: object
+                        properties:
+                          pvc:
+                            type: string
+                          http:
+                            type: string
+                          s3:
+                            type: string
+                          containerDisk:
+                            type: string
+
+                # Networks
+                networks:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - name
+                    properties:
+                      name:
+                        type: string
+                      type:
+                        type: string
+                        enum:
+                          - pod-network
+                          - multus
+                          - bridge
+                        default: pod-network
+                      multusNetworkName:
+                        type: string
+                      macAddress:
+                        type: string
+                        pattern: '^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$'
+
+                # Image Source
+                image:
+                  type: object
+                  properties:
+                    source:
+                      type: string
+                      description: "Image URL (s3://, http://, https://)"
+                    templateRef:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        namespace:
+                          type: string
+                    checksum:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                          enum:
+                            - md5
+                            - sha256
+                            - sha512
+                        value:
+                          type: string
+
+                # Cloud-init
+                cloudInit:
+                  type: object
+                  properties:
+                    userData:
+                      type: string
+                      description: "Cloud-init user data"
+                    networkData:
+                      type: string
+                      description: "Cloud-init network data"
+                    secretRef:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+
+                # Power State
+                running:
+                  type: boolean
+                  default: true
+                  description: "Desired power state (true=running, false=stopped)"
+
+                # Scheduling
+                nodeSelector:
+                  type: object
+                  additionalProperties:
+                    type: string
+                affinity:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
+                tolerations:
+                  type: array
+                  items:
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+
+                # Carbon-aware Scheduling
+                carbonAware:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                      default: false
+                    maxIntensity:
+                      type: integer
+                      description: "Maximum carbon intensity in gCO2/kWh"
+                    preferGreenEnergy:
+                      type: boolean
+                      default: true
+                    zone:
+                      type: string
+                      description: "Carbon intensity zone (e.g., US-CAL-CISO)"
+
+                # Machine Type
+                machineType:
+                  type: string
+                  enum:
+                    - q35
+                    - pc
+                  default: q35
+                  description: "QEMU machine type"
+
+                # Firmware
+                firmware:
+                  type: object
+                  properties:
+                    bootloader:
+                      type: string
+                      enum:
+                        - bios
+                        - uefi
+                      default: bios
+                    secureBoot:
+                      type: boolean
+                      default: false
+
+                # Guest Agent
+                guestAgent:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                      default: true
+
+                # High Availability
+                highAvailability:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                      default: false
+                    restartPolicy:
+                      type: string
+                      enum:
+                        - Always
+                        - OnFailure
+                        - Never
+                      default: Always
+                    restartDelay:
+                      type: string
+                      pattern: '^[0-9]+(s|m|h)$'
+                      default: 30s
+                    maxRestarts:
+                      type: integer
+                      default: 3
+                    evictionStrategy:
+                      type: string
+                      enum:
+                        - LiveMigrate
+                        - Shutdown
+                        - None
+                      default: LiveMigrate
+
+                # Labels and Annotations
+                labels:
+                  type: object
+                  additionalProperties:
+                    type: string
+                annotations:
+                  type: object
+                  additionalProperties:
+                    type: string
+
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                  enum:
+                    - Pending
+                    - Creating
+                    - Running
+                    - Stopped
+                    - Migrating
+                    - Paused
+                    - Failed
+                    - Unknown
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - type
+                      - status
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                        enum:
+                          - "True"
+                          - "False"
+                          - Unknown
+                      lastTransitionTime:
+                        type: string
+                        format: date-time
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                guestAgent:
+                  type: object
+                  properties:
+                    connected:
+                      type: boolean
+                    version:
+                      type: string
+                    hostname:
+                      type: string
+                ipAddresses:
+                  type: array
+                  items:
+                    type: string
+                nodeName:
+                  type: string
+                  description: "Node where VM is running"
+                resources:
+                  type: object
+                  properties:
+                    cpu:
+                      type: object
+                      properties:
+                        usage:
+                          type: string
+                        requests:
+                          type: integer
+                    memory:
+                      type: object
+                      properties:
+                        usage:
+                          type: string
+                        requests:
+                          type: string
+                qemuPid:
+                  type: integer
+                  description: "QEMU process ID"
+                vnc:
+                  type: object
+                  properties:
+                    port:
+                      type: integer
+                    nodePort:
+                      type: integer
+                    enabled:
+                      type: boolean
+                creationTimestamp:
+                  type: string
+                  format: date-time
+                startTime:
+                  type: string
+                  format: date-time
+                carbonIntensity:
+                  type: number
+                  description: "Current carbon intensity at VM location (gCO2/kWh)"
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Status
+          type: string
+          jsonPath: .status.phase
+        - name: CPUs
+          type: integer
+          jsonPath: .spec.cpus
+        - name: Memory
+          type: string
+          jsonPath: .spec.memory
+        - name: Node
+          type: string
+          jsonPath: .status.nodeName
+        - name: IPs
+          type: string
+          jsonPath: .status.ipAddresses[0]
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp

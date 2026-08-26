@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "transiva-operator.fullname" . }}
+  namespace: {{ include "transiva-operator.namespace" . }}
+  labels:
+    {{- include "transiva-operator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: operator
+  {{- with .Values.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    {{- include "transiva-operator.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: 8081
+      protocol: TCP

@@ -1,0 +1,214 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: vmtemplates.transiva.zyvor.ai
+spec:
+  group: transiva.zyvor.ai
+  names:
+    kind: VMTemplate
+    listKind: VMTemplateList
+    plural: vmtemplates
+    singular: vmtemplate
+    shortNames:
+      - vmt
+      - vmtpl
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required:
+                - displayName
+                - image
+              properties:
+                # Template Metadata
+                displayName:
+                  type: string
+                  description: "Human-readable template name"
+                description:
+                  type: string
+                  description: "Template description"
+                version:
+                  type: string
+                  description: "Template version"
+                  default: "1.0.0"
+                tags:
+                  type: array
+                  items:
+                    type: string
+                  description: "Template tags for categorization"
+                icon:
+                  type: string
+                  description: "Icon URL or emoji"
+
+                # Operating System Info
+                osInfo:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                      enum:
+                        - linux
+                        - windows
+                        - other
+                    distribution:
+                      type: string
+                      description: "e.g., ubuntu, centos, debian, windows-server"
+                    version:
+                      type: string
+                      description: "OS version (e.g., 22.04, 2022)"
+
+                # Default VM Spec (can be overridden when creating VM)
+                defaultSpec:
+                  type: object
+                  properties:
+                    cpus:
+                      type: integer
+                      minimum: 1
+                      maximum: 128
+                      default: 2
+                    memory:
+                      type: string
+                      pattern: '^[0-9]+[KMGT]i$'
+                      default: 4Gi
+                    disks:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                          size:
+                            type: string
+                          storageClass:
+                            type: string
+                    networks:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                          type:
+                            type: string
+
+                # Image Source
+                image:
+                  type: object
+                  required:
+                    - source
+                  properties:
+                    source:
+                      type: string
+                      description: "Image URL (s3://, http://, https://)"
+                    format:
+                      type: string
+                      enum:
+                        - qcow2
+                        - raw
+                        - vmdk
+                        - vdi
+                        - vhdx
+                      default: qcow2
+                    size:
+                      type: string
+                      description: "Image size"
+                    checksum:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                          enum:
+                            - md5
+                            - sha256
+                            - sha512
+                        value:
+                          type: string
+
+                # Cloud-init Defaults
+                cloudInit:
+                  type: object
+                  properties:
+                    defaultUserData:
+                      type: string
+                      description: "Default cloud-init user data"
+                    defaultNetworkData:
+                      type: string
+                      description: "Default cloud-init network data"
+
+                # Required Features
+                requiredFeatures:
+                  type: array
+                  items:
+                    type: string
+                  description: "Required node features (e.g., kvm, sriov)"
+
+                # Recommended Resources
+                recommendedResources:
+                  type: object
+                  properties:
+                    minCpus:
+                      type: integer
+                    minMemory:
+                      type: string
+                    minDiskSize:
+                      type: string
+
+            status:
+              type: object
+              properties:
+                ready:
+                  type: boolean
+                  description: "Template is ready for use"
+                size:
+                  type: string
+                  description: "Image size on disk"
+                lastUpdated:
+                  type: string
+                  format: date-time
+                usageCount:
+                  type: integer
+                  description: "Number of VMs created from this template"
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                        format: date-time
+                      reason:
+                        type: string
+                      message:
+                        type: string
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Display Name
+          type: string
+          jsonPath: .spec.displayName
+        - name: OS
+          type: string
+          jsonPath: .spec.osInfo.distribution
+        - name: Version
+          type: string
+          jsonPath: .spec.version
+        - name: Ready
+          type: boolean
+          jsonPath: .status.ready
+        - name: Usage
+          type: integer
+          jsonPath: .status.usageCount
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp

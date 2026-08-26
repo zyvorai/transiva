@@ -1,0 +1,90 @@
+# Alertmanager configuration for HyperSDK
+
+global:
+  resolve_timeout: 5m
+  smtp_smarthost: 'smtp.example.com:587'
+  smtp_from: 'alertmanager@transiva.example.com'
+  smtp_auth_username: 'alertmanager'
+  smtp_auth_password: 'password'
+
+# Templates for alert notifications
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# Route tree for alerts
+route:
+  receiver: 'default'
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+  routes:
+    # Critical alerts go to pagerduty
+    - match:
+        severity: critical
+      receiver: 'pagerduty'
+      continue: true
+
+    # Job-related alerts
+    - match:
+        component: jobs
+      receiver: 'team-jobs'
+
+    # System alerts
+    - match:
+        component: system
+      receiver: 'team-infra'
+
+    # Provider alerts
+    - match:
+        component: provider
+      receiver: 'team-providers'
+
+# Alert receivers
+receivers:
+  - name: 'default'
+    email_configs:
+      - to: 'team@example.com'
+        headers:
+          Subject: '[HyperSDK] {{ .GroupLabels.alertname }}'
+
+  - name: 'team-jobs'
+    email_configs:
+      - to: 'jobs-team@example.com'
+        headers:
+          Subject: '[HyperSDK Jobs] {{ .GroupLabels.alertname }}'
+
+  - name: 'team-infra'
+    email_configs:
+      - to: 'infra-team@example.com'
+        headers:
+          Subject: '[HyperSDK Infra] {{ .GroupLabels.alertname }}'
+
+  - name: 'team-providers'
+    email_configs:
+      - to: 'providers-team@example.com'
+        headers:
+          Subject: '[HyperSDK Providers] {{ .GroupLabels.alertname }}'
+
+  - name: 'pagerduty'
+    pagerduty_configs:
+      - service_key: 'your-pagerduty-service-key'
+        description: '{{ .GroupLabels.alertname }}: {{ .CommonAnnotations.summary }}'
+
+  # Slack webhook (optional)
+  # - name: 'slack'
+  #   slack_configs:
+  #     - api_url: 'https://hooks.slack.com/services/YOUR/WEBHOOK/URL'
+  #       channel: '#alerts'
+  #       title: '[{{ .Status | toUpper }}] {{ .GroupLabels.alertname }}'
+  #       text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+
+# Inhibition rules
+inhibit_rules:
+  # Inhibit warning if critical is firing
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'instance']

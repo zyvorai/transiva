@@ -1,0 +1,199 @@
+# Default values for transiva-operator
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Operator configuration
+operator:
+  # Number of replicas (leader election enables HA)
+  replicaCount: 1
+
+  image:
+    repository: ghcr.io/ssahani/transiva-operator
+    pullPolicy: IfNotPresent
+    # Overrides the image tag whose default is the chart appVersion
+    tag: ""
+
+  imagePullSecrets: []
+  nameOverride: ""
+  fullnameOverride: ""
+
+  # Operator command-line arguments
+  args:
+    # Number of worker threads per controller
+    workers: 3
+    # Log level (debug, info, warn, error)
+    logLevel: info
+    # Namespace to watch (empty = all namespaces)
+    namespace: ""
+
+  # Resource limits and requests
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+  # Security context for the pod
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    fsGroup: 65532
+    seccompProfile:
+      type: RuntimeDefault
+
+  # Security context for the container
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+
+  # Liveness probe configuration
+  livenessProbe:
+    httpGet:
+      path: /healthz
+      port: 8081
+    initialDelaySeconds: 15
+    periodSeconds: 20
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  # Readiness probe configuration
+  readinessProbe:
+    httpGet:
+      path: /readyz
+      port: 8081
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  # Node selector
+  nodeSelector: {}
+
+  # Tolerations
+  tolerations: []
+
+  # Affinity rules
+  affinity: {}
+
+  # Pod annotations
+  podAnnotations: {}
+
+  # Pod labels
+  podLabels: {}
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 8081
+  annotations: {}
+
+# ServiceAccount configuration
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+# RBAC configuration
+rbac:
+  # Specifies whether RBAC resources should be created
+  create: true
+
+# CRD installation
+crds:
+  # Install CRDs as part of the Helm release
+  install: true
+  # Keep CRDs when the Helm release is deleted
+  keep: true
+
+# Namespace configuration
+namespace:
+  # Create the operator namespace
+  create: true
+  # Namespace name
+  name: transiva-system
+
+# Metrics configuration (for future Prometheus integration)
+metrics:
+  enabled: false
+  port: 8080
+  serviceMonitor:
+    enabled: false
+    interval: 30s
+    scrapeTimeout: 10s
+
+# Webhook configuration (for future admission webhooks)
+webhook:
+  enabled: false
+  port: 9443
+  certManager:
+    enabled: false
+
+# Provider configurations
+providers:
+  # Enable specific providers
+  vsphere:
+    enabled: true
+  kubevirt:
+    enabled: true
+  aws:
+    enabled: true
+  azure:
+    enabled: true
+  gcp:
+    enabled: true
+
+# Carbon-aware scheduling
+carbonAware:
+  # Enable carbon-aware scheduling by default for new jobs
+  defaultEnabled: true
+  # Default carbon zone
+  defaultZone: US-CAL-CISO
+  # Default maximum carbon intensity (gCO2/kWh)
+  defaultMaxIntensity: 200.0
+  # Default maximum delay in hours
+  defaultMaxDelayHours: 4.0
+
+# Backup defaults
+backupDefaults:
+  # Default backup format
+  format: ova
+  # Default compression
+  compression: true
+  compressionLevel: 6
+  # Default retention policy
+  retention:
+    keepDaily: 7
+    keepWeekly: 4
+    keepMonthly: 12
+    keepYearly: 3
+
+# Scheduled backup defaults
+scheduleDefaults:
+  # Default concurrency policy
+  concurrencyPolicy: Forbid
+  # Default successful jobs history limit
+  successfulJobsHistoryLimit: 3
+  # Default failed jobs history limit
+  failedJobsHistoryLimit: 1
+  # Default timezone
+  timezone: UTC
+
+# Feature gates (for experimental features)
+featureGates:
+  # Enable incremental backups
+  incrementalBackups: true
+  # Enable VM cloning
+  vmCloning: true
+  # Enable live migration
+  liveMigration: false
+  # Enable webhook validation
+  webhookValidation: false

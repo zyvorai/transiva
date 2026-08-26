@@ -1,0 +1,320 @@
+# HyperSDK Configuration File
+# This file demonstrates all available configuration options including Phase 1-3 enhancements
+
+# ===== vCenter Connection =====
+vcenter_url: "https://vcenter.example.com"
+username: "admin@vsphere.local"
+password: "your-password-here"
+insecure: true  # Set to false in production with valid certificates
+timeout: 3600s
+
+# ===== Export Settings =====
+download_workers: 3
+chunk_size: 33554432  # 32MB
+retry_attempts: 3
+retry_delay: 5s
+
+# ===== Logging =====
+log_level: "info"  # debug, info, warn, error
+progress_style: "bar"  # bar, spinner, quiet
+show_eta: true
+refresh_rate: 100ms
+
+# ===== Daemon API Server =====
+daemon_addr: "0.0.0.0:8080"
+
+# ===== Phase 1.1: Connection Pooling =====
+# Reuse vSphere connections to reduce overhead for concurrent exports
+connection_pool:
+  enabled: true
+  max_connections: 5  # Maximum number of pooled connections
+  idle_timeout: 5m    # Close connections idle for this duration
+  health_check_interval: 30s  # How often to check for stale connections
+
+# ===== Phase 1.2: Webhook Notifications =====
+# Receive real-time notifications for job lifecycle events
+webhooks:
+  # Production webhook
+  - url: "https://your-server.com/api/webhook"
+    events:
+      - "job.started"
+      - "job.completed"
+      - "job.failed"
+    headers:
+      Authorization: "Bearer your-api-token-here"
+      X-Custom-Header: "transiva"
+    timeout: 10s
+    retry: 3
+    enabled: true
+
+  # Slack webhook (example)
+  - url: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+    events:
+      - "job.completed"
+      - "job.failed"
+    timeout: 5s
+    retry: 2
+    enabled: false  # Set to true to enable
+
+  # Catch-all webhook (all events)
+  - url: "https://monitoring.example.com/events"
+    events: ["*"]  # All events
+    timeout: 15s
+    retry: 5
+    enabled: false
+
+# ===== Phase 2.3: Job Scheduling Database =====
+# SQLite database for persistent job schedules
+database_path: "./transiva.db"
+
+# ===== Phase 4.1: AWS EC2 Export to S3 =====
+# Configure AWS credentials and S3 bucket for EC2 instance exports
+aws:
+  enabled: false  # Set to true to enable AWS exports
+  region: "us-east-1"  # AWS region for EC2 instances
+  access_key: "AKIAIOSFODNN7EXAMPLE"  # AWS access key ID
+  secret_key: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"  # AWS secret access key
+  s3_bucket: "vm-exports"  # S3 bucket for storing exported VMDKs
+  export_format: "vmdk"  # vmdk, vhd, or raw
+
+# Example AWS EC2 export usage:
+# 1. Export EC2 instance to S3 as VMDK:
+#    POST /jobs/submit
+#    {
+#      "provider": "aws",
+#      "vm_path": "i-1234567890abcdef0",  # EC2 instance ID
+#      "output_dir": "/exports",
+#      "format": "vmdk",
+#      "metadata": {
+#        "s3_bucket": "vm-exports",
+#        "region": "us-east-1"
+#      }
+#    }
+#
+# 2. Export EBS snapshot to VMDK:
+#    POST /aws/snapshots/{snapshot-id}/export
+#
+# Note: AWS VM Import/Export requires:
+# - IAM role with vmimport permissions
+# - S3 bucket in the same region as EC2 instances
+# - Service role policy for VM Import/Export
+
+# ===== Phase 4.2: Azure VHD Export to Blob Storage =====
+# Configure Azure credentials and blob storage for VM exports
+azure:
+  enabled: false  # Set to true to enable Azure exports
+  subscription_id: "00000000-0000-0000-0000-000000000000"
+  tenant_id: "00000000-0000-0000-0000-000000000000"
+  client_id: "00000000-0000-0000-0000-000000000000"  # Service principal client ID
+  client_secret: "your-client-secret-here"
+  resource_group: "vm-exports-rg"
+  location: "eastus"  # Azure region
+  storage_account: "vmexportsstorage"  # Storage account name
+  container: "vhd-exports"  # Blob container name
+  container_url: "https://vmexportsstorage.blob.core.windows.net/vhd-exports"
+  export_format: "vhd"  # vhd or image
+
+# Example Azure VM export usage:
+# 1. Export Azure VM to VHD in blob storage:
+#    POST /jobs/submit
+#    {
+#      "provider": "azure",
+#      "vm_path": "my-vm-name",
+#      "output_dir": "/exports",
+#      "format": "vhd",
+#      "metadata": {
+#        "container_url": "https://storage.blob.core.windows.net/exports",
+#        "export_format": "vhd",
+#        "resource_group": "my-rg"
+#      }
+#    }
+#
+# 2. Export managed disk to VHD:
+#    POST /azure/disks/{disk-name}/export
+#
+# Note: Azure VHD export requires:
+# - Service principal with appropriate permissions
+# - Storage account with blob container created
+# - Managed disks or VMs in the same subscription
+# - IAM roles: "Disk Snapshot Contributor" and "Storage Blob Data Contributor"
+
+# ===== Phase 4.3: GCP Export to Google Cloud Storage =====
+# Configure GCP credentials and GCS bucket for VM exports
+gcp:
+  enabled: false  # Set to true to enable GCP exports
+  project_id: "my-gcp-project-id"
+  zone: "us-central1-a"  # GCP zone for compute instances
+  region: "us-central1"  # GCP region
+  credentials_json: "/path/to/service-account-key.json"  # Path to service account JSON
+  gcs_bucket: "vm-exports"  # GCS bucket for storing exported VMDKs
+  export_format: "vmdk"  # vmdk or image
+
+# Example GCP instance export usage:
+# 1. Export GCP instance to GCS as VMDK:
+#    POST /jobs/submit
+#    {
+#      "provider": "gcp",
+#      "vm_path": "my-instance-name",
+#      "output_dir": "/exports",
+#      "format": "vmdk",
+#      "metadata": {
+#        "gcs_bucket": "vm-exports",
+#        "project_id": "my-project",
+#        "zone": "us-central1-a"
+#      }
+#    }
+#
+# 2. Export persistent disk to VMDK:
+#    POST /gcp/disks/{disk-name}/export
+#
+# Note: GCP VMDK export requires:
+# - Service account with appropriate permissions
+# - GCS bucket created in the same project
+# - Persistent disks or instances in the specified zone
+# - IAM roles: "Compute Image User" and "Storage Object Admin"
+# - API: Compute Engine API and Cloud Storage API enabled
+
+# ===== Phase 4.4: Hyper-V Export via PowerShell/WinRM =====
+# Configure Hyper-V host and credentials for VM exports
+hyperv:
+  enabled: false  # Set to true to enable Hyper-V exports
+  host: ""  # Leave empty for local Hyper-V, or specify hostname/IP for remote
+  username: "Administrator"  # Windows username (for WinRM)
+  password: "your-password-here"  # Windows password (for WinRM)
+  use_winrm: false  # Set to true for remote Hyper-V hosts
+  winrm_port: 5985  # WinRM port (5985 for HTTP, 5986 for HTTPS)
+  use_https: false  # Set to true to use HTTPS for WinRM (port 5986)
+  export_format: "vhdx"  # vhdx, vhd, or hyperv (full VM export)
+
+# Example Hyper-V VM export usage:
+# 1. Export Hyper-V VM (full export with config):
+#    POST /jobs/submit
+#    {
+#      "provider": "hyperv",
+#      "vm_path": "MyVM",
+#      "output_dir": "/exports",
+#      "format": "hyperv",
+#      "metadata": {
+#        "host": "hyperv-server",
+#        "use_winrm": true
+#      }
+#    }
+#
+# 2. Export VHD files only:
+#    POST /jobs/submit
+#    {
+#      "provider": "hyperv",
+#      "vm_path": "MyVM",
+#      "output_dir": "/exports",
+#      "format": "vhdx",
+#      "metadata": {
+#        "export_format": "vhdx"
+#      }
+#    }
+#
+# Note: Hyper-V export requires:
+# - Hyper-V role installed on Windows Server
+# - PowerShell 5.0+ with Hyper-V module
+# - Administrator privileges (local or via WinRM)
+# - For remote: WinRM configured and enabled
+# - For remote: Network connectivity on WinRM port (5985/5986)
+# - Sufficient disk space for exports
+
+# ===== Export Format Defaults (Phase 2.1 & 2.2) =====
+# Note: These can be overridden per-job in API requests
+# Default format: "ovf" or "ova"
+# Default compression: false or true
+# Default compression_level: 0-9 (6 is standard gzip default)
+
+# Example job definition with new features:
+# {
+#   "name": "Production Backup",
+#   "vm_path": "/Datacenter/vm/prod-web-01",
+#   "output_dir": "/backups",
+#   "format": "ova",           # Use OVA format (Phase 2.1)
+#   "compress": true,          # Enable compression (Phase 2.2)
+#   "compression_level": 6,    # Compression level (0-9)
+#   "cleanup_ovf": true        # Remove intermediate OVF files
+# }
+
+# Example scheduled job (Phase 2.3):
+# POST /schedules
+# {
+#   "id": "daily-backup",
+#   "name": "Daily Production Backup",
+#   "schedule": "0 2 * * *",  # 2 AM daily (cron format)
+#   "enabled": true,
+#   "job_template": {
+#     "vm_path": "/Datacenter/vm/prod-*",
+#     "output_dir": "/backups",
+#     "format": "ova",
+#     "compress": true
+#   }
+# }
+
+# ===== Nutanix Prism Central (Discovery + NFS Pickup Export) =====
+# Full guide: docs/nutanix.md
+# Environment variables (optional):
+#   NUTANIX_HOST, NUTANIX_USERNAME, NUTANIX_PASSWORD
+#   NUTANIX_CLUSTER, NUTANIX_VERIFY_SSL, NUTANIX_ENABLED
+nutanix:
+  host: "prism-central.example.com"
+  port: 9440
+  username: "admin"
+  password: "your-password-here"
+  verify_ssl: false
+  cluster: ""              # Optional: filter by cluster name or UUID
+  page_size: 500
+  detail_workers: 10     # Concurrent per-VM detail fetches
+  detailed: true         # Include disk UUIDs and container IDs
+  output_dir: "/var/lib/transiva/nutanix"
+  export_format: "qcow2"  # qcow2 or raw
+  mounts:
+    default-container-12345: "/mnt/nutanix/default"
+  resolve_containers: true
+  enable_pipeline: false
+  pipeline_timeout: 60m
+  enabled: true
+
+# Pickup workflow (after mounting containers via NFS on AlmaLinux):
+#   1. go run ./cmd/nutanix-pickup --prism $PC --user admin --pass 'xxx' \
+#        --format pickup-plan --out plan.json
+#   2. go run ./cmd/nutanix-pickup --plan-in plan.json --execute --dry-run \
+#        --output-dir /var/lib/transiva/nutanix --mounts 'default-container-12345:/mnt/nutanix/default'
+#   3. go run ./cmd/nutanix-pickup --plan-in plan.json --execute \
+#        --output-dir /var/lib/transiva/nutanix --mounts 'default-container-12345:/mnt/nutanix/default'
+#   4. artifact-manifest.json per VM is written for hyper2kvm pipeline
+#
+# Export via daemon API:
+#   curl -X POST 'http://localhost:8080/vms/export?provider=nutanix' \
+#     -H 'Content-Type: application/json' \
+#     -d '{"vm":"web-prod-01","output_path":"/var/lib/transiva/nutanix","format":"qcow2",
+#          "mounts":{"default-container-12345":"/mnt/nutanix/default"},"resolve_containers":true}'
+#
+# Export via hyperctl:
+#   hyperctl export --provider nutanix --vm web-prod-01 --output /var/lib/transiva/nutanix \
+#     --mounts 'default-container-12345:/mnt/nutanix/default' --resolve-containers
+#
+# Export via hyperexport:
+#   hyperexport --provider nutanix -vm web-prod-01 -output /var/lib/transiva/nutanix \
+#     -mounts 'default-container-12345:/mnt/nutanix/default' --resolve-containers
+#   hyperexport --provider nutanix --use-daemon -vm web-prod-01 -output /var/lib/transiva/nutanix \
+#     -mounts 'default-container-12345:/mnt/nutanix/default'
+#
+# Async export via job queue:
+#   hyperctl submit --provider nutanix --vm web-prod-01 --output /var/lib/transiva/nutanix \
+#     --mounts 'default-container-12345:/mnt/nutanix/default' --resolve-containers --pipeline
+#   hyperctl query -status running
+#
+# Example nutanix job YAML (jobs/nutanix-export.yaml):
+#   name: nutanix-web-prod-01
+#   provider: nutanix
+#   export_method: nutanix
+#   vm_path: web-prod-01
+#   output_path: /var/lib/transiva/nutanix
+#   format: qcow2
+#   enable_pipeline: true
+#   metadata:
+#     mounts:
+#       default-container-12345: /mnt/nutanix/default
+#     resolve_containers: true

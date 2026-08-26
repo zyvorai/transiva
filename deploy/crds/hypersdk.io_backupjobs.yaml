@@ -1,0 +1,269 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: backupjobs.transiva.zyvor.ai
+spec:
+  group: transiva.zyvor.ai
+  names:
+    kind: BackupJob
+    listKind: BackupJobList
+    plural: backupjobs
+    singular: backupjob
+    shortNames:
+      - bj
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required:
+                - source
+                - destination
+              properties:
+                source:
+                  type: object
+                  required:
+                    - provider
+                  properties:
+                    provider:
+                      type: string
+                      enum:
+                        - kubevirt
+                        - vsphere
+                        - aws
+                        - azure
+                        - gcp
+                        - hyperv
+                        - proxmox
+                    namespace:
+                      type: string
+                      description: Kubernetes namespace for KubeVirt VMs
+                    vmName:
+                      type: string
+                      description: VM name for KubeVirt
+                    vmPath:
+                      type: string
+                      description: VM path for vSphere and other providers
+                    vmID:
+                      type: string
+                      description: VM ID for cloud providers
+                    tags:
+                      type: object
+                      additionalProperties:
+                        type: string
+                      description: Tags to filter VMs
+                destination:
+                  type: object
+                  required:
+                    - type
+                  properties:
+                    type:
+                      type: string
+                      enum:
+                        - s3
+                        - azure-blob
+                        - gcs
+                        - local
+                        - nfs
+                    bucket:
+                      type: string
+                      description: S3/GCS bucket or Azure container name
+                    prefix:
+                      type: string
+                      description: Path prefix in destination
+                    region:
+                      type: string
+                      description: Cloud region
+                    storageClass:
+                      type: string
+                      description: Storage class for cloud storage
+                    endpoint:
+                      type: string
+                      description: Custom endpoint URL
+                    credentials:
+                      type: object
+                      properties:
+                        secretRef:
+                          type: object
+                          required:
+                            - name
+                          properties:
+                            name:
+                              type: string
+                              description: Name of secret containing credentials
+                            namespace:
+                              type: string
+                              description: Namespace of secret
+                format:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                      enum:
+                        - ovf
+                        - ova
+                        - raw
+                        - qcow2
+                        - vmdk
+                        - vhd
+                        - vhdx
+                      default: ovf
+                    compression:
+                      type: boolean
+                      default: false
+                    compressionLevel:
+                      type: integer
+                      minimum: 1
+                      maximum: 9
+                      default: 6
+                incremental:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                      default: false
+                    baseBackupRef:
+                      type: string
+                      description: Reference to base backup for incremental
+                carbonAware:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                      default: false
+                    zone:
+                      type: string
+                      description: Carbon intensity zone
+                      default: US-CAL-CISO
+                    maxIntensity:
+                      type: number
+                      format: float
+                      description: Maximum carbon intensity threshold (gCO2/kWh)
+                      default: 200
+                    maxDelayHours:
+                      type: number
+                      format: float
+                      description: Maximum delay in hours
+                      default: 4
+                retention:
+                  type: object
+                  properties:
+                    keepDaily:
+                      type: integer
+                      minimum: 0
+                      description: Number of daily backups to retain
+                    keepWeekly:
+                      type: integer
+                      minimum: 0
+                      description: Number of weekly backups to retain
+                    keepMonthly:
+                      type: integer
+                      minimum: 0
+                      description: Number of monthly backups to retain
+                    keepYearly:
+                      type: integer
+                      minimum: 0
+                      description: Number of yearly backups to retain
+                metadata:
+                  type: object
+                  additionalProperties:
+                    type: string
+                  description: Custom metadata for the backup
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                  enum:
+                    - Pending
+                    - Running
+                    - Completed
+                    - Failed
+                    - Cancelled
+                startTime:
+                  type: string
+                  format: date-time
+                completionTime:
+                  type: string
+                  format: date-time
+                progress:
+                  type: object
+                  properties:
+                    percentage:
+                      type: number
+                      format: float
+                      minimum: 0
+                      maximum: 100
+                    bytesTransferred:
+                      type: integer
+                      format: int64
+                    totalBytes:
+                      type: integer
+                      format: int64
+                    currentPhase:
+                      type: string
+                    estimatedCompletion:
+                      type: string
+                      format: date-time
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                        enum:
+                          - "True"
+                          - "False"
+                          - Unknown
+                      lastTransitionTime:
+                        type: string
+                        format: date-time
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                outputPath:
+                  type: string
+                  description: Final output path of the backup
+                size:
+                  type: integer
+                  format: int64
+                  description: Size of backup in bytes
+                carbonIntensity:
+                  type: number
+                  format: float
+                  description: Carbon intensity when backup was performed
+                carbonSavings:
+                  type: number
+                  format: float
+                  description: Carbon savings in kg CO2
+                error:
+                  type: string
+                  description: Error message if backup failed
+      additionalPrinterColumns:
+        - name: Phase
+          type: string
+          jsonPath: .status.phase
+        - name: Progress
+          type: string
+          jsonPath: .status.progress.percentage
+        - name: Source
+          type: string
+          jsonPath: .spec.source.vmName
+        - name: Destination
+          type: string
+          jsonPath: .spec.destination.type
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      subresources:
+        status: {}

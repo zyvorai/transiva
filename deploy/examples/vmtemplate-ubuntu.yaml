@@ -1,0 +1,70 @@
+apiVersion: transiva.zyvor.ai/v1alpha1
+kind: VMTemplate
+metadata:
+  name: ubuntu-22-04-template
+  namespace: default
+spec:
+  # Template metadata
+  displayName: "Ubuntu 22.04 LTS Server"
+  description: "Ubuntu 22.04 LTS with Docker, Kubernetes tools, and common utilities pre-installed"
+  version: "1.0.0"
+  tags:
+    - ubuntu
+    - linux
+    - docker
+    - kubernetes
+  icon: "🐧"
+
+  # Operating system info
+  osInfo:
+    type: linux
+    distribution: ubuntu
+    version: "22.04"
+
+  # Default VM spec (can be overridden when creating VM)
+  defaultSpec:
+    cpus: 2
+    memory: "4Gi"
+    disks:
+      - name: root
+        size: "30Gi"
+        storageClass: standard
+        bootOrder: 1
+    networks:
+      - name: default
+        type: pod-network
+    firmware:
+      bootloader: uefi
+    guestAgent:
+      enabled: true
+
+  # Template image
+  image:
+    source: "s3://transiva-templates/ubuntu-22.04-server-v1.0.0.qcow2"
+    format: qcow2
+    size: "2.3Gi"
+    checksum:
+      type: sha256
+      value: "a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67890"
+
+  # Default cloud-init
+  cloudInit:
+    defaultUserData: |
+      #cloud-config
+      package_update: true
+      package_upgrade: false
+      packages:
+        - qemu-guest-agent
+      runcmd:
+        - systemctl enable qemu-guest-agent
+        - systemctl start qemu-guest-agent
+
+  # Required node features
+  requiredFeatures:
+    - kvm
+
+  # Recommended resources
+  recommendedResources:
+    minCpus: 2
+    minMemory: "2Gi"
+    minDiskSize: "20Gi"

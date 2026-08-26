@@ -1,0 +1,205 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: vmoperations.transiva.zyvor.ai
+spec:
+  group: transiva.zyvor.ai
+  names:
+    kind: VMOperation
+    listKind: VMOperationList
+    plural: vmoperations
+    singular: vmoperation
+    shortNames:
+      - vmop
+      - vmops
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required:
+                - vmRef
+                - operation
+              properties:
+                # Target VM
+                vmRef:
+                  type: object
+                  required:
+                    - name
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+
+                # Operation Type
+                operation:
+                  type: string
+                  enum:
+                    - start
+                    - stop
+                    - restart
+                    - clone
+                    - migrate
+                    - snapshot
+                    - resize
+                    - delete
+                  description: "Type of operation to perform"
+
+                # Force flag (for stop/delete)
+                force:
+                  type: boolean
+                  default: false
+
+                # Clone-specific spec
+                cloneSpec:
+                  type: object
+                  properties:
+                    targetName:
+                      type: string
+                      description: "Name for the cloned VM"
+                    targetNamespace:
+                      type: string
+                      description: "Namespace for the cloned VM"
+                    linkedClone:
+                      type: boolean
+                      default: false
+                      description: "Create linked clone (uses backing file)"
+                    startAfterClone:
+                      type: boolean
+                      default: false
+
+                # Migrate-specific spec
+                migrateSpec:
+                  type: object
+                  properties:
+                    targetNode:
+                      type: string
+                      description: "Target node for migration"
+                    live:
+                      type: boolean
+                      default: true
+                      description: "Use live migration"
+                    bandwidth:
+                      type: string
+                      pattern: '^[0-9]+[KMG]?bps$'
+                      description: "Migration bandwidth limit (e.g., 100Mbps)"
+                    autoConverge:
+                      type: boolean
+                      default: true
+                      description: "Enable auto-convergence for live migration"
+                    postCopy:
+                      type: boolean
+                      default: false
+                      description: "Enable post-copy migration"
+
+                # Resize-specific spec
+                resizeSpec:
+                  type: object
+                  properties:
+                    cpus:
+                      type: integer
+                      minimum: 1
+                      maximum: 128
+                    memory:
+                      type: string
+                      pattern: '^[0-9]+[KMGT]i$'
+                    hotplug:
+                      type: boolean
+                      default: false
+                      description: "Hot-add resources without reboot"
+
+                # Snapshot-specific spec
+                snapshotSpec:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      description: "Snapshot name"
+                    description:
+                      type: string
+                    includeMemory:
+                      type: boolean
+                      default: false
+                      description: "Include memory state in snapshot"
+                    quiesce:
+                      type: boolean
+                      default: true
+                      description: "Quiesce filesystem before snapshot"
+
+                # Timeout
+                timeout:
+                  type: string
+                  pattern: '^[0-9]+(s|m|h)$'
+                  default: 10m
+                  description: "Operation timeout"
+
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                  enum:
+                    - Pending
+                    - Running
+                    - Succeeded
+                    - Failed
+                    - Cancelled
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                        format: date-time
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                progress:
+                  type: integer
+                  minimum: 0
+                  maximum: 100
+                  description: "Operation progress percentage"
+                startTime:
+                  type: string
+                  format: date-time
+                completionTime:
+                  type: string
+                  format: date-time
+                message:
+                  type: string
+                  description: "Human-readable status message"
+                result:
+                  type: object
+                  description: "Operation-specific result data"
+                  x-kubernetes-preserve-unknown-fields: true
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: VM
+          type: string
+          jsonPath: .spec.vmRef.name
+        - name: Operation
+          type: string
+          jsonPath: .spec.operation
+        - name: Status
+          type: string
+          jsonPath: .status.phase
+        - name: Progress
+          type: integer
+          jsonPath: .status.progress
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp

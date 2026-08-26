@@ -1,0 +1,91 @@
+suite: test service monitor
+templates:
+  - servicemonitor.yaml
+tests:
+  - it: should not create ServiceMonitor by default
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should create ServiceMonitor when enabled
+    set:
+      monitoring:
+        serviceMonitor:
+          enabled: true
+    asserts:
+      - isKind:
+          of: ServiceMonitor
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-transiva
+
+  - it: should set correct endpoint configuration
+    set:
+      monitoring:
+        serviceMonitor:
+          enabled: true
+    asserts:
+      - equal:
+          path: spec.endpoints[0].port
+          value: metrics
+      - equal:
+          path: spec.endpoints[0].path
+          value: /metrics
+      - equal:
+          path: spec.endpoints[0].interval
+          value: 30s
+
+  - it: should set custom interval and scrapeTimeout
+    set:
+      monitoring:
+        serviceMonitor:
+          enabled: true
+          interval: 15s
+          scrapeTimeout: 10s
+    asserts:
+      - equal:
+          path: spec.endpoints[0].interval
+          value: 15s
+      - equal:
+          path: spec.endpoints[0].scrapeTimeout
+          value: 10s
+
+  - it: should have correct selector labels
+    set:
+      monitoring:
+        serviceMonitor:
+          enabled: true
+    asserts:
+      - equal:
+          path: spec.selector.matchLabels["app.kubernetes.io/name"]
+          value: transiva
+      - equal:
+          path: spec.selector.matchLabels["app.kubernetes.io/instance"]
+          value: RELEASE-NAME
+
+  - it: should add custom labels
+    set:
+      monitoring:
+        serviceMonitor:
+          enabled: true
+          labels:
+            prometheus: kube-prometheus
+            team: platform
+    asserts:
+      - equal:
+          path: metadata.labels.prometheus
+          value: kube-prometheus
+      - equal:
+          path: metadata.labels.team
+          value: platform
+
+  - it: should set namespace when specified
+    set:
+      monitoring:
+        serviceMonitor:
+          enabled: true
+          namespace: monitoring
+    asserts:
+      - equal:
+          path: metadata.namespace
+          value: monitoring

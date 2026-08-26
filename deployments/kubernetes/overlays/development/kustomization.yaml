@@ -1,0 +1,90 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Development environment overlay
+namespace: transiva
+
+# Base configuration
+resources:
+- ../../base
+
+# Images (use latest for testing)
+images:
+- name: transiva/hypervisord
+  newName: ghcr.io/ssahani/transiva-hypervisord
+  newTag: latest
+
+# Replicas
+replicas:
+- name: hypervisord
+  count: 1
+
+# Patches for development environment
+patches:
+- patch: |-
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: hypervisord-config
+      namespace: transiva
+    data:
+      log_level: "debug"
+      download_workers: "2"
+  target:
+    kind: ConfigMap
+    name: hypervisord-config
+
+- patch: |-
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: hypervisord
+      namespace: transiva
+    spec:
+      template:
+        spec:
+          containers:
+          - name: hypervisord
+            resources:
+              requests:
+                memory: "256Mi"
+                cpu: "100m"
+              limits:
+                memory: "1Gi"
+                cpu: "500m"
+  target:
+    kind: Deployment
+    name: hypervisord
+
+- patch: |-
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: hypervisord-data-pvc
+      namespace: transiva
+    spec:
+      resources:
+        requests:
+          storage: 5Gi
+  target:
+    kind: PersistentVolumeClaim
+    name: hypervisord-data-pvc
+
+- patch: |-
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: hypervisord-exports-pvc
+      namespace: transiva
+    spec:
+      resources:
+        requests:
+          storage: 50Gi
+  target:
+    kind: PersistentVolumeClaim
+    name: hypervisord-exports-pvc
+
+# Common annotations
+commonAnnotations:
+  environment: development
+  managed-by: kustomize

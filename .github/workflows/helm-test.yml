@@ -1,0 +1,294 @@
+name: Helm Chart Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'deployments/helm/**'
+      - '.github/workflows/helm-test.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'deployments/helm/**'
+      - '.github/workflows/helm-test.yml'
+
+jobs:
+  lint-and-template:
+    name: Lint and Template Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.20.0'
+
+      - name: Run Helm chart tests
+        run: |
+          chmod +x deployments/scripts/test-helm-chart.sh
+          ./deployments/scripts/test-helm-chart.sh
+
+      - name: Helm lint
+        run: |
+          helm lint deployments/helm/transiva
+          helm lint deployments/helm/transiva --values deployments/helm/transiva/examples/minikube-values.yaml
+          helm lint deployments/helm/transiva --values deployments/helm/transiva/examples/gke-values.yaml
+          helm lint deployments/helm/transiva --values deployments/helm/transiva/examples/eks-values.yaml
+          helm lint deployments/helm/transiva --values deployments/helm/transiva/examples/aks-values.yaml
+
+      - name: Helm template (default)
+        run: |
+          helm template transiva deployments/helm/transiva > /tmp/default-manifest.yaml
+          wc -l /tmp/default-manifest.yaml
+
+      - name: Helm template (minikube)
+        run: |
+          helm template transiva deployments/helm/transiva \
+            --values deployments/helm/transiva/examples/minikube-values.yaml > /tmp/minikube-manifest.yaml
+
+      - name: Helm template (GKE)
+        run: |
+          helm template transiva deployments/helm/transiva \
+            --values deployments/helm/transiva/examples/gke-values.yaml > /tmp/gke-manifest.yaml
+
+      - name: Helm template (EKS)
+        run: |
+          helm template transiva deployments/helm/transiva \
+            --values deployments/helm/transiva/examples/eks-values.yaml > /tmp/eks-manifest.yaml
+
+      - name: Helm template (AKS)
+        run: |
+          helm template transiva deployments/helm/transiva \
+            --values deployments/helm/transiva/examples/aks-values.yaml > /tmp/aks-manifest.yaml
+
+      - name: Upload manifests
+        uses: actions/upload-artifact@v4
+        with:
+          name: rendered-manifests
+          path: /tmp/*-manifest.yaml
+
+  minikube-deployment:
+    name: Minikube Deployment Test
+    runs-on: ubuntu-latest
+    needs: lint-and-template
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.20.0'
+
+      - name: Start Minikube
+        uses: medyagh/setup-minikube@latest
+        with:
+          kubernetes-version: 'v1.31.0'
+          driver: docker
+          cpus: 2
+          memory: 4096
+
+      - name: Wait for Minikube
+        run: |
+          kubectl wait --for=condition=Ready nodes --all --timeout=300s
+          kubectl get nodes
+
+      - name: Install HyperSDK with Helm
+        run: |
+          helm install transiva deployments/helm/transiva \
+            --values deployments/helm/transiva/examples/minikube-values.yaml \
+            --namespace transiva \
+            --create-namespace \
+            --wait \
+            --timeout 5m
+
+      - name: Check deployment status
+        run: |
+          kubectl get all -n transiva
+          kubectl wait --for=condition=available --timeout=300s deployment/transiva -n transiva
+
+      - name: Check pods
+        run: |
+          kubectl get pods -n transiva
+          kubectl describe pods -n transiva
+
+      - name: Check service
+        run: |
+          kubectl get svc -n transiva
+          kubectl describe svc -n transiva
+
+      - name: Check PVCs
+        run: |
+          kubectl get pvc -n transiva
+          kubectl describe pvc -n transiva
+
+      - name: Test API health endpoint
+        run: |
+          kubectl port-forward -n transiva svc/transiva 8080:8080 &
+          sleep 5
+          curl -f http://localhost:8080/health || (kubectl logs -n transiva -l app.kubernetes.io/name=transiva && exit 1)
+
+      - name: Test metrics endpoint
+        run: |
+          kubectl port-forward -n transiva svc/transiva 8081:8081 &
+          sleep 5
+          curl -f http://localhost:8081/metrics || exit 1
+
+      - name: Helm test
+        run: |
+          helm test transiva -n transiva || true
+
+      - name: Get logs on failure
+        if: failure()
+        run: |
+          kubectl logs -n transiva -l app.kubernetes.io/name=transiva --tail=100
+          kubectl describe deployment -n transiva transiva
+          kubectl get events -n transiva --sort-by='.lastTimestamp'
+
+      - name: Uninstall chart
+        if: always()
+        run: |
+          helm uninstall transiva -n transiva || true
+          kubectl delete namespace transiva || true
+
+  kind-deployment:
+    name: KIND Deployment Test
+    runs-on: ubuntu-latest
+    needs: lint-and-template
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.20.0'
+
+      - name: Create KIND cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: transiva-test
+          version: v0.24.0
+          config: |
+            kind: Cluster
+            apiVersion: kind.x-k8s.io/v1alpha4
+            nodes:
+              - role: control-plane
+              - role: worker
+              - role: worker
+
+      - name: Wait for cluster
+        run: |
+          kubectl wait --for=condition=Ready nodes --all --timeout=300s
+          kubectl get nodes
+
+      - name: Install HyperSDK with Helm
+        run: |
+          helm install transiva deployments/helm/transiva \
+            --namespace transiva \
+            --create-namespace \
+            --set replicaCount=2 \
+            --set resources.requests.memory=256Mi \
+            --set resources.limits.memory=1Gi \
+            --wait \
+            --timeout 5m
+
+      - name: Check deployment status
+        run: |
+          kubectl get all -n transiva
+          kubectl wait --for=condition=available --timeout=300s deployment/transiva -n transiva
+
+      - name: Scale test
+        run: |
+          kubectl scale deployment transiva -n transiva --replicas=3
+          kubectl wait --for=condition=available --timeout=300s deployment/transiva -n transiva
+          kubectl get pods -n transiva
+
+      - name: Rolling update test
+        run: |
+          kubectl set env deployment/transiva -n transiva TEST_VAR=test
+          kubectl rollout status deployment/transiva -n transiva --timeout=300s
+
+      - name: Get logs on failure
+        if: failure()
+        run: |
+          kubectl logs -n transiva -l app.kubernetes.io/name=transiva --tail=100 --all-containers
+          kubectl get events -n transiva --sort-by='.lastTimestamp'
+
+      - name: Uninstall chart
+        if: always()
+        run: |
+          helm uninstall transiva -n transiva || true
+
+  cloud-values-validation:
+    name: Cloud Provider Values Validation
+    runs-on: ubuntu-latest
+    needs: lint-and-template
+    strategy:
+      matrix:
+        cloud: [gke, eks, aks]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.20.0'
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Validate ${{ matrix.cloud }} values
+        run: |
+          helm lint deployments/helm/transiva \
+            --values deployments/helm/transiva/examples/${{ matrix.cloud }}-values.yaml
+
+      - name: Template with ${{ matrix.cloud }} values
+        run: |
+          helm template transiva deployments/helm/transiva \
+            --values deployments/helm/transiva/examples/${{ matrix.cloud }}-values.yaml \
+            --debug > /tmp/${{ matrix.cloud }}-manifest.yaml
+
+          echo "Manifest size: $(wc -l < /tmp/${{ matrix.cloud }}-manifest.yaml) lines"
+
+          # Validate specific resources exist
+          grep -q "kind: Deployment" /tmp/${{ matrix.cloud }}-manifest.yaml
+          grep -q "kind: Service" /tmp/${{ matrix.cloud }}-manifest.yaml
+          grep -q "kind: HorizontalPodAutoscaler" /tmp/${{ matrix.cloud }}-manifest.yaml
+
+      - name: Validate kubectl dry-run
+        run: |
+          # Create a test kubeconfig that won't actually connect
+          mkdir -p ~/.kube
+          cat > ~/.kube/config <<EOF
+          apiVersion: v1
+          kind: Config
+          clusters:
+          - cluster:
+              server: https://127.0.0.1:6443
+            name: test
+          contexts:
+          - context:
+              cluster: test
+              user: test
+            name: test
+          current-context: test
+          users:
+          - name: test
+            user:
+              token: test
+          EOF
+
+          # Validate with --validate=false since we don't have a real cluster
+          helm template transiva deployments/helm/transiva \
+            --values deployments/helm/transiva/examples/${{ matrix.cloud }}-values.yaml | \
+            kubectl apply --dry-run=client --validate=false -f - || true
+
+      - name: Upload ${{ matrix.cloud }} manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.cloud }}-manifest
+          path: /tmp/${{ matrix.cloud }}-manifest.yaml
