@@ -1,0 +1,31 @@
+# Build artifacts
+build/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test and coverage
+*.test
+coverage.out
+
+# Development files
+.git/
+.gitignore
+README.md
+Makefile
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Export directories
+export-*/
+exports/
+
+# OS
+.DS_Store
+Thumbs.db

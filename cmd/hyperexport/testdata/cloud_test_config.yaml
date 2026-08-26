@@ -1,0 +1,171 @@
+# Test configuration for cloud storage integration tests
+# This file contains example configurations for all supported cloud providers
+
+# AWS S3 Configuration
+s3:
+  bucket: "transiva-test-bucket"
+  region: "us-east-1"
+  access_key_id: "${AWS_ACCESS_KEY_ID}"
+  secret_access_key: "${AWS_SECRET_ACCESS_KEY}"
+  prefix: "test-exports"
+  endpoint: ""  # Leave empty for AWS S3, set for S3-compatible storage
+
+  # S3-compatible storage examples
+  minio:
+    endpoint: "http://localhost:9000"
+    bucket: "vm-backups"
+    access_key: "minioadmin"
+    secret_key: "minioadmin"
+
+  wasabi:
+    endpoint: "https://s3.wasabisys.com"
+    region: "us-east-1"
+    bucket: "my-wasabi-bucket"
+
+# Azure Blob Storage Configuration
+azure:
+  storage_account: "${AZURE_STORAGE_ACCOUNT}"
+  account_key: "${AZURE_STORAGE_KEY}"
+  container: "vm-backups"
+  prefix: "test-exports"
+
+  # Connection string alternative
+  connection_string: "${AZURE_STORAGE_CONNECTION_STRING}"
+
+# Google Cloud Storage Configuration
+gcs:
+  bucket: "transiva-gcs-bucket"
+  project_id: "my-gcp-project"
+  credentials_file: "${GOOGLE_APPLICATION_CREDENTIALS}"
+  prefix: "test-exports"
+
+# SFTP Configuration
+sftp:
+  host: "sftp.example.com"
+  port: 22
+  username: "vmbackup"
+
+  # Authentication methods (choose one)
+  password: "${SFTP_PASSWORD}"
+  private_key_file: "~/.ssh/id_rsa"
+  private_key_password: ""
+
+  # Remote path
+  remote_path: "/backups/vms"
+
+# Test scenarios
+test_scenarios:
+  - name: "small_file_upload"
+    description: "Upload a small text file"
+    file_size: 1MB
+    expected_duration: 5s
+    providers:
+      - s3
+      - azure
+      - gcs
+      - sftp
+
+  - name: "large_file_multipart"
+    description: "Upload a large file using multipart"
+    file_size: 100MB
+    expected_duration: 60s
+    providers:
+      - s3
+      - azure
+      - gcs
+
+  - name: "directory_upload"
+    description: "Upload entire directory"
+    files: 10
+    total_size: 50MB
+    expected_duration: 120s
+    providers:
+      - s3
+      - azure
+      - gcs
+      - sftp
+
+  - name: "concurrent_uploads"
+    description: "Multiple concurrent uploads"
+    concurrent_files: 5
+    file_size: 10MB
+    expected_duration: 30s
+    providers:
+      - s3
+      - azure
+
+  - name: "resume_interrupted"
+    description: "Resume interrupted upload"
+    file_size: 50MB
+    interrupt_at: 50%
+    expected_resume_time: 15s
+    providers:
+      - s3
+      - sftp
+
+# Mock configurations for unit tests
+mocks:
+  s3:
+    mock_endpoint: "http://localhost:9000"
+    mock_bucket: "test-bucket"
+    mock_access_key: "test-access-key"
+    mock_secret_key: "test-secret-key"
+
+  azure:
+    mock_account: "devstoreaccount1"
+    mock_key: "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=="
+    mock_endpoint: "http://127.0.0.1:10000/devstoreaccount1"
+
+  gcs:
+    mock_endpoint: "http://localhost:4443"
+    mock_bucket: "test-bucket"
+
+  sftp:
+    mock_host: "localhost"
+    mock_port: 2222
+    mock_username: "testuser"
+    mock_password: "testpass"
+
+# Environment variable templates
+env_templates:
+  aws: |
+    export AWS_ACCESS_KEY_ID="your-access-key-id"
+    export AWS_SECRET_ACCESS_KEY="your-secret-access-key"
+    export AWS_REGION="us-east-1"
+    export TEST_S3_BUCKET="transiva-test-bucket"
+
+  azure: |
+    export AZURE_STORAGE_ACCOUNT="your-storage-account"
+    export AZURE_STORAGE_KEY="your-account-key"
+    export TEST_AZURE_CONTAINER="vm-backups"
+
+  gcs: |
+    export GOOGLE_APPLICATION_CREDENTIALS="/path/to/service-account-key.json"
+    export TEST_GCS_BUCKET="transiva-gcs-bucket"
+
+  sftp: |
+    export TEST_SFTP_HOST="sftp.example.com"
+    export TEST_SFTP_USERNAME="vmbackup"
+    export TEST_SFTP_PASSWORD="your-password"
+
+# Performance benchmarks (expected values)
+benchmarks:
+  s3:
+    upload_speed_mbps: 100
+    download_speed_mbps: 100
+    api_latency_ms: 50
+
+  azure:
+    upload_speed_mbps: 80
+    download_speed_mbps: 80
+    api_latency_ms: 60
+
+  gcs:
+    upload_speed_mbps: 90
+    download_speed_mbps: 90
+    api_latency_ms: 55
+
+  sftp:
+    upload_speed_mbps: 50
+    download_speed_mbps: 50
+    api_latency_ms: 30

@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "transiva-operator.fullname" . }}
+  namespace: {{ include "transiva-operator.namespace" . }}
+  labels:
+    {{- include "transiva-operator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: operator
+spec:
+  replicas: {{ .Values.operator.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "transiva-operator.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.operator.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "transiva-operator.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: operator
+        {{- with .Values.operator.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.operator.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "transiva-operator.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.operator.podSecurityContext | nindent 8 }}
+      containers:
+        - name: operator
+          image: {{ include "transiva-operator.image" . }}
+          imagePullPolicy: {{ .Values.operator.image.pullPolicy }}
+          command:
+            - /usr/local/bin/transiva-operator
+          args:
+            - --workers={{ .Values.operator.args.workers }}
+            - --log-level={{ .Values.operator.args.logLevel }}
+            {{- if .Values.operator.args.namespace }}
+            - --namespace={{ .Values.operator.args.namespace }}
+            {{- end }}
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            {{- if .Values.carbonAware.defaultEnabled }}
+            - name: CARBON_AWARE_ENABLED
+              value: "true"
+            - name: CARBON_AWARE_ZONE
+              value: {{ .Values.carbonAware.defaultZone | quote }}
+            - name: CARBON_AWARE_MAX_INTENSITY
+              value: {{ .Values.carbonAware.defaultMaxIntensity | quote }}
+            - name: CARBON_AWARE_MAX_DELAY_HOURS
+              value: {{ .Values.carbonAware.defaultMaxDelayHours | quote }}
+            {{- end }}
+          securityContext:
+            {{- toYaml .Values.operator.securityContext | nindent 12 }}
+          resources:
+            {{- toYaml .Values.operator.resources | nindent 12 }}
+          livenessProbe:
+            {{- toYaml .Values.operator.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.operator.readinessProbe | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      {{- with .Values.operator.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.operator.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.operator.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      terminationGracePeriodSeconds: 10

@@ -1,0 +1,72 @@
+[Unit]
+Description=hyper2kvm VM Conversion Daemon (Default Instance)
+Documentation=https://github.com/ssahani/hyper2kvm
+After=network.target
+
+[Service]
+Type=simple
+User=hyper2kvm
+Group=hyper2kvm
+
+# Environment configuration
+EnvironmentFile=-/etc/hyper2kvm/hyper2kvm.conf
+
+# Working directories
+WorkingDirectory=/var/lib/hyper2kvm
+StateDirectory=hyper2kvm
+StateDirectoryMode=0755
+CacheDirectory=hyper2kvm
+CacheDirectoryMode=0755
+LogsDirectory=hyper2kvm
+LogsDirectoryMode=0755
+
+# Runtime directories
+RuntimeDirectory=hyper2kvm
+RuntimeDirectoryMode=0755
+
+# Watch and output directories
+Environment="WATCH_DIR=/var/lib/hyper2kvm/queue"
+Environment="OUTPUT_DIR=/var/lib/hyper2kvm/output"
+Environment="LOG_LEVEL=info"
+
+# Binary path (update this to match your installation)
+ExecStart=/usr/local/bin/hyper2kvm daemon \
+    --watch-dir=${WATCH_DIR} \
+    --output-dir=${OUTPUT_DIR} \
+    --log-level=${LOG_LEVEL}
+
+# Restart policy
+Restart=on-failure
+RestartSec=5s
+
+# Resource limits
+MemoryMax=4G
+MemoryHigh=3G
+CPUQuota=200%
+
+# Timeout for start and stop
+TimeoutStartSec=30s
+TimeoutStopSec=30s
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/hyper2kvm /var/log/hyper2kvm
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictRealtime=true
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+
+# Capabilities (needed for QEMU operations)
+AmbientCapabilities=CAP_DAC_OVERRIDE CAP_FOWNER
+
+[Install]
+WantedBy=multi-user.target

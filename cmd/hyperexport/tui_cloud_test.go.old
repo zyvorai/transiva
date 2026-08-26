@@ -1,0 +1,654 @@
+// SPDX-License-Identifier: Apache-2.0
+
+package main
+
+import (
+	"testing"
+)
+
+// Test cloud provider configuration steps
+func TestGetConfigSteps(t *testing.T) {
+	tests := []struct {
+		provider CloudProvider
+		expected int
+	}{
+		{CloudProviderS3, 5},    // bucket, region, accessKey, secretKey, prefix
+		{CloudProviderAzure, 4}, // bucket, accessKey, secretKey, prefix
+		{CloudProviderGCS, 2},   // bucket, prefix
+		{CloudProviderSFTP, 5},  // host, port, username, password, prefix
+		{CloudProviderNone, 1},  // none
+	}
+
+	for _, tt := range tests {
+		t.Run(string(tt.provider), func(t *testing.T) {
+			steps := getConfigSteps(tt.provider)
+			if steps != tt.expected {
+				t.Errorf("getConfigSteps(%s) = %d, want %d", tt.provider, steps, tt.expected)
+			}
+		})
+	}
+}
+
+// Test cloud provider configuration step numbers
+func TestGetConfigStep(t *testing.T) {
+	tests := []struct {
+		provider CloudProvider
+		phase    string
+		expected int
+	}{
+		// S3
+		{CloudProviderS3, "bucket", 1},
+		{CloudProviderS3, "region", 2},
+		{CloudProviderS3, "accessKey", 3},
+		{CloudProviderS3, "secretKey", 4},
+		{CloudProviderS3, "prefix", 5},
+
+		// Azure
+		{CloudProviderAzure, "bucket", 1},
+		{CloudProviderAzure, "accessKey", 2},
+		{CloudProviderAzure, "secretKey", 3},
+		{CloudProviderAzure, "prefix", 4},
+
+		// GCS
+		{CloudProviderGCS, "bucket", 1},
+		{CloudProviderGCS, "prefix", 2},
+
+		// SFTP
+		{CloudProviderSFTP, "host", 1},
+		{CloudProviderSFTP, "port", 2},
+		{CloudProviderSFTP, "accessKey", 3},
+		{CloudProviderSFTP, "password", 4},
+		{CloudProviderSFTP, "prefix", 5},
+	}
+
+	for _, tt := range tests {
+		t.Run(string(tt.provider)+"_"+tt.phase, func(t *testing.T) {
+			step := getConfigStep(tt.provider, tt.phase)
+			if step != tt.expected {
+				t.Errorf("getConfigStep(%s, %s) = %d, want %d",
+					tt.provider, tt.phase, step, tt.expected)
+			}
+		})
+	}
+}
+
+// Test cloud provider options
+func TestCloudProviderOptions(t *testing.T) {
+	if len(cloudProviders) != 5 {
+		t.Errorf("Expected 5 cloud providers, got %d", len(cloudProviders))
+	}
+
+	expectedProviders := map[CloudProvider]bool{
+		CloudProviderNone:  true,
+		CloudProviderS3:    true,
+		CloudProviderAzure: true,
+		CloudProviderGCS:   true,
+		CloudProviderSFTP:  true,
+	}
+
+	for _, provider := range cloudProviders {
+		if !expectedProviders[provider.provider] {
+			t.Errorf("Unexpected provider: %s", provider.provider)
+		}
+
+		// Validate provider has required fields
+		if provider.name == "" {
+			t.Errorf("Provider %s has empty name", provider.provider)
+		}
+		if provider.description == "" {
+			t.Errorf("Provider %s has empty description", provider.provider)
+		}
+		if provider.icon == "" {
+			t.Errorf("Provider %s has empty icon", provider.provider)
+		}
+	}
+}
+
+// Test cloud configuration initialization
+func TestNewCloudSelectionModel(t *testing.T) {
+	parent := &tuiModel{}
+	model := newCloudSelectionModel(parent)
+
+	if model.selected != CloudProviderNone {
+		t.Errorf("Expected initial selection to be 'none', got %s", model.selected)
+	}
+
+	if !model.uploadEnabled {
+		t.Error("Expected uploadEnabled to be true by default")
+	}
+
+	if model.streamUpload {
+		t.Error("Expected streamUpload to be false by default")
+	}
+
+	if !model.keepLocal {
+		t.Error("Expected keepLocal to be true by default")
+	}
+
+	if len(model.providers) != 5 {
+		t.Errorf("Expected 5 providers, got %d", len(model.providers))
+	}
+}
+
+// Test cloud credentials model initialization
+func TestNewCloudCredentialsModel(t *testing.T) {
+	parent := &tuiModel{}
+
+	tests := []struct {
+		provider      CloudProvider
+		expectedPhase string
+	}{
+		{CloudProviderS3, "bucket"},
+		{CloudProviderAzure, "bucket"},
+		{CloudProviderGCS, "bucket"},
+		{CloudProviderSFTP, "bucket"},
+	}
+
+	for _, tt := range tests {
+		t.Run(string(tt.provider), func(t *testing.T) {
+			model := newCloudCredentialsModel(tt.provider, parent)
+
+			if model.provider != tt.provider {
+				t.Errorf("Expected provider %s, got %s", tt.provider, model.provider)
+			}
+
+			if model.phase != tt.expectedPhase {
+				t.Errorf("Expected initial phase %s, got %s", tt.expectedPhase, model.phase)
+			}
+
+			if model.config == nil {
+				t.Error("Expected config to be initialized")
+			}
+
+			if model.config.provider != tt.provider {
+				t.Errorf("Expected config provider %s, got %s", tt.provider, model.config.provider)
+			}
+		})
+	}
+}
+
+// Test cloud browser model initialization
+func TestNewCloudBrowserModel(t *testing.T) {
+	parent := &tuiModel{}
+
+	tests := []CloudProvider{
+		CloudProviderS3,
+		CloudProviderAzure,
+		CloudProviderGCS,
+		CloudProviderSFTP,
+	}
+
+	for _, provider := range tests {
+		t.Run(string(provider), func(t *testing.T) {
+			model := newCloudBrowserModel(provider, parent)
+
+			if model.provider != provider {
+				t.Errorf("Expected provider %s, got %s", provider, model.provider)
+			}
+
+			if !model.loading {
+				t.Error("Expected loading to be true initially")
+			}
+
+			if len(model.files) != 0 {
+				t.Errorf("Expected empty file list, got %d files", len(model.files))
+			}
+
+			if model.cursor != 0 {
+				t.Errorf("Expected cursor at 0, got %d", model.cursor)
+			}
+		})
+	}
+}
+
+// Test cloud config phase transitions
+func TestCloudConfigPhaseTransitions(t *testing.T) {
+	tests := []struct {
+		provider CloudProvider
+		phases   []string
+	}{
+		{
+			CloudProviderS3,
+			[]string{"bucket", "region", "accessKey", "secretKey", "prefix"},
+		},
+		{
+			CloudProviderAzure,
+			[]string{"bucket", "accessKey", "secretKey", "prefix"},
+		},
+		{
+			CloudProviderGCS,
+			[]string{"bucket", "prefix"},
+		},
+		{
+			CloudProviderSFTP,
+			[]string{"bucket", "host", "port", "accessKey", "password", "prefix"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(string(tt.provider), func(t *testing.T) {
+			parent := &tuiModel{}
+			model := newCloudCredentialsModel(tt.provider, parent)
+
+			for i, expectedPhase := range tt.phases {
+				if model.phase != expectedPhase {
+					t.Errorf("Step %d: expected phase %s, got %s", i, expectedPhase, model.phase)
+				}
+
+				// Simulate phase transition (simplified, not full Update logic)
+				// This would normally happen through Update() with Enter key
+				if i < len(tt.phases)-1 {
+					// Store input value based on current phase
+					switch model.phase {
+					case "bucket":
+						model.config.bucket = "test-bucket"
+					case "region":
+						model.config.region = "us-east-1"
+					case "host":
+						model.config.host = "sftp.example.com"
+					case "port":
+						model.config.port = "22"
+					case "accessKey":
+						model.config.accessKey = "test-access-key"
+					case "secretKey", "password":
+						model.config.secretKey = "test-secret"
+					}
+
+					// Determine next phase
+					switch model.phase {
+					case "bucket":
+						switch tt.provider {
+						case CloudProviderS3:
+							model.phase = "region"
+						case CloudProviderAzure:
+							model.phase = "accessKey"
+						case CloudProviderGCS:
+							model.phase = "prefix"
+						case CloudProviderSFTP:
+							model.phase = "host"
+						}
+					case "region":
+						model.phase = "accessKey"
+					case "accessKey":
+						if tt.provider == CloudProviderSFTP {
+							model.phase = "password"
+						} else {
+							model.phase = "secretKey"
+						}
+					case "secretKey", "password":
+						model.phase = "prefix"
+					case "host":
+						model.phase = "port"
+					case "port":
+						model.phase = "accessKey"
+					}
+				}
+			}
+		})
+	}
+}
+
+// Test cloud config validation
+func TestCloudConfigValidation(t *testing.T) {
+	tests := []struct {
+		name   string
+		config *cloudConfig
+		valid  bool
+	}{
+		{
+			name: "Valid S3 config",
+			config: &cloudConfig{
+				provider:  CloudProviderS3,
+				bucket:    "my-bucket",
+				region:    "us-east-1",
+				accessKey: "AKIAIOSFODNN7EXAMPLE",
+				secretKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+				prefix:    "backups",
+			},
+			valid: true,
+		},
+		{
+			name: "S3 config missing bucket",
+			config: &cloudConfig{
+				provider:  CloudProviderS3,
+				region:    "us-east-1",
+				accessKey: "AKIAIOSFODNN7EXAMPLE",
+				secretKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+			},
+			valid: false,
+		},
+		{
+			name: "Valid Azure config",
+			config: &cloudConfig{
+				provider:  CloudProviderAzure,
+				bucket:    "my-container",
+				accessKey: "mystorageaccount",
+				secretKey: "accountkey123",
+				prefix:    "vm-exports",
+			},
+			valid: true,
+		},
+		{
+			name: "Valid GCS config",
+			config: &cloudConfig{
+				provider: CloudProviderGCS,
+				bucket:   "my-gcs-bucket",
+				prefix:   "exports",
+			},
+			valid: true,
+		},
+		{
+			name: "Valid SFTP config",
+			config: &cloudConfig{
+				provider:  CloudProviderSFTP,
+				host:      "sftp.example.com",
+				port:      "22",
+				accessKey: "username",
+				secretKey: "password",
+				prefix:    "/backups",
+			},
+			valid: true,
+		},
+		{
+			name: "SFTP config missing host",
+			config: &cloudConfig{
+				provider:  CloudProviderSFTP,
+				port:      "22",
+				accessKey: "username",
+				secretKey: "password",
+			},
+			valid: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			valid := validateCloudConfig(tt.config)
+			if valid != tt.valid {
+				t.Errorf("validateCloudConfig() = %v, want %v", valid, tt.valid)
+			}
+		})
+	}
+}
+
+// Helper function to validate cloud configuration
+func validateCloudConfig(config *cloudConfig) bool {
+	if config == nil {
+		return false
+	}
+
+	switch config.provider {
+	case CloudProviderS3:
+		return config.bucket != "" &&
+			config.region != "" &&
+			config.accessKey != "" &&
+			config.secretKey != ""
+
+	case CloudProviderAzure:
+		return config.bucket != "" &&
+			config.accessKey != "" &&
+			config.secretKey != ""
+
+	case CloudProviderGCS:
+		return config.bucket != ""
+
+	case CloudProviderSFTP:
+		return config.host != "" &&
+			config.port != "" &&
+			config.accessKey != ""
+
+	default:
+		return false
+	}
+}
+
+// Test cloud storage URL generation
+func TestCloudStorageURLGeneration(t *testing.T) {
+	tests := []struct {
+		name     string
+		config   *cloudConfig
+		expected string
+	}{
+		{
+			name: "S3 URL",
+			config: &cloudConfig{
+				provider: CloudProviderS3,
+				bucket:   "my-bucket",
+				prefix:   "backups/prod",
+			},
+			expected: "s3://my-bucket/backups/prod",
+		},
+		{
+			name: "S3 URL without prefix",
+			config: &cloudConfig{
+				provider: CloudProviderS3,
+				bucket:   "my-bucket",
+				prefix:   "",
+			},
+			expected: "s3://my-bucket/",
+		},
+		{
+			name: "Azure URL",
+			config: &cloudConfig{
+				provider: CloudProviderAzure,
+				bucket:   "my-container",
+				prefix:   "vm-exports",
+			},
+			expected: "azure://my-container/vm-exports",
+		},
+		{
+			name: "GCS URL",
+			config: &cloudConfig{
+				provider: CloudProviderGCS,
+				bucket:   "my-gcs-bucket",
+				prefix:   "exports/daily",
+			},
+			expected: "gcs://my-gcs-bucket/exports/daily",
+		},
+		{
+			name: "SFTP URL",
+			config: &cloudConfig{
+				provider:  CloudProviderSFTP,
+				accessKey: "admin",
+				host:      "sftp.example.com",
+				port:      "22",
+				prefix:    "/backups",
+			},
+			expected: "sftp://admin@sftp.example.com:22/backups",
+		},
+		{
+			name: "SFTP URL with custom port",
+			config: &cloudConfig{
+				provider:  CloudProviderSFTP,
+				accessKey: "user",
+				host:      "backup.example.com",
+				port:      "2222",
+				prefix:    "/vm-backups",
+			},
+			expected: "sftp://user@backup.example.com:2222/vm-backups",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			url := generateCloudStorageURL(tt.config)
+			if url != tt.expected {
+				t.Errorf("generateCloudStorageURL() = %s, want %s", url, tt.expected)
+			}
+		})
+	}
+}
+
+// Helper function to generate cloud storage URL
+func generateCloudStorageURL(config *cloudConfig) string {
+	switch config.provider {
+	case CloudProviderS3:
+		return "s3://" + config.bucket + "/" + config.prefix
+
+	case CloudProviderAzure:
+		return "azure://" + config.bucket + "/" + config.prefix
+
+	case CloudProviderGCS:
+		return "gcs://" + config.bucket + "/" + config.prefix
+
+	case CloudProviderSFTP:
+		return "sftp://" + config.accessKey + "@" + config.host + ":" + config.port + config.prefix
+
+	default:
+		return ""
+	}
+}
+
+// Test cloud provider name formatting
+func TestCloudProviderNames(t *testing.T) {
+	tests := []struct {
+		provider CloudProvider
+		name     string
+		icon     string
+	}{
+		{CloudProviderNone, "Skip Cloud Upload", "💾"},
+		{CloudProviderS3, "Amazon S3", "☁️"},
+		{CloudProviderAzure, "Azure Blob Storage", "🔷"},
+		{CloudProviderGCS, "Google Cloud Storage", "🌩️"},
+		{CloudProviderSFTP, "SFTP Server", "🔐"},
+	}
+
+	for _, tt := range tests {
+		t.Run(string(tt.provider), func(t *testing.T) {
+			// Find provider in cloudProviders slice
+			var found bool
+			for _, p := range cloudProviders {
+				if p.provider == tt.provider {
+					found = true
+					if p.name != tt.name {
+						t.Errorf("Expected name %s, got %s", tt.name, p.name)
+					}
+					if p.icon != tt.icon {
+						t.Errorf("Expected icon %s, got %s", tt.icon, p.icon)
+					}
+					break
+				}
+			}
+			if !found {
+				t.Errorf("Provider %s not found in cloudProviders", tt.provider)
+			}
+		})
+	}
+}
+
+// Benchmark cloud configuration step calculation
+func BenchmarkGetConfigSteps(b *testing.B) {
+	providers := []CloudProvider{
+		CloudProviderS3,
+		CloudProviderAzure,
+		CloudProviderGCS,
+		CloudProviderSFTP,
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		for _, provider := range providers {
+			getConfigSteps(provider)
+		}
+	}
+}
+
+// Benchmark cloud provider model creation
+func BenchmarkNewCloudSelectionModel(b *testing.B) {
+	parent := &tuiModel{}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		newCloudSelectionModel(parent)
+	}
+}
+
+// Benchmark cloud credentials model creation
+func BenchmarkNewCloudCredentialsModel(b *testing.B) {
+	parent := &tuiModel{}
+	providers := []CloudProvider{
+		CloudProviderS3,
+		CloudProviderAzure,
+		CloudProviderGCS,
+		CloudProviderSFTP,
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		for _, provider := range providers {
+			newCloudCredentialsModel(provider, parent)
+		}
+	}
+}
+
+// Test edge cases
+func TestCloudConfigEdgeCases(t *testing.T) {
+	t.Run("Empty provider", func(t *testing.T) {
+		config := &cloudConfig{
+			provider: "",
+			bucket:   "test-bucket",
+		}
+		if validateCloudConfig(config) {
+			t.Error("Expected validation to fail for empty provider")
+		}
+	})
+
+	t.Run("Nil config", func(t *testing.T) {
+		if validateCloudConfig(nil) {
+			t.Error("Expected validation to fail for nil config")
+		}
+	})
+
+	t.Run("Special characters in bucket name", func(t *testing.T) {
+		config := &cloudConfig{
+			provider:  CloudProviderS3,
+			bucket:    "my-bucket-123",
+			region:    "us-east-1",
+			accessKey: "key",
+			secretKey: "secret",
+		}
+		if !validateCloudConfig(config) {
+			t.Error("Expected validation to pass for bucket with hyphens and numbers")
+		}
+	})
+
+	t.Run("Empty prefix", func(t *testing.T) {
+		config := &cloudConfig{
+			provider:  CloudProviderS3,
+			bucket:    "my-bucket",
+			region:    "us-east-1",
+			accessKey: "key",
+			secretKey: "secret",
+			prefix:    "",
+		}
+		if !validateCloudConfig(config) {
+			t.Error("Expected validation to pass with empty prefix")
+		}
+	})
+
+	t.Run("SFTP default port", func(t *testing.T) {
+		config := &cloudConfig{
+			provider:  CloudProviderSFTP,
+			host:      "sftp.example.com",
+			port:      "22",
+			accessKey: "user",
+			secretKey: "pass",
+		}
+		if !validateCloudConfig(config) {
+			t.Error("Expected validation to pass for SFTP with default port")
+		}
+	})
+
+	t.Run("SFTP custom port", func(t *testing.T) {
+		config := &cloudConfig{
+			provider:  CloudProviderSFTP,
+			host:      "sftp.example.com",
+			port:      "2222",
+			accessKey: "user",
+			secretKey: "pass",
+		}
+		if !validateCloudConfig(config) {
+			t.Error("Expected validation to pass for SFTP with custom port")
+		}
+	})
+}

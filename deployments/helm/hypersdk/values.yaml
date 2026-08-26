@@ -1,0 +1,376 @@
+# Default values for transiva
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Replica count (only use >1 with PostgreSQL, not SQLite)
+replicaCount: 1
+
+image:
+  repository: ghcr.io/ssahani/transiva-hypervisord
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  name: ""
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8081"
+  prometheus.io/path: "/metrics"
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+securityContext:
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  allowPrivilegeEscalation: false
+
+service:
+  type: ClusterIP
+  port: 8080
+  metricsPort: 8081
+  annotations: {}
+
+# LoadBalancer service (optional)
+externalService:
+  enabled: true
+  type: LoadBalancer
+  port: 80
+  annotations: {}
+  # Cloud provider specific annotations
+  # AWS:
+  # service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+  # GCP:
+  # cloud.google.com/load-balancer-type: "Internal"
+  # Azure:
+  # service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+
+ingress:
+  enabled: false
+  className: "nginx"
+  annotations: {}
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+    # nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: transiva.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  #  - secretName: transiva-tls
+  #    hosts:
+  #      - transiva.example.com
+
+# OpenShift Route (alternative to Ingress)
+route:
+  enabled: false
+  host: ""  # e.g., transiva.apps.example.com
+  path: ""
+  annotations: {}
+    # haproxy.router.openshift.io/timeout: 5m
+    # haproxy.router.openshift.io/balance: roundrobin
+  tls:
+    termination: edge  # edge, passthrough, or reencrypt
+    insecureEdgeTerminationPolicy: Redirect
+    # certificate: ""
+    # key: ""
+    # caCertificate: ""
+    # destinationCACertificate: ""
+  wildcardPolicy: None
+
+# OpenShift-specific configuration
+openshift:
+  # Enable OpenShift-specific features
+  enabled: false
+
+  # SecurityContextConstraints
+  scc:
+    enabled: false
+    annotations: {}
+      # kubernetes.io/description: "Custom SCC for HyperSDK"
+
+resources:
+  requests:
+    memory: "512Mi"
+    cpu: "250m"
+  limits:
+    memory: "2Gi"
+    cpu: "1000m"
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+  # maxUnavailable: 1
+
+# Persistent storage
+persistence:
+  # Data volume for SQLite database
+  data:
+    enabled: true
+    storageClass: ""  # Use cluster default
+    accessMode: ReadWriteOnce
+    size: 10Gi
+    annotations: {}
+
+  # Exports volume for VM exports
+  exports:
+    enabled: true
+    storageClass: ""  # Use cluster default
+    accessMode: ReadWriteOnce
+    size: 500Gi
+    annotations: {}
+    # For NFS or other RWX storage:
+    # accessMode: ReadWriteMany
+    # existingClaim: "nfs-exports-pvc"
+
+# Configuration
+config:
+  # Logging
+  logLevel: info
+  logFormat: json
+
+  # Daemon
+  daemonAddr: "0.0.0.0:8080"
+  metricsAddr: "0.0.0.0:8081"
+
+  # Database
+  databasePath: "/data/transiva.db"
+  databaseType: "sqlite"  # or "postgres"
+  # PostgreSQL connection (if databaseType: postgres)
+  # databaseURL: "postgresql://user:pass@postgres:5432/transiva"
+
+  # Export settings
+  downloadWorkers: 3
+  chunkSize: 33554432  # 32MB
+  retryAttempts: 3
+  retryDelay: "5s"
+
+  # Job scheduling
+  scheduler:
+    enabled: true
+    timezone: "UTC"
+    maxConcurrentJobs: 3
+
+  # Webhooks
+  webhooks: []
+  # - url: "https://example.com/webhook"
+  #   events: ["job.completed", "job.failed"]
+  #   timeout: "30s"
+  #   retryAttempts: 3
+
+  # Rate limiting
+  rateLimiting:
+    enabled: true
+    requestsPerMinute: 100
+    burst: 50
+
+  # Security
+  security:
+    enableTLS: false
+    # tlsCert: /config/tls/tls.crt
+    # tlsKey: /config/tls/tls.key
+
+  # Audit logging
+  audit:
+    enabled: true
+    logPath: "/var/log/transiva/audit.log"
+    maxSize: 100  # MB
+    maxBackups: 10
+    maxAge: 30  # days
+
+# Cloud provider credentials (stored as secrets)
+credentials:
+  # vSphere
+  vsphere:
+    enabled: false
+    url: ""
+    username: ""
+    password: ""
+    insecure: "1"
+    # Use existing secret instead
+    existingSecret: ""
+    # Keys in existing secret: url, username, password, insecure
+
+  # AWS
+  aws:
+    enabled: false
+    accessKeyId: ""
+    secretAccessKey: ""
+    region: "us-east-1"
+    existingSecret: ""
+    # Keys: accessKeyId, secretAccessKey, region
+
+  # Azure
+  azure:
+    enabled: false
+    subscriptionId: ""
+    tenantId: ""
+    clientId: ""
+    clientSecret: ""
+    existingSecret: ""
+    # Keys: subscriptionId, tenantId, clientId, clientSecret
+
+  # GCP
+  gcp:
+    enabled: false
+    projectId: ""
+    serviceAccountJSON: ""
+    existingSecret: ""
+    # Keys: projectId, serviceAccountJSON
+
+  # Other providers can be added similarly
+
+# Monitoring
+monitoring:
+  serviceMonitor:
+    enabled: false
+    interval: 30s
+    scrapeTimeout: 10s
+    labels: {}
+    # release: prometheus
+
+  prometheusRule:
+    enabled: false
+    labels: {}
+    rules: []
+    # - alert: HyperSDKDown
+    #   expr: up{job="transiva"} == 0
+    #   for: 5m
+    #   labels:
+    #     severity: critical
+    #   annotations:
+    #     summary: "HyperSDK is down"
+
+# Network Policy
+networkPolicy:
+  enabled: false
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            name: ingress-nginx
+      ports:
+      - protocol: TCP
+        port: 8080
+  egress:
+    - to:
+      - namespaceSelector: {}
+      ports:
+      - protocol: TCP
+        port: 443  # HTTPS to cloud providers
+      - protocol: TCP
+        port: 53   # DNS
+      - protocol: UDP
+        port: 53   # DNS
+
+# Init containers
+initContainers:
+  # Set correct permissions on volumes
+  - name: init-permissions
+    image: busybox:1.36
+    command:
+      - sh
+      - -c
+      - |
+        chown -R 1000:1000 /data /exports
+        chmod 755 /data /exports
+    volumeMounts:
+      - name: data
+        mountPath: /data
+      - name: exports
+        mountPath: /exports
+    securityContext:
+      runAsUser: 0
+
+# Extra environment variables
+extraEnv: []
+# - name: CUSTOM_VAR
+#   value: "custom_value"
+
+# Extra volumes
+extraVolumes: []
+# - name: custom-config
+#   configMap:
+#     name: custom-config
+
+# Extra volume mounts
+extraVolumeMounts: []
+# - name: custom-config
+#   mountPath: /custom-config
+
+# Liveness probe
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 3
+
+# Readiness probe
+readinessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  successThreshold: 1
+  failureThreshold: 3
+
+# Startup probe
+startupProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 3
+  successThreshold: 1
+  failureThreshold: 30
+
+# Priority class
+priorityClassName: ""
+
+# Topology spread constraints
+topologySpreadConstraints: []
+# - maxSkew: 1
+#   topologyKey: topology.kubernetes.io/zone
+#   whenUnsatisfiable: ScheduleAnyway
+#   labelSelector:
+#     matchLabels:
+#       app.kubernetes.io/name: transiva

@@ -1,0 +1,485 @@
+import React, { useState } from 'react';
+import ProviderManager from './ProviderManager';
+import VMBrowser from './VMBrowser';
+import { JobSubmissionForm } from './JobSubmissionForm';
+
+type WorkflowStep = 'providers' | 'vms' | 'export';
+
+interface VM {
+  id: string;
+  name: string;
+  provider: string;
+  status: string;
+  [key: string]: any;
+}
+
+const ExportWorkflow: React.FC = () => {
+  const [currentStep, setCurrentStep] = useState<WorkflowStep>('providers');
+  const [selectedProvider, setSelectedProvider] = useState<string>('');
+  const [selectedVM, setSelectedVM] = useState<VM | null>(null);
+
+  const handleProviderSelect = (provider: string) => {
+    setSelectedProvider(provider);
+    setCurrentStep('vms');
+  };
+
+  const handleVMSelect = (vm: VM) => {
+    setSelectedVM(vm);
+    setCurrentStep('export');
+  };
+
+  const handleBackToProviders = () => {
+    setCurrentStep('providers');
+    setSelectedProvider('');
+    setSelectedVM(null);
+  };
+
+  const handleBackToVMs = () => {
+    setCurrentStep('vms');
+    setSelectedVM(null);
+  };
+
+  const renderProgressIndicator = () => (
+    <div style={styles.progressContainer}>
+      <div style={styles.progressSteps}>
+        {/* Step 1: Select Provider */}
+        <div style={styles.progressStep}>
+          <div style={{
+            ...styles.progressCircle,
+            ...(currentStep === 'providers' ? styles.progressCircleActive : {}),
+            ...(currentStep !== 'providers' && selectedProvider ? styles.progressCircleCompleted : {})
+          }}>
+            {currentStep !== 'providers' && selectedProvider ? '✓' : '1'}
+          </div>
+          <div style={styles.progressLabel}>Select Provider</div>
+          {selectedProvider && (
+            <div style={styles.progressValue}>{selectedProvider.toUpperCase()}</div>
+          )}
+        </div>
+
+        {/* Progress Line */}
+        <div style={{
+          ...styles.progressLine,
+          ...(selectedProvider ? styles.progressLineCompleted : {})
+        }} />
+
+        {/* Step 2: Select VM */}
+        <div style={styles.progressStep}>
+          <div style={{
+            ...styles.progressCircle,
+            ...(currentStep === 'vms' ? styles.progressCircleActive : {}),
+            ...(currentStep === 'export' && selectedVM ? styles.progressCircleCompleted : {}),
+            ...(!selectedProvider ? styles.progressCircleDisabled : {})
+          }}>
+            {currentStep === 'export' && selectedVM ? '✓' : '2'}
+          </div>
+          <div style={styles.progressLabel}>Select VM</div>
+          {selectedVM && (
+            <div style={styles.progressValue}>{selectedVM.name}</div>
+          )}
+        </div>
+
+        {/* Progress Line */}
+        <div style={{
+          ...styles.progressLine,
+          ...(selectedVM ? styles.progressLineCompleted : {})
+        }} />
+
+        {/* Step 3: Configure Export */}
+        <div style={styles.progressStep}>
+          <div style={{
+            ...styles.progressCircle,
+            ...(currentStep === 'export' ? styles.progressCircleActive : {}),
+            ...(!selectedVM ? styles.progressCircleDisabled : {})
+          }}>
+            3
+          </div>
+          <div style={styles.progressLabel}>Configure Export</div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderBreadcrumb = () => (
+    <div style={styles.breadcrumb}>
+      <span
+        style={{
+          ...styles.breadcrumbItem,
+          ...(currentStep === 'providers' ? styles.breadcrumbItemActive : styles.breadcrumbItemClickable)
+        }}
+        onClick={currentStep !== 'providers' ? handleBackToProviders : undefined}
+      >
+        🔌 Providers
+      </span>
+      {selectedProvider && (
+        <>
+          <span style={styles.breadcrumbSeparator}>/</span>
+          <span
+            style={{
+              ...styles.breadcrumbItem,
+              ...(currentStep === 'vms' ? styles.breadcrumbItemActive : styles.breadcrumbItemClickable)
+            }}
+            onClick={currentStep === 'export' ? handleBackToVMs : undefined}
+          >
+            📂 {selectedProvider.toUpperCase()} VMs
+          </span>
+        </>
+      )}
+      {selectedVM && (
+        <>
+          <span style={styles.breadcrumbSeparator}>/</span>
+          <span style={{...styles.breadcrumbItem, ...styles.breadcrumbItemActive}}>
+            ⚙️ Export {selectedVM.name}
+          </span>
+        </>
+      )}
+    </div>
+  );
+
+  return (
+    <div style={styles.container}>
+      {/* Header */}
+      <div style={styles.header}>
+        <h1 style={styles.title}>VM Export Workflow</h1>
+        <p style={styles.subtitle}>
+          Export virtual machines from cloud providers to local or remote storage
+        </p>
+      </div>
+
+      {/* Progress Indicator */}
+      {renderProgressIndicator()}
+
+      {/* Breadcrumb Navigation */}
+      {renderBreadcrumb()}
+
+      {/* Step Content */}
+      <div style={styles.content}>
+        {currentStep === 'providers' && (
+          <div style={styles.stepContainer}>
+            <div style={styles.stepHeader}>
+              <h2 style={styles.stepTitle}>Step 1: Select Cloud Provider</h2>
+              <p style={styles.stepDescription}>
+                Configure and connect to your cloud provider to begin discovering virtual machines.
+              </p>
+            </div>
+            <ProviderManager onProviderSelect={handleProviderSelect} />
+          </div>
+        )}
+
+        {currentStep === 'vms' && selectedProvider && (
+          <div style={styles.stepContainer}>
+            <div style={styles.stepHeader}>
+              <h2 style={styles.stepTitle}>Step 2: Discover and Select VM</h2>
+              <p style={styles.stepDescription}>
+                Browse available virtual machines from {selectedProvider.toUpperCase()} and select one to export.
+              </p>
+              <button onClick={handleBackToProviders} style={styles.backButton}>
+                ← Back to Providers
+              </button>
+            </div>
+            <VMBrowser
+              provider={selectedProvider}
+              onVMSelect={handleVMSelect}
+              autoDiscoverOnMount={true}
+            />
+          </div>
+        )}
+
+        {currentStep === 'export' && selectedVM && (
+          <div style={styles.stepContainer}>
+            <div style={styles.stepHeader}>
+              <h2 style={styles.stepTitle}>Step 3: Configure Export Options</h2>
+              <p style={styles.stepDescription}>
+                Configure export settings for {selectedVM.name} from {selectedProvider.toUpperCase()}.
+              </p>
+              <div style={styles.backButtonGroup}>
+                <button onClick={handleBackToVMs} style={styles.backButton}>
+                  ← Back to VMs
+                </button>
+                <button onClick={handleBackToProviders} style={styles.backButton}>
+                  ← Back to Providers
+                </button>
+              </div>
+            </div>
+
+            {/* Selected VM Summary */}
+            <div style={styles.vmSummary}>
+              <h3 style={styles.vmSummaryTitle}>Selected Virtual Machine</h3>
+              <div style={styles.vmSummaryGrid}>
+                <div style={styles.vmSummaryItem}>
+                  <span style={styles.vmSummaryLabel}>Name:</span>
+                  <span style={styles.vmSummaryValue}>{selectedVM.name}</span>
+                </div>
+                <div style={styles.vmSummaryItem}>
+                  <span style={styles.vmSummaryLabel}>ID:</span>
+                  <span style={styles.vmSummaryValue}>{selectedVM.id}</span>
+                </div>
+                <div style={styles.vmSummaryItem}>
+                  <span style={styles.vmSummaryLabel}>Provider:</span>
+                  <span style={styles.vmSummaryValue}>{selectedVM.provider}</span>
+                </div>
+                <div style={styles.vmSummaryItem}>
+                  <span style={styles.vmSummaryLabel}>Status:</span>
+                  <span style={styles.vmSummaryValue}>{selectedVM.status || selectedVM.power_state}</span>
+                </div>
+                {selectedVM.cpu_count && (
+                  <div style={styles.vmSummaryItem}>
+                    <span style={styles.vmSummaryLabel}>CPU:</span>
+                    <span style={styles.vmSummaryValue}>{selectedVM.cpu_count} vCPU</span>
+                  </div>
+                )}
+                {selectedVM.memory_mb && (
+                  <div style={styles.vmSummaryItem}>
+                    <span style={styles.vmSummaryLabel}>Memory:</span>
+                    <span style={styles.vmSummaryValue}>{(selectedVM.memory_mb / 1024).toFixed(1)} GB</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Job Submission Form with pre-filled values */}
+            <JobSubmissionForm
+              initialProvider={selectedProvider}
+              initialVMIdentifier={selectedVM.id}
+              initialVMName={selectedVM.name}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Help Section */}
+      <div style={styles.helpSection}>
+        <h3 style={styles.helpTitle}>ℹ️ Need Help?</h3>
+        <div style={styles.helpContent}>
+          {currentStep === 'providers' && (
+            <ul style={styles.helpList}>
+              <li>Click "Add Provider" to configure a new cloud provider connection</li>
+              <li>Test your connection to verify credentials are correct</li>
+              <li>Once connected, click "Browse VMs" to discover virtual machines</li>
+              <li>Supported providers: vSphere, AWS, Azure, GCP, Hyper-V, OCI, OpenStack, Alibaba Cloud, Proxmox</li>
+            </ul>
+          )}
+          {currentStep === 'vms' && (
+            <ul style={styles.helpList}>
+              <li>Use the search box to filter VMs by name or ID</li>
+              <li>Filter by power state to find running or stopped VMs</li>
+              <li>Click "Refresh VMs" to discover newly created or deleted VMs</li>
+              <li>Select a VM from the table to proceed with export configuration</li>
+            </ul>
+          )}
+          {currentStep === 'export' && (
+            <ul style={styles.helpList}>
+              <li>Choose export format: OVA, OVF, VMDK, or provider-specific formats</li>
+              <li>Enable compression to reduce export file size</li>
+              <li>Configure hyper2kvm integration for automatic conversion to KVM format</li>
+              <li>Monitor export progress in the Jobs dashboard after submission</li>
+            </ul>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const styles: { [key: string]: React.CSSProperties } = {
+  container: {
+    padding: '20px',
+    maxWidth: '1400px',
+    margin: '0 auto',
+  },
+  header: {
+    marginBottom: '30px',
+    textAlign: 'center',
+  },
+  title: {
+    margin: '0 0 10px 0',
+    fontSize: '32px',
+    color: '#222324',
+  },
+  subtitle: {
+    margin: 0,
+    fontSize: '16px',
+    color: '#666',
+  },
+  progressContainer: {
+    marginBottom: '30px',
+    padding: '20px',
+    backgroundColor: '#f0f2f7',
+    borderRadius: '8px',
+  },
+  progressSteps: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    maxWidth: '800px',
+    margin: '0 auto',
+  },
+  progressStep: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '8px',
+  },
+  progressCircle: {
+    width: '50px',
+    height: '50px',
+    borderRadius: '50%',
+    backgroundColor: '#ccc',
+    color: '#fff',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '20px',
+    fontWeight: 'bold',
+  },
+  progressCircleActive: {
+    backgroundColor: '#f0583a',
+    boxShadow: '0 0 0 4px rgba(240, 88, 58, 0.2)',
+  },
+  progressCircleCompleted: {
+    backgroundColor: '#4caf50',
+  },
+  progressCircleDisabled: {
+    backgroundColor: '#e0e0e0',
+    color: '#999',
+  },
+  progressLabel: {
+    fontSize: '14px',
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+  },
+  progressValue: {
+    fontSize: '12px',
+    color: '#666',
+    textAlign: 'center',
+  },
+  progressLine: {
+    width: '100px',
+    height: '4px',
+    backgroundColor: '#e0e0e0',
+    margin: '0 20px',
+    position: 'relative',
+    top: '-25px',
+  },
+  progressLineCompleted: {
+    backgroundColor: '#4caf50',
+  },
+  breadcrumb: {
+    marginBottom: '20px',
+    padding: '15px',
+    backgroundColor: '#fff',
+    borderRadius: '8px',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+  },
+  breadcrumbItem: {
+    fontSize: '14px',
+    fontWeight: 'bold',
+  },
+  breadcrumbItemActive: {
+    color: '#f0583a',
+  },
+  breadcrumbItemClickable: {
+    color: '#2196f3',
+    cursor: 'pointer',
+    textDecoration: 'underline',
+  },
+  breadcrumbSeparator: {
+    color: '#999',
+  },
+  content: {
+    marginBottom: '30px',
+  },
+  stepContainer: {
+    backgroundColor: '#fff',
+    borderRadius: '8px',
+    padding: '20px',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+  },
+  stepHeader: {
+    marginBottom: '20px',
+    paddingBottom: '15px',
+    borderBottom: '2px solid #f0f2f7',
+  },
+  stepTitle: {
+    margin: '0 0 10px 0',
+    fontSize: '24px',
+    color: '#222324',
+  },
+  stepDescription: {
+    margin: '0 0 15px 0',
+    fontSize: '14px',
+    color: '#666',
+  },
+  backButton: {
+    padding: '8px 16px',
+    backgroundColor: '#2196f3',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '5px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: 'bold',
+    marginRight: '10px',
+  },
+  backButtonGroup: {
+    display: 'flex',
+    gap: '10px',
+  },
+  vmSummary: {
+    padding: '20px',
+    backgroundColor: '#e8f5e9',
+    border: '2px solid #4caf50',
+    borderRadius: '8px',
+    marginBottom: '20px',
+  },
+  vmSummaryTitle: {
+    margin: '0 0 15px 0',
+    fontSize: '18px',
+    color: '#2e7d32',
+  },
+  vmSummaryGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+    gap: '15px',
+  },
+  vmSummaryItem: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '5px',
+  },
+  vmSummaryLabel: {
+    fontSize: '12px',
+    fontWeight: 'bold',
+    color: '#555',
+    textTransform: 'uppercase',
+  },
+  vmSummaryValue: {
+    fontSize: '14px',
+    color: '#222',
+  },
+  helpSection: {
+    padding: '20px',
+    backgroundColor: '#fff9e6',
+    border: '1px solid #ffd54f',
+    borderRadius: '8px',
+  },
+  helpTitle: {
+    margin: '0 0 15px 0',
+    fontSize: '18px',
+    color: '#f57f17',
+  },
+  helpContent: {
+    fontSize: '14px',
+    color: '#333',
+  },
+  helpList: {
+    margin: '0',
+    paddingLeft: '20px',
+  },
+};
+
+export default ExportWorkflow;

@@ -1,0 +1,203 @@
+name: Helm Chart Tests
+
+on:
+  pull_request:
+    paths:
+      - 'deployments/helm/**'
+      - '.github/workflows/helm-test.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'deployments/helm/**'
+
+jobs:
+  lint-and-test:
+    name: Lint and Test Helm Chart
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+
+      - name: Set up chart-testing
+        uses: helm/chart-testing-action@v2.6.1
+
+      - name: Install helm-unittest plugin
+        run: |
+          helm plugin install https://github.com/helm-unittest/helm-unittest
+
+      - name: Run helm lint
+        run: |
+          helm lint deployments/helm/transiva
+
+      - name: Run unit tests
+        run: |
+          helm unittest deployments/helm/transiva
+
+      - name: Run chart-testing lint
+        run: |
+          ct lint --config .github/ct.yaml \
+            --charts deployments/helm/transiva
+
+      - name: Template rendering tests
+        run: |
+          ./deployments/scripts/test-helm-chart.sh
+
+      - name: Test all example values
+        run: |
+          for values_file in deployments/helm/transiva/examples/*.yaml; do
+            echo "Testing with $values_file"
+            helm template test deployments/helm/transiva -f "$values_file"
+          done
+
+  kubeconform:
+    name: Validate Kubernetes Manifests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+
+      - name: Install kubeconform
+        run: |
+          wget https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz
+          tar xf kubeconform-linux-amd64.tar.gz
+          sudo mv kubeconform /usr/local/bin/
+
+      - name: Validate manifests with default values
+        run: |
+          helm template test deployments/helm/transiva | \
+            kubeconform -strict -summary -kubernetes-version 1.29.0
+
+      - name: Validate manifests with production values
+        run: |
+          helm template test deployments/helm/transiva \
+            -f deployments/helm/transiva/examples/gke-values.yaml | \
+            kubeconform -strict -summary -kubernetes-version 1.29.0
+
+  install-test:
+    name: Install Test on Kind
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.9.0
+        with:
+          cluster_name: transiva-test
+          kubectl_version: v1.29.0
+
+      - name: Install chart
+        run: |
+          helm install transiva deployments/helm/transiva \
+            --namespace transiva --create-namespace \
+            --wait --timeout 5m
+
+      - name: Check deployment status
+        run: |
+          kubectl get all -n transiva
+          kubectl wait --for=condition=available --timeout=300s \
+            deployment/transiva -n transiva
+
+      - name: Run smoke tests
+        run: |
+          kubectl port-forward -n transiva svc/transiva 8080:8080 &
+          sleep 5
+          curl -f http://localhost:8080/health || exit 1
+
+      - name: Show logs on failure
+        if: failure()
+        run: |
+          kubectl logs -n transiva -l app.kubernetes.io/name=transiva --tail=100
+          kubectl describe pod -n transiva
+          kubectl get events -n transiva --sort-by='.lastTimestamp'
+
+      - name: Uninstall chart
+        if: always()
+        run: |
+          helm uninstall transiva --namespace transiva
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          scan-ref: 'deployments/helm/transiva'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Check for secrets
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: deployments/helm/
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+
+  documentation:
+    name: Check Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install helm-docs
+        run: |
+          wget https://github.com/norwoodj/helm-docs/releases/download/v1.13.1/helm-docs_1.13.1_Linux_x86_64.tar.gz
+          tar xf helm-docs_1.13.1_Linux_x86_64.tar.gz
+          sudo mv helm-docs /usr/local/bin/
+
+      - name: Check documentation is up to date
+        run: |
+          cd deployments/helm/transiva
+          helm-docs
+          if ! git diff --exit-code README.md; then
+            echo "README.md is out of date. Please run 'helm-docs' and commit the changes."
+            exit 1
+          fi
+
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [lint-and-test, kubeconform, install-test, security-scan, documentation]
+    if: always()
+    steps:
+      - name: Check test results
+        run: |
+          if [ "${{ needs.lint-and-test.result }}" != "success" ] || \
+             [ "${{ needs.kubeconform.result }}" != "success" ] || \
+             [ "${{ needs.install-test.result }}" != "success" ] || \
+             [ "${{ needs.security-scan.result }}" != "success" ] || \
+             [ "${{ needs.documentation.result }}" != "success" ]; then
+            echo "Some tests failed"
+            exit 1
+          fi
+          echo "All tests passed!"

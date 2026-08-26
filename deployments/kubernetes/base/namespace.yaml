@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: transiva
+  labels:
+    name: transiva
+    app.kubernetes.io/name: transiva
+    app.kubernetes.io/component: vm-migration

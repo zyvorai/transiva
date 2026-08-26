@@ -1,0 +1,144 @@
+Thank you for installing {{ .Chart.Name }}!
+
+Your release is named {{ .Release.Name }}.
+
+To learn more about the release, try:
+
+  $ helm status {{ .Release.Name }} -n {{ .Release.Namespace }}
+  $ helm get all {{ .Release.Name }} -n {{ .Release.Namespace }}
+
+HyperSDK has been deployed successfully!
+
+1. Get the application URL:
+{{- if .Values.route.enabled }}
+  {{- if .Values.route.host }}
+  http{{ if .Values.route.tls }}s{{ end }}://{{ .Values.route.host }}
+  {{- else }}
+  oc get route {{ include "transiva.fullname" . }} -n {{ .Release.Namespace }} -o jsonpath='{.spec.host}'
+  {{- end }}
+{{- else if .Values.ingress.enabled }}
+{{- range $host := .Values.ingress.hosts }}
+  {{- range .paths }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
+  {{- end }}
+{{- end }}
+{{- else if contains "NodePort" .Values.externalService.type }}
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "transiva.fullname" . }}-external)
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo "http://$NODE_IP:$NODE_PORT"
+{{- else if contains "LoadBalancer" .Values.externalService.type }}
+  NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+        You can watch the status by running 'kubectl get svc -n {{ .Release.Namespace }} -w {{ include "transiva.fullname" . }}-external'
+
+  export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "transiva.fullname" . }}-external --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
+  echo "http://$SERVICE_IP:{{ .Values.externalService.port }}"
+{{- else if contains "ClusterIP" .Values.service.type }}
+  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "transiva.fullname" . }} 8080:8080
+  echo "Visit http://127.0.0.1:8080 to access HyperSDK"
+{{- end }}
+
+2. Check the API health:
+  curl http://<service-url>:8080/health
+
+3. View metrics:
+  curl http://<service-url>:8081/metrics
+
+4. Check pod status:
+  kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ include "transiva.name" . }}
+
+5. View logs:
+  kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ include "transiva.name" . }} -f
+
+{{- if .Values.credentials.vsphere.enabled }}
+
+vSphere Integration:
+  ✓ vSphere credentials configured
+  {{- if .Values.credentials.vsphere.existingSecret }}
+  Using existing secret: {{ .Values.credentials.vsphere.existingSecret }}
+  {{- else }}
+  Using generated secret: {{ include "transiva.fullname" . }}-vsphere
+  {{- end }}
+{{- end }}
+
+{{- if .Values.credentials.aws.enabled }}
+
+AWS Integration:
+  ✓ AWS credentials configured
+  {{- if .Values.credentials.aws.existingSecret }}
+  Using existing secret: {{ .Values.credentials.aws.existingSecret }}
+  {{- else }}
+  Using generated secret: {{ include "transiva.fullname" . }}-aws
+  {{- end }}
+{{- end }}
+
+{{- if .Values.credentials.azure.enabled }}
+
+Azure Integration:
+  ✓ Azure credentials configured
+  {{- if .Values.credentials.azure.existingSecret }}
+  Using existing secret: {{ .Values.credentials.azure.existingSecret }}
+  {{- else }}
+  Using generated secret: {{ include "transiva.fullname" . }}-azure
+  {{- end }}
+{{- end }}
+
+{{- if .Values.credentials.gcp.enabled }}
+
+GCP Integration:
+  ✓ GCP credentials configured
+  {{- if .Values.credentials.gcp.existingSecret }}
+  Using existing secret: {{ .Values.credentials.gcp.existingSecret }}
+  {{- else }}
+  Using generated secret: {{ include "transiva.fullname" . }}-gcp
+  {{- end }}
+{{- end }}
+
+{{- if .Values.persistence.data.enabled }}
+
+Storage:
+  ✓ Data volume: {{ .Values.persistence.data.size }}
+  ✓ Exports volume: {{ .Values.persistence.exports.size }}
+{{- end }}
+
+{{- if .Values.autoscaling.enabled }}
+
+Autoscaling:
+  ✓ HorizontalPodAutoscaler enabled
+  Min replicas: {{ .Values.autoscaling.minReplicas }}
+  Max replicas: {{ .Values.autoscaling.maxReplicas }}
+  Target CPU: {{ .Values.autoscaling.targetCPUUtilizationPercentage }}%
+{{- end }}
+
+{{- if .Values.monitoring.serviceMonitor.enabled }}
+
+Monitoring:
+  ✓ ServiceMonitor enabled for Prometheus
+  Metrics available at: http://<service-url>:8081/metrics
+{{- end }}
+
+{{- if .Values.networkPolicy.enabled }}
+
+Security:
+  ✓ NetworkPolicy enabled
+  {{- if .Values.podSecurityContext.runAsNonRoot }}
+  ✓ Running as non-root user
+  {{- end }}
+{{- end }}
+
+{{- if .Values.openshift.enabled }}
+
+OpenShift:
+  ✓ OpenShift-specific features enabled
+  {{- if .Values.openshift.scc.enabled }}
+  ✓ Custom SecurityContextConstraints created
+  {{- end }}
+  {{- if .Values.route.enabled }}
+  ✓ Route configured for external access
+  {{- end }}
+{{- end }}
+
+Documentation:
+  https://github.com/ssahani/transiva
+
+For support and issues:
+  https://github.com/ssahani/transiva/issues

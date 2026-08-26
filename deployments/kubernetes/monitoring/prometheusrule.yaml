@@ -1,0 +1,200 @@
+# PrometheusRule for alerting
+# Defines alert rules for hypervisord monitoring
+
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: hypervisord-alerts
+  namespace: transiva
+  labels:
+    app: hypervisord
+    app.kubernetes.io/name: hypervisord
+    app.kubernetes.io/component: monitoring
+    app.kubernetes.io/part-of: transiva
+    # Label required by Prometheus Operator
+    prometheus: kube-prometheus
+    role: alert-rules
+spec:
+  groups:
+  # ===========================================================================
+  # HyperSDK Service Health Alerts
+  # ===========================================================================
+  - name: transiva.health
+    interval: 30s
+    rules:
+    - alert: HyperSDKServiceDown
+      expr: up{job="hypervisord"} == 0
+      for: 5m
+      labels:
+        severity: critical
+        component: hypervisord
+      annotations:
+        summary: "HyperSDK service is down"
+        description: "HyperSDK service in namespace {{ $labels.namespace }} has been down for more than 5 minutes."
+
+    - alert: HyperSDKHighErrorRate
+      expr: rate(hypersdk_http_requests_total{status=~"5.."}[5m]) > 0.1
+      for: 5m
+      labels:
+        severity: warning
+        component: hypervisord
+      annotations:
+        summary: "High error rate detected"
+        description: "HyperSDK is experiencing high error rate ({{ $value }} errors/sec) in namespace {{ $labels.namespace }}."
+
+  # ===========================================================================
+  # Export Job Alerts
+  # ===========================================================================
+  - name: transiva.jobs
+    interval: 30s
+    rules:
+    - alert: HyperSDKJobFailureRateHigh
+      expr: rate(hypersdk_export_jobs_failed_total[15m]) > 0.5
+      for: 10m
+      labels:
+        severity: warning
+        component: jobs
+      annotations:
+        summary: "High job failure rate"
+        description: "HyperSDK is experiencing high job failure rate ({{ $value }} failures/sec) in namespace {{ $labels.namespace }}."
+
+    - alert: HyperSDKJobQueueBacklog
+      expr: hypersdk_export_jobs_queued > 20
+      for: 30m
+      labels:
+        severity: warning
+        component: jobs
+      annotations:
+        summary: "Large job queue backlog"
+        description: "HyperSDK has {{ $value }} jobs queued for more than 30 minutes in namespace {{ $labels.namespace }}."
+
+    - alert: HyperSDKJobStuck
+      expr: hypersdk_export_job_duration_seconds{quantile="0.99"} > 7200
+      for: 15m
+      labels:
+        severity: warning
+        component: jobs
+      annotations:
+        summary: "Long-running export job detected"
+        description: "Export job in namespace {{ $labels.namespace }} has been running for more than 2 hours."
+
+  # ===========================================================================
+  # Resource Usage Alerts
+  # ===========================================================================
+  - name: transiva.resources
+    interval: 30s
+    rules:
+    - alert: HyperSDKHighMemoryUsage
+      expr: |
+        (container_memory_working_set_bytes{container="hypervisord",namespace="transiva"}
+        / container_spec_memory_limit_bytes{container="hypervisord",namespace="transiva"}) > 0.9
+      for: 10m
+      labels:
+        severity: warning
+        component: resources
+      annotations:
+        summary: "High memory usage"
+        description: "HyperSDK pod {{ $labels.pod }} is using {{ $value | humanizePercentage }} of its memory limit."
+
+    - alert: HyperSDKHighCPUUsage
+      expr: |
+        (rate(container_cpu_usage_seconds_total{container="hypervisord",namespace="transiva"}[5m])
+        / container_spec_cpu_quota{container="hypervisord",namespace="transiva"}
+        * container_spec_cpu_period{container="hypervisord",namespace="transiva"}) > 0.9
+      for: 15m
+      labels:
+        severity: warning
+        component: resources
+      annotations:
+        summary: "High CPU usage"
+        description: "HyperSDK pod {{ $labels.pod }} is using {{ $value | humanizePercentage }} of its CPU limit."
+
+    - alert: HyperSDKDiskSpaceLow
+      expr: |
+        (1 - (node_filesystem_avail_bytes{mountpoint=~"/data|/exports"}
+        / node_filesystem_size_bytes{mountpoint=~"/data|/exports"})) > 0.85
+      for: 10m
+      labels:
+        severity: warning
+        component: storage
+      annotations:
+        summary: "Low disk space"
+        description: "HyperSDK storage on {{ $labels.mountpoint }} is {{ $value | humanizePercentage }} full."
+
+  # ===========================================================================
+  # Provider Connection Alerts
+  # ===========================================================================
+  - name: transiva.providers
+    interval: 30s
+    rules:
+    - alert: HyperSDKProviderConnectionFailure
+      expr: hypersdk_provider_connection_errors_total > 10
+      for: 5m
+      labels:
+        severity: warning
+        component: providers
+      annotations:
+        summary: "Provider connection failures"
+        description: "HyperSDK is experiencing connection failures to {{ $labels.provider }} ({{ $value }} errors)."
+
+    - alert: HyperSDKProviderAuthenticationFailure
+      expr: rate(hypersdk_provider_auth_errors_total[5m]) > 0
+      for: 2m
+      labels:
+        severity: critical
+        component: providers
+      annotations:
+        summary: "Provider authentication failure"
+        description: "HyperSDK cannot authenticate to {{ $labels.provider }} in namespace {{ $labels.namespace }}."
+
+  # ===========================================================================
+  # API Performance Alerts
+  # ===========================================================================
+  - name: transiva.api
+    interval: 30s
+    rules:
+    - alert: HyperSDKAPIHighLatency
+      expr: histogram_quantile(0.99, rate(hypersdk_http_request_duration_seconds_bucket[5m])) > 2
+      for: 10m
+      labels:
+        severity: warning
+        component: api
+      annotations:
+        summary: "High API latency"
+        description: "HyperSDK API p99 latency is {{ $value }}s in namespace {{ $labels.namespace }}."
+
+    - alert: HyperSDKAPIRateLimitExceeded
+      expr: rate(hypersdk_rate_limit_exceeded_total[5m]) > 1
+      for: 5m
+      labels:
+        severity: info
+        component: api
+      annotations:
+        summary: "API rate limit exceeded"
+        description: "HyperSDK API rate limit is being exceeded ({{ $value }} requests/sec) in namespace {{ $labels.namespace }}."
+
+  # ===========================================================================
+  # Database Alerts
+  # ===========================================================================
+  - name: transiva.database
+    interval: 30s
+    rules:
+    - alert: HyperSDKDatabaseSlowQueries
+      expr: hypersdk_database_query_duration_seconds{quantile="0.99"} > 1
+      for: 10m
+      labels:
+        severity: warning
+        component: database
+      annotations:
+        summary: "Slow database queries"
+        description: "HyperSDK database p99 query latency is {{ $value }}s in namespace {{ $labels.namespace }}."
+
+    - alert: HyperSDKDatabaseConnectionPoolExhausted
+      expr: hypersdk_database_connections_in_use >= hypersdk_database_connections_max
+      for: 5m
+      labels:
+        severity: critical
+        component: database
+      annotations:
+        summary: "Database connection pool exhausted"
+        description: "HyperSDK database connection pool is exhausted in namespace {{ $labels.namespace }}."

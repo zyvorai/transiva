@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Machines - HyperSDK</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <link rel="stylesheet" href="/static/css/k8s.css">
+    <link rel="stylesheet" href="/static/css/k8s-vms.css">
+    <style>
+        /* VM-specific quick styles */
+        .vm-card {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid var(--accent-primary);
+        }
+
+        .vm-card.running { border-left-color: #10b981; }
+        .vm-card.stopped { border-left-color: #6b7280; }
+        .vm-card.failed { border-left-color: #ef4444; }
+        .vm-card.creating { border-left-color: #f59e0b; }
+
+        .vm-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .vm-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .vm-status {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .status-Running { background: #10b981; color: #ffffff; }
+        .status-Stopped { background: #6b7280; color: #ffffff; }
+        .status-Creating { background: #f59e0b; color: #ffffff; }
+        .status-Failed { background: #ef4444; color: #ffffff; }
+        .status-Migrating { background: #3b82f6; color: #ffffff; }
+
+        .vm-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .vm-detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .vm-detail-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+        }
+
+        .vm-detail-value {
+            font-size: 1rem;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .vm-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .vm-action-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            border: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .vm-action-btn.primary {
+            background: var(--accent-primary);
+            color: var(--text-primary);
+        }
+
+        .vm-action-btn.secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .vm-action-btn.danger {
+            background: #ef4444;
+            color: #ffffff;
+        }
+
+        .vm-action-btn:hover {
+            opacity: 0.8;
+            transform: translateY(-1px);
+        }
+
+        .vm-action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .resource-bar {
+            height: 8px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .resource-fill {
+            height: 100%;
+            background: var(--accent-primary);
+            transition: width 0.3s ease;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            padding: 1.5rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🖥️ Virtual Machines</h1>
+            <p>Manage Kubernetes VMs with HyperSDK</p>
+        </header>
+
+        <!-- Summary Stats -->
+        <div class="stats-grid" id="vm-stats">
+            <div class="stat-card">
+                <div class="stat-value" id="stat-total">0</div>
+                <div class="stat-label">Total VMs</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-running" style="color: #10b981;">0</div>
+                <div class="stat-label">Running</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-stopped">0</div>
+                <div class="stat-label">Stopped</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-cpus">0</div>
+                <div class="stat-label">Total vCPUs</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-memory">0</div>
+                <div class="stat-label">Total Memory (Gi)</div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="k8s-tabs">
+            <button class="k8s-tab active" data-tab="running">
+                Running VMs
+                <span class="badge" id="badge-running">0</span>
+            </button>
+            <button class="k8s-tab" data-tab="stopped">
+                Stopped VMs
+                <span class="badge" id="badge-stopped">0</span>
+            </button>
+            <button class="k8s-tab" data-tab="templates">
+                Templates
+                <span class="badge" id="badge-templates">0</span>
+            </button>
+            <button class="k8s-tab" data-tab="snapshots">
+                Snapshots
+                <span class="badge" id="badge-snapshots">0</span>
+            </button>
+        </div>
+
+        <!-- Running VMs Tab -->
+        <div class="tab-content active" id="tab-running">
+            <div id="running-vms-list"></div>
+        </div>
+
+        <!-- Stopped VMs Tab -->
+        <div class="tab-content" id="tab-stopped">
+            <div id="stopped-vms-list"></div>
+        </div>
+
+        <!-- Templates Tab -->
+        <div class="tab-content" id="tab-templates">
+            <div id="templates-list"></div>
+        </div>
+
+        <!-- Snapshots Tab -->
+        <div class="tab-content" id="tab-snapshots">
+            <div id="snapshots-list"></div>
+        </div>
+    </div>
+
+    <script src="/static/js/k8s-vms.js"></script>
+    <script>
+        // Initialize VM dashboard
+        const vmDashboard = new VMDashboard();
+        vmDashboard.init();
+    </script>
+</body>
+</html>

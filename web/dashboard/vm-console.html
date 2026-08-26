@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HyperSDK - VM Console Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #f0f2f7;
+            color: #1a1d29;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1a1d29 0%, #2d3748 100%);
+            color: white;
+            padding: 20px 40px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .header .subtitle {
+            color: #f0583a;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .vm-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .vm-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .vm-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .vm-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .vm-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1d29;
+        }
+
+        .vm-status {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-running {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .status-stopped {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        .status-paused {
+            background: #feebc8;
+            color: #7c2d12;
+        }
+
+        .vm-info {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f7fafc;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+        }
+
+        .info-label {
+            color: #718096;
+        }
+
+        .info-value {
+            font-weight: 500;
+            color: #1a1d29;
+        }
+
+        .console-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-vnc {
+            background: #f0583a;
+            color: white;
+        }
+
+        .btn-vnc:hover {
+            background: #d94728;
+        }
+
+        .btn-serial {
+            background: #4a5568;
+            color: white;
+        }
+
+        .btn-serial:hover {
+            background: #2d3748;
+        }
+
+        .btn-screenshot {
+            background: #3182ce;
+            color: white;
+        }
+
+        .btn-screenshot:hover {
+            background: #2c5aa0;
+        }
+
+        .btn-info {
+            background: #38b2ac;
+            color: white;
+        }
+
+        .btn-info:hover {
+            background: #319795;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+        }
+
+        .error {
+            background: #fed7d7;
+            color: #742a2a;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+
+        .console-info-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .console-info-modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #718096;
+        }
+
+        .close-btn:hover {
+            color: #1a1d29;
+        }
+
+        .console-detail {
+            background: #1a1d29;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            margin: 10px 0;
+        }
+
+        .console-detail pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .copy-btn {
+            background: #f0583a;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .copy-btn:hover {
+            background: #d94728;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🖥️ VM Console Viewer</h1>
+        <div class="subtitle">Access VM screens, terminals, and consoles</div>
+    </div>
+
+    <div class="container">
+        <div id="vm-list" class="vm-grid">
+            <div class="loading">Loading VMs...</div>
+        </div>
+    </div>
+
+    <!-- Console Info Modal -->
+    <div id="console-modal" class="console-info-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Console Information</div>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080';
+
+        // Load all VMs
+        function loadVMs() {
+            fetch(API_BASE + '/libvirt/domains')
+                .then(r => r.json())
+                .then(data => {
+                    displayVMs(data.domains || []);
+                })
+                .catch(err => {
+                    document.getElementById('vm-list').innerHTML =
+                        '<div class="error">Failed to load VMs: ' + err.message + '</div>';
+                });
+        }
+
+        // Display VMs in grid
+        function displayVMs(vms) {
+            if (vms.length === 0) {
+                document.getElementById('vm-list').innerHTML =
+                    '<div class="loading">No VMs found. Create some VMs first!</div>';
+                return;
+            }
+
+            const html = vms.map(vm => {
+                const statusClass = vm.state === 'running' ? 'running' :
+                                  vm.state === 'shut off' ? 'stopped' : 'paused';
+
+                return `
+                    <div class="vm-card">
+                        <div class="vm-header">
+                            <div class="vm-name">${vm.name}</div>
+                            <div class="vm-status status-${statusClass}">${vm.state}</div>
+                        </div>
+
+                        <div class="vm-info">
+                            <div class="info-row">
+                                <span class="info-label">ID:</span>
+                                <span class="info-value">${vm.id || 'N/A'}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">UUID:</span>
+                                <span class="info-value">${vm.uuid ? vm.uuid.substring(0, 13) + '...' : 'N/A'}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">CPUs:</span>
+                                <span class="info-value">${vm.cpus || 'N/A'}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Memory:</span>
+                                <span class="info-value">${vm.memory ? vm.memory + ' MB' : 'N/A'}</span>
+                            </div>
+                        </div>
+
+                        <div class="console-buttons">
+                            <button class="btn btn-vnc" onclick="openVNC('${vm.name}')">
+                                🖼️ VNC Console
+                            </button>
+                            <button class="btn btn-serial" onclick="openSerial('${vm.name}')">
+                                💻 Serial Console
+                            </button>
+                            <button class="btn btn-screenshot" onclick="takeScreenshot('${vm.name}')">
+                                📸 Screenshot
+                            </button>
+                            <button class="btn btn-info" onclick="showConsoleInfo('${vm.name}')">
+                                ℹ️ Console Info
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('vm-list').innerHTML = html;
+        }
+
+        // Open VNC console in new window
+        function openVNC(vmName) {
+            const url = API_BASE + '/console/vnc?name=' + encodeURIComponent(vmName);
+            window.open(url, vmName + '-vnc', 'width=1024,height=768,toolbar=no,menubar=no');
+        }
+
+        // Open serial console in new window
+        function openSerial(vmName) {
+            const url = API_BASE + '/console/serial?name=' + encodeURIComponent(vmName);
+            window.open(url, vmName + '-serial', 'width=800,height=600,toolbar=no,menubar=no');
+        }
+
+        // Take screenshot
+        function takeScreenshot(vmName) {
+            if (!confirm('Take screenshot of ' + vmName + '?')) return;
+
+            fetch(API_BASE + '/console/screenshot?name=' + encodeURIComponent(vmName))
+                .then(r => r.json())
+                .then(data => {
+                    alert('Screenshot saved to: ' + data.path + '\n\n' + data.note);
+                })
+                .catch(err => {
+                    alert('Failed to take screenshot: ' + err.message);
+                });
+        }
+
+        // Show console information
+        function showConsoleInfo(vmName) {
+            fetch(API_BASE + '/console/info?name=' + encodeURIComponent(vmName))
+                .then(r => r.json())
+                .then(data => {
+                    displayConsoleInfo(data);
+                })
+                .catch(err => {
+                    alert('Failed to get console info: ' + err.message);
+                });
+        }
+
+        // Display console info in modal
+        function displayConsoleInfo(info) {
+            let html = '<h3>' + info.vm_name + '</h3>';
+
+            if (info.has_vnc) {
+                html += `
+                    <div style="margin: 20px 0;">
+                        <h4>🖼️ VNC Console</h4>
+                        <div class="console-detail">
+                            <pre>Display:  ${info.vnc_display}
+Port:     ${info.vnc_port}
+URL:      ${info.vnc_url}
+
+Connect with VNC client:
+$ vncviewer localhost:${info.vnc_port}
+
+Or use remote-viewer:
+$ remote-viewer ${info.vnc_url}</pre>
+                        </div>
+                        <button class="copy-btn" onclick="copyText('vncviewer localhost:${info.vnc_port}')">
+                            Copy VNC Command
+                        </button>
+                    </div>
+                `;
+            }
+
+            if (info.has_serial) {
+                html += `
+                    <div style="margin: 20px 0;">
+                        <h4>💻 Serial Console</h4>
+                        <div class="console-detail">
+                            <pre>Device: ${info.serial_device || 'Dynamic PTY'}
+
+Connect via virsh:
+$ virsh console ${info.vm_name}
+
+Or directly via screen:
+$ screen ${info.serial_device || '/dev/pts/X'}</pre>
+                        </div>
+                        <button class="copy-btn" onclick="copyText('virsh console ${info.vm_name}')">
+                            Copy Command
+                        </button>
+                    </div>
+                `;
+            }
+
+            if (info.has_spice) {
+                html += `
+                    <div style="margin: 20px 0;">
+                        <h4>🎮 SPICE Console</h4>
+                        <div class="console-detail">
+                            <pre>SPICE is enabled for this VM.
+
+Connect with remote-viewer:
+$ remote-viewer spice://localhost:5900</pre>
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (!info.has_vnc && !info.has_serial && !info.has_spice) {
+                html += '<p style="color: #742a2a;">No console configured for this VM.</p>';
+            }
+
+            document.getElementById('modal-body').innerHTML = html;
+            document.getElementById('console-modal').classList.add('show');
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('console-modal').classList.remove('show');
+        }
+
+        // Copy text to clipboard
+        function copyText(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Copied to clipboard!');
+            }).catch(err => {
+                alert('Failed to copy: ' + err.message);
+            });
+        }
+
+        // Initialize
+        loadVMs();
+
+        // Auto-refresh every 10 seconds
+        setInterval(loadVMs, 10000);
+
+        // Close modal on outside click
+        document.getElementById('console-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>

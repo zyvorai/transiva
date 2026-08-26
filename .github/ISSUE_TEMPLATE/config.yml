@@ -1,0 +1,32 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "Sponsor development (Razorpay)"
+    url: https://razorpay.me/@zyvorAILabs
+    about: Support open-source maintenance by Susant Sahani — not required to use CE
+  - name: "Watch migration demo (video + dashboard)"
+    url: https://zyvor.dev/demo?utm_source=github&utm_medium=transiva
+    about: See the platform before downloading CE — migration video and live dashboard
+  - name: "Enterprise, sales and SLAs (Zyvor)"
+    url: https://zyvor.dev/contact?utm_source=github&utm_medium=transiva
+    about: Production migrations, VMware exit, licensing — not for GitHub Issues
+  - name: "Email sales"
+    url: mailto:sales@zyvor.dev
+    about: sales@zyvor.dev — enterprise quotes and migration programs
+  - name: "ROI calculator"
+    url: https://zyvor.dev/roi?utm_source=github&utm_medium=transiva
+    about: Estimate savings from VMware exit and platform migration
+  - name: "Discussions"
+    url: https://github.com/transiva/transiva/discussions
+    about: Ask questions and discuss ideas with the community
+  - name: "CE vs Enterprise"
+    url: https://github.com/transiva/transiva/blob/main/docs/enterprise.md
+    about: When to use GitHub vs contact Zyvor for production
+  - name: "Documentation"
+    url: https://github.com/transiva/transiva/blob/main/README.md
+    about: Install, quick start, and enterprise options
+  - name: "API schema"
+    url: https://github.com/transiva/transiva/blob/main/openapi.yaml
+    about: REST API OpenAPI specification
+  - name: "Security"
+    url: https://github.com/transiva/transiva/blob/main/SECURITY.md
+    about: Report vulnerabilities privately

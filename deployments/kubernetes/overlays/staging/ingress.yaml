@@ -1,0 +1,32 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hypervisord-ingress
+  namespace: transiva
+  labels:
+    app: hypervisord
+  annotations:
+    # Nginx Ingress Controller annotations
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # cert-manager annotation for automatic TLS
+    cert-manager.io/cluster-issuer: "letsencrypt-staging"
+    # Rate limiting
+    nginx.ingress.kubernetes.io/limit-rps: "10"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - transiva-staging.example.com
+    secretName: hypervisord-tls-staging
+  rules:
+  - host: transiva-staging.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: hypervisord
+            port:
+              number: 8080

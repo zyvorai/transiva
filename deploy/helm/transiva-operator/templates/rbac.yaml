@@ -1,0 +1,203 @@
+{{- if .Values.rbac.create -}}
+---
+# ClusterRole with permissions for HyperSDK CRDs and resources
+apiVersion: {{ include "transiva-operator.rbac.apiVersion" . }}
+kind: ClusterRole
+metadata:
+  name: {{ include "transiva-operator.fullname" . }}
+  labels:
+    {{- include "transiva-operator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: operator
+rules:
+  # BackupJob permissions
+  - apiGroups:
+      - transiva.zyvor.ai
+    resources:
+      - backupjobs
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - transiva.zyvor.ai
+    resources:
+      - backupjobs/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - transiva.zyvor.ai
+    resources:
+      - backupjobs/finalizers
+    verbs:
+      - update
+
+  # BackupSchedule permissions
+  - apiGroups:
+      - transiva.zyvor.ai
+    resources:
+      - backupschedules
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - transiva.zyvor.ai
+    resources:
+      - backupschedules/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - transiva.zyvor.ai
+    resources:
+      - backupschedules/finalizers
+    verbs:
+      - update
+
+  # RestoreJob permissions
+  - apiGroups:
+      - transiva.zyvor.ai
+    resources:
+      - restorejobs
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - transiva.zyvor.ai
+    resources:
+      - restorejobs/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - transiva.zyvor.ai
+    resources:
+      - restorejobs/finalizers
+    verbs:
+      - update
+
+  {{- if .Values.providers.kubevirt.enabled }}
+  # KubeVirt permissions (for KubeVirt provider)
+  - apiGroups:
+      - kubevirt.io
+    resources:
+      - virtualmachines
+      - virtualmachineinstances
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - snapshot.kubevirt.io
+    resources:
+      - virtualmachinesnapshots
+      - virtualmachinerestores
+      - virtualmachineexports
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  {{- end }}
+
+  # Secret permissions (for credentials)
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch
+
+  # ConfigMap permissions
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+
+  # Event permissions
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+      - update
+
+  # Pod permissions (for job execution)
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - watch
+
+  # PersistentVolumeClaim permissions
+  - apiGroups:
+      - ""
+    resources:
+      - persistentvolumeclaims
+    verbs:
+      - get
+      - list
+      - watch
+
+  # Lease permissions (for leader election)
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - create
+      - get
+      - list
+      - update
+
+---
+# ClusterRoleBinding to bind the ClusterRole to the ServiceAccount
+apiVersion: {{ include "transiva-operator.rbac.apiVersion" . }}
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "transiva-operator.fullname" . }}
+  labels:
+    {{- include "transiva-operator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "transiva-operator.fullname" . }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "transiva-operator.serviceAccountName" . }}
+    namespace: {{ include "transiva-operator.namespace" . }}
+{{- end }}

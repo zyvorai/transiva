@@ -1,0 +1,1801 @@
+openapi: 3.0.3
+info:
+  title: HyperSDK API
+  description: |
+    VM migration and export platform providing unified VM export across 9 cloud/virtualization platforms with carbon-aware scheduling.
+
+    Supports: vSphere, Nutanix AHV, AWS, Azure, GCP, Hyper-V, OCI, OpenStack, Alibaba Cloud, Proxmox
+
+    Features:
+    - Multi-cloud VM export
+    - Carbon-aware scheduling (30-50% carbon reduction)
+    - Real-time job monitoring
+    - Scheduled backups
+  version: 2.0.0
+  contact:
+    name: HyperSDK
+    url: https://github.com/ssahani/transiva
+  license:
+    name: Apache-2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+  - url: https://api.transiva.example.com
+    description: Production server
+
+security:
+  - BearerAuth: []
+  - ApiKeyAuth: []
+
+tags:
+  - name: Health
+    description: Health check and status endpoints
+  - name: Jobs
+    description: Job submission, querying, and management
+  - name: VMs
+    description: Virtual machine discovery and operations
+  - name: Providers
+    description: Provider registry and export capabilities
+  - name: Schedules
+    description: Scheduled job management
+  - name: Webhooks
+    description: Webhook configuration and testing
+  - name: Authentication
+    description: User authentication and session management
+  - name: Libvirt
+    description: Libvirt domain, volume, and network management
+  - name: Console
+    description: VM console access (VNC, serial)
+  - name: Hyper2KVM
+    description: Hyper2KVM integration and conversion
+  - name: vSphere
+    description: VMware vSphere infrastructure management
+  - name: Carbon
+    description: Carbon-aware scheduling for sustainable VM backups (30-50% carbon reduction)
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Check if the API server is healthy
+      tags: [Health]
+      security: []
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /status:
+    get:
+      summary: Get daemon status
+      description: Get overall status of the daemon including job counts
+      tags: [Health]
+      responses:
+        '200':
+          description: Daemon status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DaemonStatus'
+
+  /capabilities:
+    get:
+      summary: Get export capabilities
+      description: Get available export methods and default method
+      tags: [Health]
+      responses:
+        '200':
+          description: Export capabilities
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  capabilities:
+                    type: object
+                  default_method:
+                    type: string
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /jobs/submit:
+    post:
+      summary: Submit job(s)
+      description: Submit one or more VM export jobs
+      tags: [Jobs]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/JobDefinition'
+                - type: array
+                  items:
+                    $ref: '#/components/schemas/JobDefinition'
+                - $ref: '#/components/schemas/BatchJobDefinition'
+          application/x-yaml:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/JobDefinition'
+                - type: array
+                  items:
+                    $ref: '#/components/schemas/JobDefinition'
+      responses:
+        '200':
+          description: Job(s) submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /jobs/query:
+    get:
+      summary: Query jobs (GET)
+      description: Query jobs with optional filters
+      tags: [Jobs]
+      parameters:
+        - name: all
+          in: query
+          description: Return all jobs
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Jobs query result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryResponse'
+    post:
+      summary: Query jobs (POST)
+      description: Query jobs with detailed filters
+      tags: [Jobs]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QueryRequest'
+      responses:
+        '200':
+          description: Jobs query result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryResponse'
+
+  /jobs/{jobId}:
+    get:
+      summary: Get specific job
+      description: Get details of a specific job by ID
+      tags: [Jobs]
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Job details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+        '404':
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /jobs/cancel:
+    post:
+      summary: Cancel jobs
+      description: Cancel one or more running jobs
+      tags: [Jobs]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelRequest'
+      responses:
+        '200':
+          description: Cancel result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CancelResponse'
+
+  /jobs/progress/{jobId}:
+    get:
+      summary: Get job progress
+      description: Get real-time progress of a running job
+      tags: [Jobs]
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Job progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobProgress'
+
+  /jobs/logs/{jobId}:
+    get:
+      summary: Get job logs
+      description: Get logs for a specific job
+      tags: [Jobs]
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Job logs
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /jobs/eta/{jobId}:
+    get:
+      summary: Get job ETA
+      description: Get estimated time of arrival for job completion
+      tags: [Jobs]
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Job ETA
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  eta:
+                    type: string
+                  estimated_remaining:
+                    type: string
+
+  /vms/list:
+    get:
+      summary: List VMs (query params)
+      description: List VMs from a provider using query parameters. Use `provider=nutanix` or `provider=vsphere`.
+      tags: [VMs]
+      parameters:
+        - name: provider
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [vsphere, nutanix]
+        - name: server
+          in: query
+          schema:
+            type: string
+        - name: username
+          in: query
+          schema:
+            type: string
+        - name: password
+          in: query
+          schema:
+            type: string
+        - name: cluster
+          in: query
+          schema:
+            type: string
+          description: Nutanix cluster filter
+        - name: detailed
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: List of VMs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+    post:
+      summary: List VMs
+      description: List VMs from a provider
+      tags: [VMs]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VCenterConfig'
+      responses:
+        '200':
+          description: List of VMs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+
+  /vms/info:
+    get:
+      summary: Get VM info (query params)
+      description: Get VM details. Use `provider=nutanix&vm={name|uuid}` or vSphere path-based lookup via POST.
+      tags: [VMs]
+      parameters:
+        - name: provider
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [vsphere, nutanix]
+        - name: vm
+          in: query
+          schema:
+            type: string
+        - name: server
+          in: query
+          schema:
+            type: string
+        - name: username
+          in: query
+          schema:
+            type: string
+        - name: password
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: VM information
+          content:
+            application/json:
+              schema:
+                type: object
+    post:
+      summary: Get VM info
+      description: Get detailed information about a specific VM
+      tags: [VMs]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                vcenter:
+                  $ref: '#/components/schemas/VCenterConfig'
+                vm_path:
+                  type: string
+      responses:
+        '200':
+          description: VM information
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /vms/export:
+    post:
+      summary: Export VM (Nutanix)
+      description: Synchronous Nutanix AHV NFS pickup export. Requires `provider=nutanix`.
+      tags: [VMs]
+      parameters:
+        - name: provider
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [nutanix]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vm, output_path]
+              properties:
+                vm:
+                  type: string
+                output_path:
+                  type: string
+                format:
+                  type: string
+                  enum: [qcow2, raw]
+                mounts:
+                  type: object
+                  additionalProperties:
+                    type: string
+                  description: Storage container ID/name to local NFS mount path
+                resolve_containers:
+                  type: boolean
+                enable_pipeline:
+                  type: boolean
+                dry_run:
+                  type: boolean
+                server:
+                  type: string
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Export result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  provider:
+                    type: string
+                  result:
+                    type: object
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /providers/list:
+    get:
+      summary: List registered providers
+      tags: [Providers]
+      responses:
+        '200':
+          description: Provider names
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  providers:
+                    type: array
+                    items:
+                      type: string
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /providers/capabilities:
+    get:
+      summary: Provider export capabilities
+      tags: [Providers]
+      parameters:
+        - name: provider
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [vsphere, nutanix]
+      responses:
+        '200':
+          description: Export capabilities
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  provider:
+                    type: string
+                  capabilities:
+                    type: object
+                  registered:
+                    type: boolean
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /vms/shutdown:
+    post:
+      summary: Shutdown VM
+      description: Gracefully shutdown a VM
+      tags: [VMs]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                vcenter:
+                  $ref: '#/components/schemas/VCenterConfig'
+                vm_path:
+                  type: string
+      responses:
+        '200':
+          description: Shutdown initiated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+
+  /schedules:
+    get:
+      summary: List schedules
+      description: List all scheduled jobs
+      tags: [Schedules]
+      responses:
+        '200':
+          description: List of scheduled jobs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ScheduledJob'
+    post:
+      summary: Create schedule
+      description: Create a new scheduled job
+      tags: [Schedules]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduledJob'
+      responses:
+        '200':
+          description: Schedule created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduledJob'
+
+  /schedules/{scheduleId}:
+    get:
+      summary: Get schedule
+      description: Get details of a specific schedule
+      tags: [Schedules]
+      parameters:
+        - name: scheduleId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Schedule details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduledJob'
+    put:
+      summary: Update schedule
+      description: Update an existing schedule
+      tags: [Schedules]
+      parameters:
+        - name: scheduleId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduledJob'
+      responses:
+        '200':
+          description: Schedule updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduledJob'
+    delete:
+      summary: Delete schedule
+      description: Delete a scheduled job
+      tags: [Schedules]
+      parameters:
+        - name: scheduleId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Schedule deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+
+  /schedules/{scheduleId}/enable:
+    post:
+      summary: Enable schedule
+      description: Enable a disabled schedule
+      tags: [Schedules]
+      parameters:
+        - name: scheduleId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Schedule enabled
+
+  /schedules/{scheduleId}/disable:
+    post:
+      summary: Disable schedule
+      description: Disable an active schedule
+      tags: [Schedules]
+      parameters:
+        - name: scheduleId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Schedule disabled
+
+  /schedules/{scheduleId}/trigger:
+    post:
+      summary: Trigger schedule
+      description: Manually trigger a scheduled job
+      tags: [Schedules]
+      parameters:
+        - name: scheduleId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Schedule triggered
+
+  /webhooks:
+    get:
+      summary: List webhooks
+      description: List all configured webhooks
+      tags: [Webhooks]
+      responses:
+        '200':
+          description: List of webhooks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Webhook'
+    post:
+      summary: Add webhook
+      description: Add a new webhook
+      tags: [Webhooks]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Webhook'
+      responses:
+        '200':
+          description: Webhook added
+
+  /webhooks/test:
+    post:
+      summary: Test webhook
+      description: Send a test event to a webhook URL
+      tags: [Webhooks]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url:
+                  type: string
+                  format: uri
+      responses:
+        '200':
+          description: Webhook test successful
+
+  /webhooks/{webhookId}:
+    delete:
+      summary: Delete webhook
+      description: Remove a webhook
+      tags: [Webhooks]
+      parameters:
+        - name: webhookId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Webhook deleted
+
+  /api/login:
+    post:
+      summary: Login
+      description: Authenticate and create a session
+      tags: [Authentication]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+              required:
+                - username
+                - password
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+
+  /api/logout:
+    post:
+      summary: Logout
+      description: End the current session
+      tags: [Authentication]
+      responses:
+        '200':
+          description: Logout successful
+
+  /libvirt/domains:
+    get:
+      summary: List libvirt domains
+      description: List all libvirt VM domains
+      tags: [Libvirt]
+      responses:
+        '200':
+          description: List of domains
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+
+  /libvirt/domain:
+    get:
+      summary: Get domain
+      description: Get details of a specific domain
+      tags: [Libvirt]
+      parameters:
+        - name: name
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Domain details
+
+  /libvirt/domain/start:
+    post:
+      summary: Start domain
+      description: Start a libvirt domain
+      tags: [Libvirt]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        '200':
+          description: Domain started
+
+  /libvirt/domain/shutdown:
+    post:
+      summary: Shutdown domain
+      description: Gracefully shutdown a domain
+      tags: [Libvirt]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        '200':
+          description: Domain shutdown initiated
+
+  /libvirt/snapshots:
+    get:
+      summary: List snapshots
+      description: List all snapshots for a domain
+      tags: [Libvirt]
+      parameters:
+        - name: domain
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of snapshots
+
+  /libvirt/snapshot/create:
+    post:
+      summary: Create snapshot
+      description: Create a new snapshot of a domain
+      tags: [Libvirt]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                domain:
+                  type: string
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '200':
+          description: Snapshot created
+
+  /convert/vm:
+    post:
+      summary: Convert VM
+      description: Convert VM using hyper2kvm
+      tags: [Hyper2KVM]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                source_path:
+                  type: string
+                output_path:
+                  type: string
+      responses:
+        '200':
+          description: Conversion started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  conversion_id:
+                    type: string
+
+  /convert/status:
+    get:
+      summary: Get conversion status
+      description: Get status of a VM conversion
+      tags: [Hyper2KVM]
+      parameters:
+        - name: conversion_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Conversion status
+
+  /carbon/status:
+    post:
+      summary: Get carbon status
+      description: |
+        Get current grid carbon intensity status for a zone.
+
+        Returns carbon intensity, renewable energy percentage, 4-hour forecast,
+        and recommendation on whether grid is optimal for backup.
+
+        Quality levels:
+        - excellent: < 100 gCO2/kWh
+        - good: 100-200 gCO2/kWh
+        - moderate: 200-400 gCO2/kWh
+        - poor: 400-600 gCO2/kWh
+        - very poor: > 600 gCO2/kWh
+      tags: [Carbon]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                zone:
+                  type: string
+                  description: Carbon zone ID
+                  default: US-CAL-CISO
+                  example: US-CAL-CISO
+                threshold:
+                  type: number
+                  format: float
+                  description: Carbon intensity threshold in gCO2/kWh
+                  default: 200.0
+                  example: 200.0
+      responses:
+        '200':
+          description: Carbon status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CarbonStatus'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Failed to fetch carbon data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /carbon/zones:
+    get:
+      summary: List carbon zones
+      description: |
+        List all available carbon zones with typical carbon intensity.
+
+        Returns 12 global zones across US, EU, and APAC regions:
+        - US: US-CAL-CISO, US-NEISO, US-PJM, US-MISO
+        - EU: DE, FR, GB, SE
+        - APAC: JP, AU, SG, IN
+      tags: [Carbon]
+      responses:
+        '200':
+          description: List of carbon zones
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  zones:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CarbonZone'
+
+  /carbon/estimate:
+    post:
+      summary: Estimate carbon savings
+      description: |
+        Estimate potential carbon savings from delaying a backup job.
+
+        Compares running the backup now vs running it at the optimal time
+        within the next 4 hours. Returns savings in kg CO2 and percentage.
+
+        Typical savings: 30-50% when delaying from dirty grid to clean grid.
+      tags: [Carbon]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - zone
+                - data_size_gb
+              properties:
+                zone:
+                  type: string
+                  description: Carbon zone ID
+                  example: US-CAL-CISO
+                data_size_gb:
+                  type: number
+                  format: float
+                  description: Data size in GB
+                  example: 500.0
+                duration_hours:
+                  type: number
+                  format: float
+                  description: Estimated backup duration in hours
+                  default: 2.0
+                  example: 2.0
+      responses:
+        '200':
+          description: Carbon savings estimate
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CarbonEstimate'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /carbon/report:
+    post:
+      summary: Generate carbon report
+      description: |
+        Generate carbon footprint report for a completed backup job.
+
+        Calculates actual energy consumption, carbon emissions, and savings
+        compared to worst-case scenario. Useful for ESG compliance reporting.
+
+        Returns emissions in kg CO2 and equivalent comparisons (e.g., km of driving).
+      tags: [Carbon]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - job_id
+                - start_time
+                - end_time
+                - data_size_gb
+              properties:
+                job_id:
+                  type: string
+                  description: Job ID
+                  example: job-123
+                start_time:
+                  type: string
+                  format: date-time
+                  description: Job start time (ISO 8601)
+                  example: "2026-02-04T10:00:00Z"
+                end_time:
+                  type: string
+                  format: date-time
+                  description: Job end time (ISO 8601)
+                  example: "2026-02-04T12:00:00Z"
+                data_size_gb:
+                  type: number
+                  format: float
+                  description: Data size in GB
+                  example: 500.0
+                zone:
+                  type: string
+                  description: Carbon zone ID
+                  default: US-CAL-CISO
+                  example: US-CAL-CISO
+      responses:
+        '200':
+          description: Carbon report generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CarbonReport'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /ws:
+    get:
+      summary: WebSocket connection
+      description: WebSocket endpoint for real-time updates
+      tags: [Health]
+      responses:
+        '101':
+          description: Switching Protocols to WebSocket
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: Session token obtained from /api/login
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for authentication
+
+  schemas:
+    JobDefinition:
+      type: object
+      required:
+        - vm_path
+      description: |
+        Job definition for VM export. Supports carbon-aware scheduling via metadata fields.
+
+        For carbon-aware scheduling, set metadata fields:
+        - carbon_aware: true
+        - carbon_zone: "US-CAL-CISO"
+        - carbon_max_intensity: 200.0
+        - carbon_max_delay: 14400000000000 (4 hours in nanoseconds)
+
+        Job will be automatically delayed if grid carbon intensity exceeds threshold.
+      properties:
+        id:
+          type: string
+          description: Unique job identifier
+        name:
+          type: string
+          description: Human-readable job name
+        vm_path:
+          type: string
+          description: Path to the VM to export
+          example: /Datacenter/vm/my-vm
+        output_path:
+          type: string
+          description: Output path for exported files (CLI/YAML)
+        output_dir:
+          type: string
+          description: Output directory for exported files (API)
+        vcenter_url:
+          type: string
+          description: vCenter URL (CLI/YAML)
+          example: vcenter.example.com
+        vcenter:
+          $ref: '#/components/schemas/VCenterConfig'
+        username:
+          type: string
+          description: vCenter username
+        datacenter:
+          type: string
+          description: Datacenter name
+        format:
+          type: string
+          description: Export format
+          enum: [qcow2, raw, vmdk, ova, ovf]
+          default: ovf
+        export_method:
+          type: string
+          description: Export method to use
+          enum: [ctl, govc, ovftool, web, ""]
+        method:
+          type: string
+          description: Alias for export_method (web API compatibility)
+        compress:
+          type: boolean
+          description: Enable GZIP compression
+          default: false
+        thin:
+          type: boolean
+          description: Use thin provisioning
+          default: false
+        insecure:
+          type: boolean
+          description: Skip TLS certificate verification
+          default: false
+        options:
+          $ref: '#/components/schemas/ExportOptions'
+        metadata:
+          type: object
+          description: |
+            Custom metadata for job. Used for carbon-aware scheduling.
+
+            Carbon-aware fields:
+            - carbon_aware (bool): Enable carbon-aware scheduling
+            - carbon_zone (string): Carbon zone ID (e.g., "US-CAL-CISO")
+            - carbon_max_intensity (float): Max carbon intensity threshold in gCO2/kWh
+            - carbon_max_delay (int64): Max delay in nanoseconds
+          additionalProperties: true
+          example:
+            carbon_aware: true
+            carbon_zone: US-CAL-CISO
+            carbon_max_intensity: 200.0
+            carbon_max_delay: 14400000000000
+        created_at:
+          type: string
+          format: date-time
+
+    ExportOptions:
+      type: object
+      properties:
+        parallel_downloads:
+          type: integer
+          description: Number of parallel downloads
+          default: 4
+          minimum: 1
+          maximum: 32
+        remove_cdrom:
+          type: boolean
+          description: Remove CD-ROM devices before export
+          default: false
+        show_individual_progress:
+          type: boolean
+          description: Show progress for each file
+          default: false
+        enable_pipeline:
+          type: boolean
+          description: Enable hyper2kvm pipeline integration
+        hyper2kvm_path:
+          type: string
+          description: Path to hyper2kvm executable
+        pipeline_inspect:
+          type: boolean
+        pipeline_fix:
+          type: boolean
+        pipeline_convert:
+          type: boolean
+        pipeline_validate:
+          type: boolean
+        pipeline_compress:
+          type: boolean
+        compress_level:
+          type: integer
+          minimum: 1
+          maximum: 9
+        libvirt_integration:
+          type: boolean
+        libvirt_uri:
+          type: string
+        libvirt_autostart:
+          type: boolean
+        libvirt_bridge:
+          type: string
+        libvirt_pool:
+          type: string
+
+    VCenterConfig:
+      type: object
+      required:
+        - server
+        - username
+        - password
+      properties:
+        server:
+          type: string
+          description: vCenter server address
+          example: vcenter.example.com
+        username:
+          type: string
+          description: vCenter username
+          example: administrator@vsphere.local
+        password:
+          type: string
+          format: password
+          description: vCenter password
+        insecure:
+          type: boolean
+          description: Skip TLS certificate verification
+          default: false
+
+    Job:
+      type: object
+      properties:
+        definition:
+          $ref: '#/components/schemas/JobDefinition'
+        status:
+          $ref: '#/components/schemas/JobStatus'
+        progress:
+          $ref: '#/components/schemas/JobProgress'
+        result:
+          $ref: '#/components/schemas/JobResult'
+        error:
+          type: string
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    JobStatus:
+      type: string
+      enum:
+        - pending
+        - running
+        - completed
+        - failed
+        - cancelled
+
+    JobProgress:
+      type: object
+      properties:
+        phase:
+          type: string
+          description: Current phase
+          enum: [connecting, discovering, exporting]
+        current_file:
+          type: string
+        current_step:
+          type: string
+        files_downloaded:
+          type: integer
+        total_files:
+          type: integer
+        bytes_downloaded:
+          type: integer
+          format: int64
+        bytes_transferred:
+          type: integer
+          format: int64
+        total_bytes:
+          type: integer
+          format: int64
+        percent_complete:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+        estimated_remaining:
+          type: string
+        export_method:
+          type: string
+
+    JobResult:
+      type: object
+      properties:
+        vm_name:
+          type: string
+        output_dir:
+          type: string
+        ovf_path:
+          type: string
+        files:
+          type: array
+          items:
+            type: string
+        output_files:
+          type: array
+          items:
+            type: string
+        total_size:
+          type: integer
+          format: int64
+        duration:
+          type: integer
+          format: int64
+          description: Duration in nanoseconds
+        success:
+          type: boolean
+        export_method:
+          type: string
+        error:
+          type: string
+
+    BatchJobDefinition:
+      type: object
+      required:
+        - jobs
+      properties:
+        jobs:
+          type: array
+          items:
+            $ref: '#/components/schemas/JobDefinition'
+
+    QueryRequest:
+      type: object
+      properties:
+        job_ids:
+          type: array
+          items:
+            type: string
+        status:
+          type: array
+          items:
+            $ref: '#/components/schemas/JobStatus'
+        all:
+          type: boolean
+          description: Return all jobs
+        limit:
+          type: integer
+          description: Limit number of results
+
+    QueryResponse:
+      type: object
+      properties:
+        jobs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Job'
+        total:
+          type: integer
+        timestamp:
+          type: string
+          format: date-time
+
+    SubmitResponse:
+      type: object
+      properties:
+        job_ids:
+          type: array
+          items:
+            type: string
+        accepted:
+          type: integer
+        rejected:
+          type: integer
+        errors:
+          type: array
+          items:
+            type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    CancelRequest:
+      type: object
+      required:
+        - job_ids
+      properties:
+        job_ids:
+          type: array
+          items:
+            type: string
+
+    CancelResponse:
+      type: object
+      properties:
+        cancelled:
+          type: array
+          items:
+            type: string
+        failed:
+          type: array
+          items:
+            type: string
+        errors:
+          type: object
+          additionalProperties:
+            type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    DaemonStatus:
+      type: object
+      properties:
+        version:
+          type: string
+        uptime:
+          type: string
+        total_jobs:
+          type: integer
+        running_jobs:
+          type: integer
+        completed_jobs:
+          type: integer
+        failed_jobs:
+          type: integer
+        cancelled_jobs:
+          type: integer
+        timestamp:
+          type: string
+          format: date-time
+
+    ScheduledJob:
+      type: object
+      required:
+        - name
+        - schedule
+        - job_template
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        schedule:
+          type: string
+          description: Cron format schedule
+          example: "0 2 * * *"
+        job_template:
+          $ref: '#/components/schemas/JobDefinition'
+        enabled:
+          type: boolean
+          default: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        next_run:
+          type: string
+          format: date-time
+        last_run:
+          type: string
+          format: date-time
+        run_count:
+          type: integer
+        tags:
+          type: array
+          items:
+            type: string
+
+    Webhook:
+      type: object
+      required:
+        - url
+      properties:
+        url:
+          type: string
+          format: uri
+          description: Webhook URL to call
+        events:
+          type: array
+          items:
+            type: string
+            enum: [job_started, job_completed, job_failed, job_cancelled]
+          description: Events to trigger webhook
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+          description: Custom headers to include
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    # Carbon-Aware Scheduling Schemas
+
+    CarbonForecast:
+      type: object
+      description: Carbon intensity forecast for a specific time
+      properties:
+        time:
+          type: string
+          format: date-time
+          description: Forecast timestamp
+          example: "2026-02-04T14:00:00Z"
+        intensity_gco2_kwh:
+          type: number
+          format: float
+          description: Carbon intensity in gCO2/kWh
+          example: 150.5
+        quality:
+          type: string
+          description: Quality level based on intensity
+          enum: [excellent, good, moderate, poor, very poor]
+          example: good
+
+    CarbonStatus:
+      type: object
+      description: Current grid carbon status with forecast
+      properties:
+        zone:
+          type: string
+          description: Carbon zone ID
+          example: US-CAL-CISO
+        current_intensity:
+          type: number
+          format: float
+          description: Current carbon intensity in gCO2/kWh
+          example: 185.3
+        renewable_percent:
+          type: number
+          format: float
+          description: Percentage of renewable energy in grid
+          minimum: 0
+          maximum: 100
+          example: 45.2
+        optimal_for_backup:
+          type: boolean
+          description: Whether current grid is optimal for backup (below threshold)
+          example: true
+        next_optimal_time:
+          type: string
+          format: date-time
+          description: Next time grid will be optimal (if currently not optimal)
+          example: "2026-02-04T14:00:00Z"
+          nullable: true
+        forecast_next_4h:
+          type: array
+          description: 4-hour carbon intensity forecast
+          items:
+            $ref: '#/components/schemas/CarbonForecast'
+        reasoning:
+          type: string
+          description: Human-readable explanation of the status
+          example: Grid is currently GOOD (185 gCO2/kWh, 45% renewable). Safe to run backup now.
+        quality:
+          type: string
+          description: Quality level of current grid
+          enum: [excellent, good, moderate, poor, very poor]
+          example: good
+        timestamp:
+          type: string
+          format: date-time
+          description: Status timestamp
+          example: "2026-02-04T12:00:00Z"
+
+    CarbonZone:
+      type: object
+      description: Carbon zone information
+      properties:
+        id:
+          type: string
+          description: Zone identifier
+          example: US-CAL-CISO
+        name:
+          type: string
+          description: Human-readable zone name
+          example: California (CAISO)
+        region:
+          type: string
+          description: Geographic region
+          enum: [North America, Europe, Asia-Pacific]
+          example: North America
+        description:
+          type: string
+          description: Zone description
+          example: California Independent System Operator grid
+        typical_intensity:
+          type: number
+          format: float
+          description: Typical carbon intensity in gCO2/kWh
+          example: 220.0
+
+    CarbonEstimate:
+      type: object
+      description: Carbon savings estimate for delaying a backup
+      properties:
+        current_intensity_gco2_kwh:
+          type: number
+          format: float
+          description: Current carbon intensity in gCO2/kWh
+          example: 450.0
+        current_emissions_kg_co2:
+          type: number
+          format: float
+          description: Emissions if run now in kg CO2
+          example: 0.225
+        best_intensity_gco2_kwh:
+          type: number
+          format: float
+          description: Best carbon intensity in next 4 hours in gCO2/kWh
+          example: 120.0
+        best_emissions_kg_co2:
+          type: number
+          format: float
+          description: Emissions if run at best time in kg CO2
+          example: 0.060
+        best_time:
+          type: string
+          format: date-time
+          description: Optimal time to run backup
+          example: "2026-02-04T14:00:00Z"
+          nullable: true
+        savings_kg_co2:
+          type: number
+          format: float
+          description: Carbon savings from delay in kg CO2
+          example: 0.165
+        savings_percent:
+          type: number
+          format: float
+          description: Savings percentage
+          example: 73.3
+        recommendation:
+          type: string
+          description: Human-readable recommendation
+          example: DELAY recommended - 73.3% carbon reduction (0.165 kg CO2 saved)
+        delay_minutes:
+          type: number
+          format: float
+          description: Delay time in minutes
+          example: 120.0
+          nullable: true
+        forecast:
+          type: array
+          description: 4-hour forecast used for estimate
+          items:
+            $ref: '#/components/schemas/CarbonForecast'
+
+    CarbonReport:
+      type: object
+      description: Carbon footprint report for a completed job
+      properties:
+        operation_id:
+          type: string
+          description: Job/operation ID
+          example: job-123
+        start_time:
+          type: string
+          format: date-time
+          description: Operation start time
+          example: "2026-02-04T10:00:00Z"
+        end_time:
+          type: string
+          format: date-time
+          description: Operation end time
+          example: "2026-02-04T12:00:00Z"
+        duration_hours:
+          type: number
+          format: float
+          description: Operation duration in hours
+          example: 2.0
+        data_size_gb:
+          type: number
+          format: float
+          description: Data size processed in GB
+          example: 500.0
+        energy_kwh:
+          type: number
+          format: float
+          description: Energy consumed in kWh
+          example: 0.5
+        carbon_intensity_gco2_kwh:
+          type: number
+          format: float
+          description: Average carbon intensity during operation in gCO2/kWh
+          example: 250.0
+        carbon_emissions_kg_co2:
+          type: number
+          format: float
+          description: Total carbon emissions in kg CO2
+          example: 0.125
+        savings_vs_worst_kg_co2:
+          type: number
+          format: float
+          description: Savings compared to worst-case scenario in kg CO2
+          example: 0.175
+        renewable_percent:
+          type: number
+          format: float
+          description: Average renewable energy percentage during operation
+          minimum: 0
+          maximum: 100
+          example: 40.0
+        equivalent:
+          type: string
+          description: Human-readable equivalent (e.g., km of driving)
+          example: 0.5 km of driving

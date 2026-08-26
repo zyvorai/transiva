@@ -1,0 +1,79 @@
+global:
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'transiva'
+    environment: 'production'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - 'alertmanager:9093'
+
+# Load alert rules
+rule_files:
+  - '/etc/prometheus/alerts.yaml'
+
+# Scrape configurations
+scrape_configs:
+  # HyperSDK daemon
+  - job_name: 'transiva'
+    static_configs:
+      - targets:
+          - 'transiva:9090'
+        labels:
+          service: 'transiva'
+          component: 'daemon'
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets:
+          - 'localhost:9090'
+
+  # Node exporter (optional - for host metrics)
+  - job_name: 'node'
+    static_configs:
+      - targets:
+          - 'node-exporter:9100'
+        labels:
+          component: 'node'
+
+  # Blackbox exporter for endpoint probing (optional)
+  - job_name: 'blackbox'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - http://transiva:8080/health
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+# Storage configuration
+storage:
+  tsdb:
+    path: /prometheus/data
+    retention:
+      time: 30d
+      size: 50GB
+
+# Remote write (optional - for long-term storage)
+# remote_write:
+#   - url: 'http://cortex:9009/api/v1/push'
+#     queue_config:
+#       capacity: 10000
+#       max_shards: 5
+#       max_samples_per_send: 1000
+
+# Remote read (optional)
+# remote_read:
+#   - url: 'http://cortex:9009/api/v1/read'

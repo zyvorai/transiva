@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HyperSDK Helm Charts</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 { color: #2c3e50; }
+        h2 { color: #34495e; margin-top: 30px; }
+        pre {
+            background: #f4f4f4;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            overflow-x: auto;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 10px 15px;
+            margin: 20px 0;
+        }
+        .info {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 10px 15px;
+            margin: 20px 0;
+        }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <h1>HyperSDK Helm Charts Repository</h1>
+
+    <p>Official Helm charts for deploying HyperSDK to Kubernetes clusters.</p>
+
+    <h2>Quick Start</h2>
+
+    <p>Add the HyperSDK Helm repository:</p>
+    <pre>helm repo add transiva https://ssahani.github.io/transiva/helm-charts
+helm repo update</pre>
+
+    <p>Install HyperSDK:</p>
+    <pre>helm install transiva transiva/transiva \
+  --namespace transiva \
+  --create-namespace</pre>
+
+    <h2>Available Charts</h2>
+
+    <h3>transiva</h3>
+    <p>Multi-cloud VM export and migration toolkit with support for vSphere, AWS, Azure, GCP, and more.</p>
+
+    <p><strong>Installation:</strong></p>
+    <pre>helm install transiva transiva/transiva</pre>
+
+    <p><strong>Features:</strong></p>
+    <ul>
+        <li>Multi-cloud support (9 providers)</li>
+        <li>Production-ready with HA support</li>
+        <li>Auto-scaling with HPA</li>
+        <li>Prometheus metrics integration</li>
+        <li>Network policies and security hardening</li>
+        <li>Cloud-specific optimizations (GKE, EKS, AKS)</li>
+    </ul>
+
+    <h2>Cloud Provider Examples</h2>
+
+    <h3>Google Kubernetes Engine (GKE)</h3>
+    <pre>helm install transiva transiva/transiva \
+  --set replicaCount=3 \
+  --set serviceAccount.annotations."iam\.gke\.io/gcp-service-account"=transiva@PROJECT_ID.iam.gserviceaccount.com \
+  --set persistence.data.storageClass=standard-rwo \
+  --namespace transiva \
+  --create-namespace</pre>
+
+    <h3>Amazon Elastic Kubernetes Service (EKS)</h3>
+    <pre>helm install transiva transiva/transiva \
+  --set replicaCount=3 \
+  --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=arn:aws:iam::ACCOUNT_ID:role/transiva-role \
+  --set persistence.data.storageClass=gp3 \
+  --namespace transiva \
+  --create-namespace</pre>
+
+    <h3>Azure Kubernetes Service (AKS)</h3>
+    <pre>helm install transiva transiva/transiva \
+  --set replicaCount=3 \
+  --set serviceAccount.labels.aadpodidbinding=transiva-identity \
+  --set persistence.data.storageClass=managed-premium \
+  --namespace transiva \
+  --create-namespace</pre>
+
+    <h2>Configuration</h2>
+
+    <p>See the <a href="https://github.com/ssahani/transiva/tree/main/deployments/helm/transiva">chart README</a> for complete configuration options.</p>
+
+    <p>View all available parameters:</p>
+    <pre>helm show values transiva/transiva</pre>
+
+    <h2>Documentation</h2>
+
+    <ul>
+        <li><a href="https://github.com/ssahani/transiva">GitHub Repository</a></li>
+        <li><a href="https://github.com/ssahani/transiva/tree/main/docs">Documentation</a></li>
+        <li><a href="https://github.com/ssahani/transiva/tree/main/deployments/helm">Helm Charts</a></li>
+        <li><a href="https://github.com/ssahani/transiva/issues">Issue Tracker</a></li>
+    </ul>
+
+    <h2>Support</h2>
+
+    <p>For questions and support:</p>
+    <ul>
+        <li>Report issues on <a href="https://github.com/ssahani/transiva/issues">GitHub Issues</a></li>
+        <li>View the <a href="https://github.com/ssahani/transiva/tree/main/docs/reference/troubleshooting-guide.md">Troubleshooting Guide</a></li>
+    </ul>
+
+    <hr>
+    <p style="color: #7f8c8d; font-size: 0.9em;">
+        Last updated: <span id="updated"></span> |
+        <a href="https://github.com/ssahani/transiva">HyperSDK Project</a>
+    </p>
+
+    <script>
+        document.getElementById('updated').textContent = new Date().toLocaleDateString();
+    </script>
+</body>
+</html>

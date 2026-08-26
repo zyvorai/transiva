@@ -1,0 +1,256 @@
+name: Weekly Cost Analysis
+
+on:
+  schedule:
+    - cron: '0 9 * * 1' # Every Monday at 9 AM UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  analyze-resources:
+    name: Analyze Resource Specifications
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+
+      - name: Extract resource specifications
+        run: |
+          helm template test deployments/helm/transiva > /tmp/manifests.yaml
+
+          echo "## Resource Analysis" > /tmp/cost-report.md
+          echo "" >> /tmp/cost-report.md
+
+          # Extract CPU and memory requests/limits
+          echo "### CPU and Memory Configuration" >> /tmp/cost-report.md
+          echo "" >> /tmp/cost-report.md
+          echo "| Component | CPU Request | CPU Limit | Memory Request | Memory Limit |" >> /tmp/cost-report.md
+          echo "|-----------|-------------|-----------|----------------|--------------|" >> /tmp/cost-report.md
+
+          # Parse deployment resources
+          cpu_req=$(grep -A 1 "cpu:" /tmp/manifests.yaml | grep -v "cpu:" | head -1 | awk '{print $2}')
+          mem_req=$(grep -A 1 "memory:" /tmp/manifests.yaml | grep -v "memory:" | head -1 | awk '{print $2}')
+
+          echo "| HyperSDK | ${cpu_req:-N/A} | N/A | ${mem_req:-N/A} | N/A |" >> /tmp/cost-report.md
+          echo "" >> /tmp/cost-report.md
+
+      - name: Analyze storage requirements
+        run: |
+          echo "### Storage Configuration" >> /tmp/cost-report.md
+          echo "" >> /tmp/cost-report.md
+          echo "| Volume | Size | Storage Class | Access Mode |" >> /tmp/cost-report.md
+          echo "|--------|------|---------------|-------------|" >> /tmp/cost-report.md
+
+          grep -A 10 "kind: PersistentVolumeClaim" /tmp/manifests.yaml | \
+            grep -E "(storage:|storageClassName:|accessModes:)" >> /tmp/cost-report.md || true
+
+          echo "" >> /tmp/cost-report.md
+
+      - name: Calculate estimated costs
+        run: |
+          echo "### Estimated Monthly Costs" >> /tmp/cost-report.md
+          echo "" >> /tmp/cost-report.md
+          echo "Cost estimates based on standard cloud provider pricing:" >> /tmp/cost-report.md
+          echo "" >> /tmp/cost-report.md
+
+          # Rough cost calculations (update with actual pricing)
+          echo "#### AWS EKS" >> /tmp/cost-report.md
+          echo "- Compute (t3.medium): ~\$30/month" >> /tmp/cost-report.md
+          echo "- EBS Storage (10Gi SSD): ~\$1/month" >> /tmp/cost-report.md
+          echo "- EBS Storage (500Gi SSD): ~\$50/month" >> /tmp/cost-report.md
+          echo "- **Total**: ~\$81/month" >> /tmp/cost-report.md
+          echo "" >> /tmp/cost-report.md
+
+          echo "#### GCP GKE" >> /tmp/cost-report.md
+          echo "- Compute (n1-standard-1): ~\$25/month" >> /tmp/cost-report.md
+          echo "- Persistent Disk (10Gi SSD): ~\$1.70/month" >> /tmp/cost-report.md
+          echo "- Persistent Disk (500Gi SSD): ~\$85/month" >> /tmp/cost-report.md
+          echo "- **Total**: ~\$111.70/month" >> /tmp/cost-report.md
+          echo "" >> /tmp/cost-report.md
+
+          echo "#### Azure AKS" >> /tmp/cost-report.md
+          echo "- Compute (Standard_B2s): ~\$30/month" >> /tmp/cost-report.md
+          echo "- Managed Disk (10Gi Premium): ~\$2/month" >> /tmp/cost-report.md
+          echo "- Managed Disk (500Gi Premium): ~\$100/month" >> /tmp/cost-report.md
+          echo "- **Total**: ~\$132/month" >> /tmp/cost-report.md
+          echo "" >> /tmp/cost-report.md
+
+      - name: Generate optimization recommendations
+        run: |
+          echo "### Cost Optimization Recommendations" >> /tmp/cost-report.md
+          echo "" >> /tmp/cost-report.md
+
+          echo "1. **Right-size resources**: Use VPA to automatically adjust requests/limits" >> /tmp/cost-report.md
+          echo "2. **Use spot instances**: Save 60-90% on compute costs for non-critical workloads" >> /tmp/cost-report.md
+          echo "3. **Optimize storage**: Use Standard storage class for exports volume" >> /tmp/cost-report.md
+          echo "4. **Enable autoscaling**: Use HPA to scale based on actual load" >> /tmp/cost-report.md
+          echo "5. **Scheduled scaling**: Scale down dev/staging during off-hours" >> /tmp/cost-report.md
+          echo "6. **Use committed use discounts**: 1-3 year commitments can save 30-50%" >> /tmp/cost-report.md
+          echo "" >> /tmp/cost-report.md
+
+          echo "See [COST-OPTIMIZATION.md](../deployments/helm/COST-OPTIMIZATION.md) for detailed strategies." >> /tmp/cost-report.md
+
+      - name: Upload cost report
+        uses: actions/upload-artifact@v4
+        with:
+          name: cost-report
+          path: /tmp/cost-report.md
+
+  compare-configurations:
+    name: Compare Cost Across Configurations
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+
+      - name: Generate comparison report
+        run: |
+          echo "## Configuration Cost Comparison" > /tmp/comparison-report.md
+          echo "" >> /tmp/comparison-report.md
+          echo "| Configuration | Replicas | CPU Request | Memory Request | Est. Monthly Cost |" >> /tmp/comparison-report.md
+          echo "|---------------|----------|-------------|----------------|-------------------|" >> /tmp/comparison-report.md
+
+          # Development
+          echo "| Development (Minikube) | 1 | 100m | 256Mi | \$10-20 |" >> /tmp/comparison-report.md
+
+          # Staging
+          echo "| Staging (k3d) | 2 | 250m | 512Mi | \$40-60 |" >> /tmp/comparison-report.md
+
+          # Production
+          echo "| Production (GKE) | 3 | 500m | 1Gi | \$100-150 |" >> /tmp/comparison-report.md
+
+          # High availability
+          echo "| HA Multi-region | 6 | 500m | 1Gi | \$300-400 |" >> /tmp/comparison-report.md
+
+          echo "" >> /tmp/comparison-report.md
+          echo "*Costs include compute, storage, and network egress.*" >> /tmp/comparison-report.md
+
+      - name: Upload comparison report
+        uses: actions/upload-artifact@v4
+        with:
+          name: comparison-report
+          path: /tmp/comparison-report.md
+
+  check-optimization-opportunities:
+    name: Check Optimization Opportunities
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+
+      - name: Check for optimization flags
+        run: |
+          echo "## Optimization Checklist" > /tmp/optimization-checklist.md
+          echo "" >> /tmp/optimization-checklist.md
+
+          helm template test deployments/helm/transiva > /tmp/manifests.yaml
+
+          # Check if HPA is enabled
+          if grep -q "kind: HorizontalPodAutoscaler" /tmp/manifests.yaml; then
+            echo "- [x] HorizontalPodAutoscaler enabled" >> /tmp/optimization-checklist.md
+          else
+            echo "- [ ] HorizontalPodAutoscaler not enabled (enable with autoscaling.enabled=true)" >> /tmp/optimization-checklist.md
+          fi
+
+          # Check if PDB is enabled
+          if grep -q "kind: PodDisruptionBudget" /tmp/manifests.yaml; then
+            echo "- [x] PodDisruptionBudget enabled" >> /tmp/optimization-checklist.md
+          else
+            echo "- [ ] PodDisruptionBudget not enabled (enable with podDisruptionBudget.enabled=true)" >> /tmp/optimization-checklist.md
+          fi
+
+          # Check resource requests
+          if grep -q "resources:" /tmp/manifests.yaml; then
+            echo "- [x] Resource requests/limits defined" >> /tmp/optimization-checklist.md
+          else
+            echo "- [ ] Resource requests/limits not defined" >> /tmp/optimization-checklist.md
+          fi
+
+          # Check node affinity for spot instances
+          if grep -q "node.kubernetes.io/instance-type" /tmp/manifests.yaml; then
+            echo "- [x] Node affinity configured" >> /tmp/optimization-checklist.md
+          else
+            echo "- [ ] Node affinity not configured (consider spot instances)" >> /tmp/optimization-checklist.md
+          fi
+
+      - name: Upload optimization checklist
+        uses: actions/upload-artifact@v4
+        with:
+          name: optimization-checklist
+          path: /tmp/optimization-checklist.md
+
+  create-cost-issue:
+    name: Create Weekly Cost Report Issue
+    runs-on: ubuntu-latest
+    needs: [analyze-resources, compare-configurations, check-optimization-opportunities]
+    if: github.event_name == 'schedule'
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Combine reports
+        run: |
+          cat cost-report/cost-report.md > /tmp/weekly-report.md
+          echo "" >> /tmp/weekly-report.md
+          echo "---" >> /tmp/weekly-report.md
+          echo "" >> /tmp/weekly-report.md
+          cat comparison-report/comparison-report.md >> /tmp/weekly-report.md
+          echo "" >> /tmp/weekly-report.md
+          echo "---" >> /tmp/weekly-report.md
+          echo "" >> /tmp/weekly-report.md
+          cat optimization-checklist/optimization-checklist.md >> /tmp/weekly-report.md
+
+      - name: Create issue with cost report
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('/tmp/weekly-report.md', 'utf8');
+
+            // Check if there's an open cost report issue
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'cost-report,automated'
+            });
+
+            const weekNumber = Math.ceil((new Date() - new Date(new Date().getFullYear(), 0, 1)) / 604800000);
+
+            if (issues.data.length > 0) {
+              // Update existing issue
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issues.data[0].number,
+                body: `# Weekly Cost Report - Week ${weekNumber}\n\n${report}`
+              });
+            } else {
+              // Create new issue
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `💰 Weekly Cost Analysis - Week ${weekNumber}`,
+                body: report,
+                labels: ['cost-report', 'automated', 'finops']
+              });
+            }

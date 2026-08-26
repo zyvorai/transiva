@@ -1,0 +1,119 @@
+# Multi-stage Dockerfile for Transiva transivad daemon
+# Optimized for production use with security hardening
+
+# ==============================================================================
+# Build Stage
+# ==============================================================================
+FROM golang:1.26-alpine AS builder
+
+# Install build dependencies
+RUN apk add --no-cache \
+    git \
+    make \
+    gcc \
+    musl-dev \
+    sqlite-dev
+
+WORKDIR /build
+
+# Copy go.mod and go.sum for dependency caching
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Build transivad with optimizations
+# CGO_ENABLED=1 is required for SQLite support
+ARG VERSION=dev
+ARG COMMIT_SHA=unknown
+ARG BUILD_DATE
+
+RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build \
+    -ldflags="-s -w \
+    -X main.version=${VERSION} \
+    -X main.commitSHA=${COMMIT_SHA} \
+    -X main.buildDate=${BUILD_DATE}" \
+    -o transivad \
+    -trimpath \
+    ./cmd/hypervisord
+
+# Verify the binary was built
+RUN ls -lh transivad
+
+# ==============================================================================
+# Runtime Stage
+# ==============================================================================
+FROM registry.fedoraproject.org/fedora-minimal:43
+
+LABEL maintainer="Zyvor AI Labs"
+LABEL org.opencontainers.image.title="Transiva transivad"
+LABEL org.opencontainers.image.description="Transiva VM export daemon with REST API"
+LABEL org.opencontainers.image.source="https://github.com/zyvorai/transiva"
+LABEL org.opencontainers.image.base.name="registry.fedoraproject.org/fedora-minimal:43"
+
+# Install runtime dependencies
+RUN microdnf install -y \
+    ca-certificates \
+    tzdata \
+    sqlite \
+    curl \
+    && microdnf clean all
+
+# Create non-root user and group (keep transiva user for compatibility)
+RUN groupadd -g 1000 transiva && \
+    useradd -u 1000 -g transiva -m -d /home/transiva -s /sbin/nologin transiva
+
+# Create necessary directories with proper permissions
+RUN mkdir -p \
+    /data \
+    /exports \
+    /config \
+    /var/log/transiva \
+    && chown -R transiva:transiva \
+    /data \
+    /exports \
+    /config \
+    /var/log/transiva
+
+# Copy binary from builder
+COPY --from=builder --chown=transiva:transiva /build/transivad /usr/local/bin/transivad
+RUN chmod +x /usr/local/bin/transivad
+
+# Copy default config (optional)
+COPY --chown=transiva:transiva config.example.yaml /config/config.yaml.example
+
+# Switch to non-root user
+USER transiva
+
+# Set working directory
+WORKDIR /data
+
+# Expose ports
+# 8080: REST API
+# 8081: Prometheus metrics
+EXPOSE 8080 8081
+
+# Health check
+HEALTHCHECK --interval=30s \
+    --timeout=5s \
+    --start-period=10s \
+    --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+# Environment variables with defaults
+ENV DAEMON_ADDR=0.0.0.0:8080 \
+    LOG_LEVEL=info \
+    DATABASE_PATH=/data/transiva.db \
+    DOWNLOAD_WORKERS=3 \
+    CHUNK_SIZE=33554432 \
+    RETRY_ATTEMPTS=3
+
+# Volume mounts
+VOLUME ["/data", "/exports", "/config"]
+
+# Entrypoint
+ENTRYPOINT ["/usr/local/bin/transivad"]
+
+# Default command - can be overridden
+CMD ["--config", "/config/config.yaml"]

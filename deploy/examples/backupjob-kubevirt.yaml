@@ -1,0 +1,54 @@
+---
+# Example BackupJob for KubeVirt VM
+apiVersion: transiva.zyvor.ai/v1alpha1
+kind: BackupJob
+metadata:
+  name: ubuntu-vm-backup
+  namespace: default
+  labels:
+    app: transiva
+    env: production
+spec:
+  # Source: KubeVirt VM
+  source:
+    provider: kubevirt
+    namespace: default
+    vmName: ubuntu-vm-1
+
+  # Destination: S3 bucket
+  destination:
+    type: s3
+    bucket: my-vm-backups
+    prefix: kubevirt/production
+    region: us-west-2
+    storageClass: STANDARD_IA
+    credentials:
+      secretRef:
+        name: aws-credentials
+        namespace: default
+
+  # Format: OVA with compression
+  format:
+    type: ova
+    compression: true
+    compressionLevel: 6
+
+  # Carbon-aware scheduling
+  carbonAware:
+    enabled: true
+    zone: US-CAL-CISO
+    maxIntensity: 200.0
+    maxDelayHours: 4.0
+
+  # Retention policy
+  retention:
+    keepDaily: 7
+    keepWeekly: 4
+    keepMonthly: 12
+    keepYearly: 3
+
+  # Custom metadata
+  metadata:
+    environment: production
+    team: platform
+    criticality: high

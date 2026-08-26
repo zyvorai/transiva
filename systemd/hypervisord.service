@@ -1,0 +1,57 @@
+[Unit]
+Description=Hypervisord - VM Export Daemon
+Documentation=https://github.com/ssahani/transiva
+After=network-online.target
+Wants=network-online.target hyper2kvm-daemon.service
+
+[Service]
+Type=simple
+User=transiva
+Group=transiva
+WorkingDirectory=/var/lib/transiva
+
+# Binary and config
+ExecStart=/usr/bin/hypervisord --config /etc/transiva/config.yaml
+ExecReload=/bin/kill -HUP $MAINPID
+
+# Restart policy
+Restart=on-failure
+RestartSec=5s
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=30s
+
+# Environment variables (can be overridden by config file)
+Environment="GOVC_URL=https://vcenter.example.com/sdk"
+Environment="GOVC_USERNAME=administrator@vsphere.local"
+Environment="GOVC_PASSWORD="
+Environment="GOVC_INSECURE=1"
+Environment="DAEMON_ADDR=localhost:8080"
+Environment="LOG_LEVEL=info"
+
+# Conversion integration
+Environment="HYPER2KVM_QUEUE=/var/lib/hyper2kvm/queue"
+Environment="HYPER2KVM_SOCKET=/var/lib/hyper2kvm/output/.daemon/control.sock"
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/transiva /var/log/transiva /var/lib/hyper2kvm /tmp
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+
+# Resource limits
+LimitNOFILE=65536
+TasksMax=4096
+MemoryLimit=4G
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=hypervisord
+
+[Install]
+WantedBy=multi-user.target

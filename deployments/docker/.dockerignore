@@ -1,0 +1,114 @@
+# Git
+.git
+.gitignore
+.gitattributes
+.github
+
+# Documentation
+*.md
+docs/
+*.txt
+LICENSE
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Build artifacts
+bin/
+dist/
+build/
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.*
+*.log
+
+# Deployment
+deployments/
+monitoring/
+systemd/
+packaging/
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Test files
+*_test.go
+testdata/
+test/
+tests/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+*.cache
+
+# Node.js (for web dashboard)
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+.npm/
+.yarn/
+
+# Web build artifacts
+web/dashboard/dist/
+web/dashboard-react/dist/
+web/dashboard-react/build/
+web/dashboard-react/node_modules/
+
+# Data and exports (runtime data, not needed in image)
+*.db
+*.db-shm
+*.db-wal
+exports/
+data/
+
+# Secrets and credentials
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*secret*
+*credential*
+.env
+.env.*
+config.yaml
+*.conf
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# RPM packaging
+*.rpm
+*.spec
+packaging/rpm/BUILD/
+packaging/rpm/BUILDROOT/
+packaging/rpm/RPMS/
+packaging/rpm/SOURCES/
+packaging/rpm/SPECS/
+packaging/rpm/SRPMS/
+
+# Examples
+examples/

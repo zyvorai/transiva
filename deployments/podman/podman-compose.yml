@@ -1,0 +1,212 @@
+version: '3.8'
+
+# ==============================================================================
+# HyperSDK Podman Compose Stack
+# Compatible with podman-compose v1.0.6+
+# ==============================================================================
+
+services:
+  # ============================================================================
+  # HyperSDK Daemon
+  # ============================================================================
+  hypervisord:
+    build:
+      context: ../..
+      dockerfile: deployments/docker/dockerfiles/Dockerfile.hypervisord
+      args:
+        VERSION: ${VERSION:-dev}
+        COMMIT_SHA: ${COMMIT_SHA:-unknown}
+        BUILD_DATE: ${BUILD_DATE:-$(date -u +"%Y-%m-%dT%H:%M:%SZ")}
+    image: transiva/hypervisord:${VERSION:-latest}
+    hostname: hypervisord
+
+    ports:
+      - "${DAEMON_PORT:-8080}:8080"     # REST API
+      - "${METRICS_PORT:-8081}:8081"    # Prometheus metrics
+
+    environment:
+      # Daemon configuration
+      - DAEMON_ADDR=0.0.0.0:8080
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - DATABASE_PATH=/data/transiva.db
+      - DOWNLOAD_WORKERS=${DOWNLOAD_WORKERS:-3}
+      - CHUNK_SIZE=${CHUNK_SIZE:-33554432}
+      - RETRY_ATTEMPTS=${RETRY_ATTEMPTS:-3}
+
+      # Redis configuration
+      - REDIS_ENABLED=${REDIS_ENABLED:-true}
+      - REDIS_ADDR=redis:6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+
+      # vSphere configuration
+      - GOVC_URL=${GOVC_URL:-}
+      - GOVC_USERNAME=${GOVC_USERNAME:-}
+      - GOVC_PASSWORD=${GOVC_PASSWORD:-}
+      - GOVC_INSECURE=${GOVC_INSECURE:-1}
+
+      # AWS configuration
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+
+      # Azure configuration
+      - AZURE_SUBSCRIPTION_ID=${AZURE_SUBSCRIPTION_ID:-}
+      - AZURE_TENANT_ID=${AZURE_TENANT_ID:-}
+      - AZURE_CLIENT_ID=${AZURE_CLIENT_ID:-}
+      - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET:-}
+
+    volumes:
+      - transiva-data:/data
+      - transiva-exports:/exports
+      - ./config:/config:ro
+      - transiva-logs:/var/log/transiva
+
+    networks:
+      - transiva-net
+
+    depends_on:
+      - redis
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+    labels:
+      - "com.transiva.service=hypervisord"
+      - "com.transiva.version=${VERSION:-dev}"
+
+  # ============================================================================
+  # Redis Cache
+  # ============================================================================
+  redis:
+    image: redis:7-alpine
+    hostname: redis
+
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync everysec
+      --maxmemory ${REDIS_MAX_MEMORY:-256mb}
+      --maxmemory-policy allkeys-lru
+      ${REDIS_PASSWORD:+--requirepass ${REDIS_PASSWORD}}
+
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+
+    volumes:
+      - redis-data:/data
+
+    networks:
+      - transiva-net
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+    labels:
+      - "com.transiva.service=redis"
+
+  # ============================================================================
+  # Prometheus Metrics
+  # ============================================================================
+  prometheus:
+    image: prom/prometheus:v2.48.1
+    hostname: prometheus
+
+    user: "65534:65534"
+
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+
+    volumes:
+      - ../../monitoring/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yml:ro,z
+      - ../../monitoring/prometheus/alerts.yaml:/etc/prometheus/alerts.yml:ro,z
+      - prometheus-data:/prometheus
+
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=${PROMETHEUS_RETENTION:-15d}'
+      - '--web.enable-lifecycle'
+
+    networks:
+      - transiva-net
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+    labels:
+      - "com.transiva.service=prometheus"
+
+  # ============================================================================
+  # Grafana Dashboards
+  # ============================================================================
+  grafana:
+    image: grafana/grafana:10.2.3
+    hostname: grafana
+
+    user: "472:472"
+
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_ANALYTICS_REPORTING_ENABLED=false
+      - GF_ANALYTICS_CHECK_FOR_UPDATES=false
+
+    volumes:
+      - ../../monitoring/grafana/provisioning:/etc/grafana/provisioning:ro,z
+      - ../../monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro,z
+      - grafana-data:/var/lib/grafana
+
+    networks:
+      - transiva-net
+
+    depends_on:
+      - prometheus
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+    labels:
+      - "com.transiva.service=grafana"
+
+# ==============================================================================
+# Networks
+# ==============================================================================
+networks:
+  transiva-net:
+    driver: bridge
+
+# ==============================================================================
+# Volumes
+# ==============================================================================
+volumes:
+  transiva-data:
+  transiva-exports:
+  transiva-logs:
+  redis-data:
+  prometheus-data:
+  grafana-data:

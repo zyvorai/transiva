@@ -1,0 +1,407 @@
+package main
+
+import (
+	"strings"
+	"testing"
+	"time"
+)
+
+func TestNewNotificationManager(t *testing.T) {
+	config := &EmailConfig{
+		SMTPHost:     "smtp.example.com",
+		SMTPPort:     587,
+		FromAddress:  "sender@example.com",
+		ToAddresses:  []string{"recipient@example.com"},
+		SMTPUsername: "user",
+		SMTPPassword: "pass",
+	}
+
+	manager := NewNotificationManager(config, nil)
+	if manager == nil {
+		t.Fatal("NewNotificationManager returned nil")
+	}
+	if manager.config != config {
+		t.Error("Config not set correctly")
+	}
+}
+
+func TestEmailConfig_Validation(t *testing.T) {
+	tests := []struct {
+		name    string
+		config  *EmailConfig
+		wantErr bool
+	}{
+		{
+			name: "valid config",
+			config: &EmailConfig{
+				SMTPHost: "smtp.gmail.com",
+				SMTPPort: 587,
+				FromAddress:  "sender@example.com",
+				ToAddresses:  []string{"recipient@example.com"},
+				SMTPUsername: "user",
+				SMTPPassword: "pass",
+			},
+			wantErr: false,
+		},
+		{
+			name: "multiple recipients",
+			config: &EmailConfig{
+				SMTPHost: "smtp.gmail.com",
+				SMTPPort: 587,
+				FromAddress:  "sender@example.com",
+				ToAddresses:  []string{"user1@example.com", "user2@example.com"},
+				SMTPUsername: "user",
+				SMTPPassword: "pass",
+			},
+			wantErr: false,
+		},
+		{
+			name: "missing host",
+			config: &EmailConfig{
+				SMTPHost: "",
+				SMTPPort: 587,
+				FromAddress:  "sender@example.com",
+				ToAddresses:  []string{"recipient@example.com"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing recipients",
+			config: &EmailConfig{
+				SMTPHost: "smtp.gmail.com",
+				SMTPPort: 587,
+				FromAddress:  "sender@example.com",
+				To:       []string{},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid port",
+			config: &EmailConfig{
+				SMTPHost: "smtp.gmail.com",
+				SMTPPort: 0,
+				FromAddress:  "sender@example.com",
+				ToAddresses:  []string{"recipient@example.com"},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.config.Validate()
+			hasErr := err != nil
+			if hasErr != tt.wantErr {
+				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestEmailConfig_DefaultPort(t *testing.T) {
+	config := &EmailConfig{
+		SMTPHost: "smtp.example.com",
+		From:     "sender@example.com",
+		To:       []string{"recipient@example.com"},
+	}
+
+	if config.SMTPPort == 0 {
+		config.SMTPPort = 587 // Default SMTP port
+	}
+
+	if config.SMTPPort != 587 {
+		t.Errorf("Expected default port 587, got %d", config.SMTPPort)
+	}
+}
+
+func TestNotificationManager_SendExportStarted(t *testing.T) {
+	config := &EmailConfig{
+		SMTPHost:  "smtp.example.com",
+		SMTPPort:  587,
+		From:      "hyperexport@example.com",
+		To:        []string{"admin@example.com"},
+		OnStart:   true,
+		OnComplete: false,
+		OnFailure: false,
+	}
+
+	manager := NewNotificationManager(config, nil)
+
+	vms := []string{"vm1", "vm2", "vm3"}
+
+	// This will fail without a real SMTP server, but we're testing the logic
+	err := manager.SendExportStarted(vms)
+	if err == nil {
+		t.Log("SendExportStarted would succeed with a real SMTP server")
+	} else {
+		// Expected to fail without real SMTP server
+		t.Logf("SendExportStarted failed as expected: %v", err)
+	}
+}
+
+func TestNotificationManager_SendExportCompleted(t *testing.T) {
+	config := &EmailConfig{
+		SMTPHost:   "smtp.example.com",
+		SMTPPort:   587,
+		From:       "hyperexport@example.com",
+		To:         []string{"admin@example.com"},
+		OnComplete: true,
+	}
+
+	manager := NewNotificationManager(config, nil)
+
+	results := []ExportResult{
+		{VMPath: "vm1", Success: true, Duration: 5 * time.Minute},
+		{VMPath: "vm2", Success: true, Duration: 10 * time.Minute},
+	}
+
+	err := manager.SendExportCompleted(results, 15*time.Minute)
+	if err == nil {
+		t.Log("SendExportCompleted would succeed with a real SMTP server")
+	} else {
+		t.Logf("SendExportCompleted failed as expected: %v", err)
+	}
+}
+
+func TestNotificationManager_SendExportFailed(t *testing.T) {
+	config := &EmailConfig{
+		SMTPHost:  "smtp.example.com",
+		SMTPPort:  587,
+		From:      "hyperexport@example.com",
+		To:        []string{"admin@example.com"},
+		OnFailure: true,
+	}
+
+	manager := NewNotificationManager(config, nil)
+
+	err := manager.SendExportFailed("vm1", "disk error")
+	if err == nil {
+		t.Log("SendExportFailed would succeed with a real SMTP server")
+	} else {
+		t.Logf("SendExportFailed failed as expected: %v", err)
+	}
+}
+
+func TestBuildHTMLEmail_ExportStarted(t *testing.T) {
+	vms := []string{"vm1", "vm2", "vm3"}
+	html := buildHTMLEmailStarted(vms)
+
+	if html == "" {
+		t.Error("HTML email should not be empty")
+	}
+
+	// Check for key elements
+	if !strings.Contains(html, "Export Started") {
+		t.Error("HTML should contain 'Export Started' header")
+	}
+	for _, vm := range vms {
+		if !strings.Contains(html, vm) {
+			t.Errorf("HTML should contain VM name: %s", vm)
+		}
+	}
+}
+
+func TestBuildHTMLEmail_ExportCompleted(t *testing.T) {
+	results := []ExportResult{
+		{VMPath: "vm1", Success: true, Duration: 5 * time.Minute, ExportedSize: 1024 * 1024 * 100},
+		{VMPath: "vm2", Success: false, Duration: 2 * time.Minute, Error: "disk error"},
+	}
+
+	html := buildHTMLEmailCompleted(results, 7*time.Minute)
+
+	if html == "" {
+		t.Error("HTML email should not be empty")
+	}
+
+	// Check for key elements
+	if !strings.Contains(html, "Export Completed") {
+		t.Error("HTML should contain 'Export Completed' header")
+	}
+	if !strings.Contains(html, "vm1") {
+		t.Error("HTML should contain vm1")
+	}
+	if !strings.Contains(html, "vm2") {
+		t.Error("HTML should contain vm2")
+	}
+	if !strings.Contains(html, "SUCCESS") {
+		t.Error("HTML should contain SUCCESS status")
+	}
+	if !strings.Contains(html, "FAILED") {
+		t.Error("HTML should contain FAILED status")
+	}
+}
+
+func TestBuildHTMLEmail_ExportFailed(t *testing.T) {
+	html := buildHTMLEmailFailed("vm-test", "network timeout")
+
+	if html == "" {
+		t.Error("HTML email should not be empty")
+	}
+
+	// Check for key elements
+	if !strings.Contains(html, "Export Failed") {
+		t.Error("HTML should contain 'Export Failed' header")
+	}
+	if !strings.Contains(html, "vm-test") {
+		t.Error("HTML should contain VM name")
+	}
+	if !strings.Contains(html, "network timeout") {
+		t.Error("HTML should contain error message")
+	}
+}
+
+func TestEmailConfig_ShouldSendOnStart(t *testing.T) {
+	config := &EmailConfig{
+		OnStart: true,
+	}
+
+	if !config.OnStart {
+		t.Error("OnStart should be true")
+	}
+}
+
+func TestEmailConfig_ShouldSendOnComplete(t *testing.T) {
+	config := &EmailConfig{
+		OnComplete: true,
+	}
+
+	if !config.OnComplete {
+		t.Error("OnComplete should be true")
+	}
+}
+
+func TestEmailConfig_ShouldSendOnFailure(t *testing.T) {
+	config := &EmailConfig{
+		OnFailure: true,
+	}
+
+	if !config.OnFailure {
+		t.Error("OnFailure should be true")
+	}
+}
+
+func TestEmailConfig_AllNotificationsDisabled(t *testing.T) {
+	config := &EmailConfig{
+		OnStart:    false,
+		OnComplete: false,
+		OnFailure:  false,
+	}
+
+	if config.OnStart || config.OnComplete || config.OnFailure {
+		t.Error("All notifications should be disabled")
+	}
+}
+
+func TestNotificationManager_NilConfig(t *testing.T) {
+	manager := NewNotificationManager(nil, nil)
+	if manager == nil {
+		t.Fatal("NewNotificationManager should handle nil config")
+	}
+
+	// Operations should handle nil config gracefully
+	err := manager.SendExportStarted([]string{"vm1"})
+	if err == nil {
+		t.Error("Expected error with nil config")
+	}
+}
+
+func TestExportResult_SuccessFields(t *testing.T) {
+	result := ExportResult{
+		VMPath:       "/datacenter/vm/test",
+		Success:      true,
+		Duration:     10 * time.Minute,
+		ExportedSize: 1024 * 1024 * 500,
+		OutputPath:   "/exports/test.ova",
+	}
+
+	if !result.Success {
+		t.Error("Success should be true")
+	}
+	if result.Duration == 0 {
+		t.Error("Duration should not be zero")
+	}
+	if result.ExportedSize == 0 {
+		t.Error("ExportedSize should not be zero")
+	}
+	if result.OutputPath == "" {
+		t.Error("OutputPath should not be empty")
+	}
+	if result.Error != "" {
+		t.Error("Error should be empty on success")
+	}
+}
+
+func TestExportResult_FailureFields(t *testing.T) {
+	result := ExportResult{
+		VMPath:   "/datacenter/vm/test",
+		Success:  false,
+		Duration: 2 * time.Minute,
+		Error:    "connection timeout",
+	}
+
+	if result.Success {
+		t.Error("Success should be false")
+	}
+	if result.Error == "" {
+		t.Error("Error should not be empty on failure")
+	}
+	if result.ExportedSize != 0 {
+		t.Error("ExportedSize should be zero on failure")
+	}
+}
+
+func TestFormatDuration(t *testing.T) {
+	tests := []struct {
+		name     string
+		duration time.Duration
+		contains string
+	}{
+		{"seconds", 45 * time.Second, "45s"},
+		{"minutes", 5 * time.Minute, "5m"},
+		{"hours", 2 * time.Hour, "2h"},
+		{"mixed", 1*time.Hour + 30*time.Minute, "1h30m"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			formatted := tt.duration.String()
+			if !strings.Contains(formatted, tt.contains) {
+				t.Logf("Duration %v formatted as %s", tt.duration, formatted)
+			}
+		})
+	}
+}
+
+func TestEmailConfig_SMTPAuth(t *testing.T) {
+	tests := []struct {
+		name     string
+		config   *EmailConfig
+		hasAuth  bool
+	}{
+		{
+			name: "with credentials",
+			config: &EmailConfig{
+				Username: "user@example.com",
+				Password: "secret",
+			},
+			hasAuth: true,
+		},
+		{
+			name: "without credentials",
+			config: &EmailConfig{
+				Username: "",
+				Password: "",
+			},
+			hasAuth: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hasAuth := tt.config.Username != "" && tt.config.Password != ""
+			if hasAuth != tt.hasAuth {
+				t.Errorf("Expected hasAuth=%v, got %v", tt.hasAuth, hasAuth)
+			}
+		})
+	}
+}

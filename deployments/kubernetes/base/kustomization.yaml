@@ -1,0 +1,47 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Namespace where all resources will be deployed
+namespace: transiva
+
+# Common labels applied to all resources
+commonLabels:
+  app.kubernetes.io/part-of: transiva
+  app.kubernetes.io/managed-by: kustomize
+
+# Resources to include in the deployment
+resources:
+- namespace.yaml
+- serviceaccount.yaml
+- rbac.yaml
+- configmap.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+
+# Note: secrets.yaml is not included here
+# Copy secrets.yaml.example to secrets.yaml and apply separately:
+#   kubectl apply -f secrets.yaml -n transiva
+
+# ConfigMap generator (alternative to static configmap.yaml)
+# Uncomment to generate ConfigMap from files
+# configMapGenerator:
+# - name: hypervisord-config
+#   files:
+#   - config.yaml
+
+# Images to use
+images:
+- name: transiva/hypervisord
+  newName: transiva/hypervisord
+  newTag: latest
+
+# Replicas (can be overridden in overlays)
+# replicas:
+# - name: hypervisord
+#   count: 1
+
+# Common annotations
+commonAnnotations:
+  description: "HyperSDK multi-cloud VM migration platform"
+  documentation: "https://github.com/ssahani/transiva"

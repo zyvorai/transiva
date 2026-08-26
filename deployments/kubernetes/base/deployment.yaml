@@ -1,0 +1,253 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hypervisord
+  namespace: transiva
+  labels:
+    app: hypervisord
+    app.kubernetes.io/name: hypervisord
+    app.kubernetes.io/component: daemon
+    app.kubernetes.io/part-of: transiva
+spec:
+  # Single replica due to SQLite limitation
+  # For HA, use StatefulSet with PostgreSQL backend
+  replicas: 1
+  strategy:
+    type: Recreate  # Required for RWO PVCs
+
+  selector:
+    matchLabels:
+      app: hypervisord
+      app.kubernetes.io/name: hypervisord
+
+  template:
+    metadata:
+      labels:
+        app: hypervisord
+        app.kubernetes.io/name: hypervisord
+        app.kubernetes.io/component: daemon
+        app.kubernetes.io/part-of: transiva
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8081"
+        prometheus.io/path: "/metrics"
+        kubectl.kubernetes.io/default-container: hypervisord
+
+    spec:
+      serviceAccountName: hypervisord
+
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+
+      initContainers:
+      # Init container to ensure directories have correct permissions
+      - name: init-permissions
+        image: busybox:1.36
+        command:
+        - sh
+        - -c
+        - |
+          chown -R 1000:1000 /data /exports
+          chmod 755 /data /exports
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        - name: exports
+          mountPath: /exports
+        securityContext:
+          runAsUser: 0
+          runAsNonRoot: false
+
+      containers:
+      - name: hypervisord
+        image: transiva/hypervisord:latest
+        imagePullPolicy: IfNotPresent
+
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        - name: metrics
+          containerPort: 8081
+          protocol: TCP
+
+        env:
+        # Daemon configuration
+        - name: DAEMON_ADDR
+          value: "0.0.0.0:8080"
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: hypervisord-config
+              key: log_level
+        - name: DATABASE_PATH
+          value: "/data/transiva.db"
+        - name: DOWNLOAD_WORKERS
+          valueFrom:
+            configMapKeyRef:
+              name: hypervisord-config
+              key: download_workers
+
+        # Redis configuration
+        - name: REDIS_ENABLED
+          value: "false"  # Enable if Redis service is deployed
+
+        # vSphere credentials
+        - name: GOVC_URL
+          valueFrom:
+            secretKeyRef:
+              name: vsphere-credentials
+              key: url
+              optional: true
+        - name: GOVC_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: vsphere-credentials
+              key: username
+              optional: true
+        - name: GOVC_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vsphere-credentials
+              key: password
+              optional: true
+        - name: GOVC_INSECURE
+          value: "1"
+
+        # AWS credentials
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: aws-credentials
+              key: access_key_id
+              optional: true
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aws-credentials
+              key: secret_access_key
+              optional: true
+        - name: AWS_REGION
+          valueFrom:
+            secretKeyRef:
+              name: aws-credentials
+              key: region
+              optional: true
+
+        # Azure credentials
+        - name: AZURE_SUBSCRIPTION_ID
+          valueFrom:
+            secretKeyRef:
+              name: azure-credentials
+              key: subscription_id
+              optional: true
+        - name: AZURE_TENANT_ID
+          valueFrom:
+            secretKeyRef:
+              name: azure-credentials
+              key: tenant_id
+              optional: true
+        - name: AZURE_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: azure-credentials
+              key: client_id
+              optional: true
+        - name: AZURE_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: azure-credentials
+              key: client_secret
+              optional: true
+
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        - name: exports
+          mountPath: /exports
+        - name: config
+          mountPath: /config
+          readOnly: true
+
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+
+        startupProbe:
+          httpGet:
+            path: /health
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 12
+          successThreshold: 1
+
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: false  # SQLite requires write access
+          runAsNonRoot: true
+          runAsUser: 1000
+
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: hypervisord-data-pvc
+      - name: exports
+        persistentVolumeClaim:
+          claimName: hypervisord-exports-pvc
+      - name: config
+        configMap:
+          name: hypervisord-config
+          items:
+          - key: config.yaml
+            path: config.yaml
+
+      terminationGracePeriodSeconds: 30
+
+      # Node affinity (optional - uncomment if needed)
+      # affinity:
+      #   nodeAffinity:
+      #     preferredDuringSchedulingIgnoredDuringExecution:
+      #     - weight: 100
+      #       preference:
+      #         matchExpressions:
+      #         - key: workload-type
+      #           operator: In
+      #           values:
+      #           - compute-intensive

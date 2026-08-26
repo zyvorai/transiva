@@ -1,0 +1,135 @@
+suite: test ingress
+templates:
+  - ingress.yaml
+tests:
+  - it: should not create ingress by default
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should create ingress when enabled
+    set:
+      ingress:
+        enabled: true
+        hosts:
+          - host: transiva.example.com
+            paths:
+              - path: /
+                pathType: Prefix
+    asserts:
+      - isKind:
+          of: Ingress
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-transiva
+
+  - it: should use correct apiVersion for Kubernetes 1.19+
+    set:
+      ingress:
+        enabled: true
+        hosts:
+          - host: transiva.example.com
+            paths:
+              - path: /
+                pathType: Prefix
+    capabilities:
+      apiVersions:
+        - networking.k8s.io/v1/Ingress
+    asserts:
+      - equal:
+          path: apiVersion
+          value: networking.k8s.io/v1
+
+  - it: should set ingressClassName when specified
+    set:
+      ingress:
+        enabled: true
+        className: nginx
+        hosts:
+          - host: transiva.example.com
+            paths:
+              - path: /
+                pathType: Prefix
+    asserts:
+      - equal:
+          path: spec.ingressClassName
+          value: nginx
+
+  - it: should configure TLS
+    set:
+      ingress:
+        enabled: true
+        hosts:
+          - host: transiva.example.com
+            paths:
+              - path: /
+                pathType: Prefix
+        tls:
+          - secretName: transiva-tls
+            hosts:
+              - transiva.example.com
+    asserts:
+      - contains:
+          path: spec.tls
+          content:
+            secretName: transiva-tls
+            hosts:
+              - transiva.example.com
+
+  - it: should add custom annotations
+    set:
+      ingress:
+        enabled: true
+        annotations:
+          cert-manager.io/cluster-issuer: letsencrypt-prod
+          nginx.ingress.kubernetes.io/ssl-redirect: "true"
+        hosts:
+          - host: transiva.example.com
+            paths:
+              - path: /
+                pathType: Prefix
+    asserts:
+      - equal:
+          path: metadata.annotations["cert-manager.io/cluster-issuer"]
+          value: letsencrypt-prod
+      - equal:
+          path: metadata.annotations["nginx.ingress.kubernetes.io/ssl-redirect"]
+          value: "true"
+
+  - it: should configure multiple hosts
+    set:
+      ingress:
+        enabled: true
+        hosts:
+          - host: transiva.example.com
+            paths:
+              - path: /
+                pathType: Prefix
+          - host: transiva.internal.com
+            paths:
+              - path: /
+                pathType: Prefix
+    asserts:
+      - equal:
+          path: spec.rules[0].host
+          value: transiva.example.com
+      - equal:
+          path: spec.rules[1].host
+          value: transiva.internal.com
+
+  - it: should set correct backend service
+    set:
+      ingress:
+        enabled: true
+        hosts:
+          - host: transiva.example.com
+            paths:
+              - path: /
+                pathType: Prefix
+    asserts:
+      - equal:
+          path: spec.rules[0].http.paths[0].backend.service.name
+          value: RELEASE-NAME-transiva
+      - equal:
+          path: spec.rules[0].http.paths[0].backend.service.port.name
+          value: http

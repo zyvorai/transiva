@@ -1,0 +1,835 @@
+import React, { useState } from 'react';
+
+interface JobSubmissionFormProps {
+  onSubmit?: (jobData: any) => Promise<void>;
+  initialProvider?: string;
+  initialVMIdentifier?: string;
+  initialVMName?: string;
+}
+
+type CloudProvider = 'vsphere' | 'aws' | 'azure' | 'gcp' | 'hyperv' | 'oci' | 'openstack' | 'alibabacloud' | 'proxmox';
+
+export const JobSubmissionForm: React.FC<JobSubmissionFormProps> = ({
+  onSubmit,
+  initialProvider,
+  initialVMIdentifier,
+  initialVMName
+}) => {
+  const [provider, setProvider] = useState<CloudProvider>((initialProvider as CloudProvider) || 'vsphere');
+  const [formData, setFormData] = useState<Record<string, any>>({
+    name: initialVMName || '',
+    provider: initialProvider || 'vsphere',
+    vm_identifier: initialVMIdentifier || '',
+    output_dir: '/tmp/exports',
+    format: 'ova',
+    compress: false,
+    // Pipeline integration
+    enable_pipeline: false,
+    hyper2kvm_path: '/home/tt/hyper2kvm/hyper2kvm',
+    pipeline_inspect: true,
+    pipeline_fix: true,
+    pipeline_convert: true,
+    pipeline_validate: true,
+    pipeline_compress: true,
+    compress_level: 6,
+    // Libvirt integration
+    libvirt_integration: false,
+    libvirt_uri: 'qemu:///system',
+    libvirt_autostart: false,
+    libvirt_bridge: 'virbr0',
+    libvirt_pool: 'default',
+    // hyper2kvm daemon integration
+    hyper2kvm_daemon: false,
+    hyper2kvm_instance: '',
+    hyper2kvm_watch_dir: '/var/lib/hyper2kvm/queue',
+    hyper2kvm_output_dir: '/var/lib/hyper2kvm/output',
+    hyper2kvm_poll_interval: 5,
+    hyper2kvm_daemon_timeout: 60,
+  });
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+  };
+
+  const handleProviderChange = (newProvider: CloudProvider) => {
+    setProvider(newProvider);
+    setFormData({
+      name: '',
+      provider: newProvider,
+      output_dir: '/tmp/exports',
+      format: newProvider === 'aws' ? 'vmdk' : newProvider === 'azure' || newProvider === 'gcp' ? 'vhd' : 'ova',
+      compress: false,
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
+    setSuccess(false);
+
+    try {
+      const jobData = { ...formData, provider };
+
+      // Use provided onSubmit or default API call
+      if (onSubmit) {
+        await onSubmit(jobData);
+      } else {
+        // Default: Submit job via API
+        const response = await fetch('/api/jobs/submit', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(jobData),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to submit job: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        console.log('Job submitted:', result);
+      }
+
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to submit job');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    padding: '8px 10px',
+    border: '1px solid #d1d5db',
+    borderRadius: '4px',
+    fontSize: '13px',
+    backgroundColor: '#fff',
+    transition: 'all 0.25s cubic-bezier(0.215, 0.61, 0.355, 1)',
+    color: '#000',
+  };
+
+  const labelStyle: React.CSSProperties = {
+    display: 'block',
+    fontSize: '11px',
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: '4px',
+  };
+
+  return (
+    <div style={{ backgroundColor: '#fff', borderRadius: '4px', padding: '16px' }}>
+      <h2 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '700', color: '#000' }}>Submit export job</h2>
+
+      {error && (
+        <div style={{ padding: '8px', backgroundColor: '#fee2e2', color: '#991b1b', borderRadius: '4px', marginBottom: '12px', fontWeight: '500', fontSize: '12px' }}>
+          {error}
+        </div>
+      )}
+
+      {success && (
+        <div style={{ padding: '8px', backgroundColor: '#d1fae5', color: '#065f46', borderRadius: '4px', marginBottom: '12px', fontWeight: '500', fontSize: '12px' }}>
+          Job submitted successfully!
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit}>
+        <div style={{ display: 'grid', gridTemplateColumns: '180px 1fr', gap: '16px' }}>
+          {/* Left Sidebar - Cloud Provider Selection */}
+          <div style={{ padding: '12px', backgroundColor: '#f0f2f7', borderRadius: '4px', height: 'fit-content' }}>
+            <label style={{ ...labelStyle, marginBottom: '8px' }}>Cloud providers</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              {(['vsphere', 'aws', 'azure', 'gcp', 'hyperv', 'oci', 'openstack', 'alibabacloud', 'proxmox'] as CloudProvider[]).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => handleProviderChange(p)}
+                  onMouseEnter={(e) => {
+                    if (provider !== p) {
+                      e.currentTarget.style.backgroundColor = '#f0583a';
+                      e.currentTarget.style.borderColor = '#f0583a';
+                      e.currentTarget.style.color = '#fff';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (provider !== p) {
+                      e.currentTarget.style.backgroundColor = '#fff';
+                      e.currentTarget.style.borderColor = '#d1d5db';
+                      e.currentTarget.style.color = '#222324';
+                    }
+                  }}
+                  style={{
+                    padding: '6px 10px',
+                    borderRadius: '4px',
+                    border: provider === p ? '1px solid #f0583a' : '1px solid #d1d5db',
+                    backgroundColor: provider === p ? '#f0583a' : '#fff',
+                    color: provider === p ? '#fff' : '#222324',
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.25s cubic-bezier(0.215, 0.61, 0.355, 1)',
+                    textAlign: 'left',
+                  }}
+                >
+                  {p === 'vsphere' ? 'vSphere' : p === 'gcp' ? 'GCP' : p === 'oci' ? 'OCI' : p.replace('cloud', ' Cloud')}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Right Content - Provider Configuration */}
+          <div>
+        {/* Provider-Specific Fields */}
+        {provider === 'vsphere' && (
+          <div style={{ marginBottom: '12px', padding: '12px', backgroundColor: '#1a1a1a', borderRadius: '4px' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#fff' }}>vSphere configuration</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              <div>
+                <label style={labelStyle}>vCenter Server *</label>
+                <input type="text" name="vcenter_url" onChange={handleChange} placeholder="vcenter.example.com" required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Datacenter *</label>
+                <input type="text" name="datacenter" onChange={handleChange} placeholder="DC1" required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Username *</label>
+                <input type="text" name="username" onChange={handleChange} placeholder="administrator@vsphere.local" required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Password *</label>
+                <input type="password" name="password" onChange={handleChange} required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>VM Path *</label>
+                <input type="text" name="vm_path" onChange={handleChange} placeholder="/DC1/vm/folder/my-vm" required style={inputStyle} />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: '28px' }}>
+                <input type="checkbox" name="insecure" onChange={handleChange} id="insecure" defaultChecked style={{ width: '16px', height: '16px' }} />
+                <label htmlFor="insecure" style={{ fontSize: '13px', cursor: 'pointer' }}>Skip SSL verification</label>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {provider === 'aws' && (
+          <div style={{ marginBottom: '12px', padding: '12px', backgroundColor: '#1a1a1a', borderRadius: '4px' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#fff' }}>AWS configuration</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              <div>
+                <label style={labelStyle}>Access Key ID *</label>
+                <input type="text" name="access_key_id" onChange={handleChange} required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Secret Access Key *</label>
+                <input type="password" name="secret_access_key" onChange={handleChange} required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Region *</label>
+                <input type="text" name="region" onChange={handleChange} placeholder="us-east-1" required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Instance ID *</label>
+                <input type="text" name="instance_id" onChange={handleChange} placeholder="i-1234567890abcdef0" required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>S3 Bucket *</label>
+                <input type="text" name="bucket" onChange={handleChange} placeholder="my-exports-bucket" required style={inputStyle} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {provider === 'azure' && (
+          <div style={{ marginBottom: '12px', padding: '12px', backgroundColor: '#1a1a1a', borderRadius: '4px' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#fff' }}>Azure configuration</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              <div>
+                <label style={labelStyle}>Subscription ID *</label>
+                <input type="text" name="subscription_id" onChange={handleChange} required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Tenant ID *</label>
+                <input type="text" name="tenant_id" onChange={handleChange} required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Client ID *</label>
+                <input type="text" name="client_id" onChange={handleChange} required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Client Secret *</label>
+                <input type="password" name="client_secret" onChange={handleChange} required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Resource Group *</label>
+                <input type="text" name="resource_group" onChange={handleChange} required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>VM Name *</label>
+                <input type="text" name="vm_name" onChange={handleChange} required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Storage Account *</label>
+                <input type="text" name="storage_account" onChange={handleChange} required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Container *</label>
+                <input type="text" name="container" onChange={handleChange} placeholder="vm-exports" required style={inputStyle} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {provider === 'gcp' && (
+          <div style={{ marginBottom: '12px', padding: '12px', backgroundColor: '#1a1a1a', borderRadius: '4px' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#fff' }}>GCP configuration</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              <div>
+                <label style={labelStyle}>Project ID *</label>
+                <input type="text" name="project_id" onChange={handleChange} required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Zone *</label>
+                <input type="text" name="zone" onChange={handleChange} placeholder="us-central1-a" required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Instance Name *</label>
+                <input type="text" name="instance_name" onChange={handleChange} required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>GCS Bucket *</label>
+                <input type="text" name="bucket" onChange={handleChange} placeholder="my-exports-bucket" required style={inputStyle} />
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={labelStyle}>Service Account Key (JSON) *</label>
+                <textarea name="service_account_json" onChange={(e: any) => handleChange(e)} required style={{ ...inputStyle, minHeight: '80px', fontFamily: 'monospace', fontSize: '12px' }} placeholder='{"type": "service_account", ...}' />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {provider === 'hyperv' && (
+          <div style={{ marginBottom: '12px', padding: '12px', backgroundColor: '#1a1a1a', borderRadius: '4px' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#fff' }}>Hyper-V configuration</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              <div>
+                <label style={labelStyle}>Host *</label>
+                <input type="text" name="host" onChange={handleChange} placeholder="hyperv.example.com" required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Username *</label>
+                <input type="text" name="username" onChange={handleChange} placeholder="DOMAIN\\Administrator" required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Password *</label>
+                <input type="password" name="password" onChange={handleChange} required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>VM Name *</label>
+                <input type="text" name="vm_name" onChange={handleChange} required style={inputStyle} />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: '28px' }}>
+                <input type="checkbox" name="use_winrm" onChange={handleChange} id="use_winrm" defaultChecked style={{ width: '16px', height: '16px' }} />
+                <label htmlFor="use_winrm" style={{ fontSize: '13px', cursor: 'pointer' }}>Use WinRM</label>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {provider === 'oci' && (
+          <div style={{ marginBottom: '12px', padding: '12px', backgroundColor: '#1a1a1a', borderRadius: '4px' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#fff' }}>OCI configuration</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              <div>
+                <label style={labelStyle}>Tenancy OCID *</label>
+                <input type="text" name="tenancy_ocid" onChange={handleChange} placeholder="ocid1.tenancy.oc1..." required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>User OCID *</label>
+                <input type="text" name="user_ocid" onChange={handleChange} placeholder="ocid1.user.oc1..." required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Fingerprint *</label>
+                <input type="text" name="fingerprint" onChange={handleChange} placeholder="aa:bb:cc:..." required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Region *</label>
+                <input type="text" name="region" onChange={handleChange} placeholder="us-phoenix-1" required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Compartment OCID *</label>
+                <input type="text" name="compartment_ocid" onChange={handleChange} placeholder="ocid1.compartment.oc1..." required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Instance OCID *</label>
+                <input type="text" name="instance_ocid" onChange={handleChange} placeholder="ocid1.instance.oc1..." required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Bucket *</label>
+                <input type="text" name="bucket" onChange={handleChange} placeholder="vm-backups" required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Namespace *</label>
+                <input type="text" name="namespace" onChange={handleChange} required style={inputStyle} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {provider === 'openstack' && (
+          <div style={{ marginBottom: '12px', padding: '12px', backgroundColor: '#1a1a1a', borderRadius: '4px' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#fff' }}>OpenStack configuration</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              <div>
+                <label style={labelStyle}>Auth URL *</label>
+                <input type="text" name="auth_url" onChange={handleChange} placeholder="https://openstack.example.com:5000/v3" required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Username *</label>
+                <input type="text" name="username" onChange={handleChange} placeholder="admin" required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Password *</label>
+                <input type="password" name="password" onChange={handleChange} required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Tenant Name *</label>
+                <input type="text" name="tenant_name" onChange={handleChange} placeholder="admin" required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Domain *</label>
+                <input type="text" name="domain_name" onChange={handleChange} placeholder="Default" required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Region *</label>
+                <input type="text" name="region" onChange={handleChange} placeholder="RegionOne" required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Instance ID *</label>
+                <input type="text" name="instance_id" onChange={handleChange} required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Container *</label>
+                <input type="text" name="container" onChange={handleChange} placeholder="vm-backups" required style={inputStyle} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {provider === 'alibabacloud' && (
+          <div style={{ marginBottom: '12px', padding: '12px', backgroundColor: '#1a1a1a', borderRadius: '4px' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#fff' }}>Alibaba Cloud configuration</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              <div>
+                <label style={labelStyle}>Access Key ID *</label>
+                <input type="text" name="access_key_id" onChange={handleChange} placeholder="LTAI4G..." required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Access Key Secret *</label>
+                <input type="password" name="access_key_secret" onChange={handleChange} required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Region ID *</label>
+                <input type="text" name="region_id" onChange={handleChange} placeholder="cn-hangzhou" required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Instance ID *</label>
+                <input type="text" name="instance_id" onChange={handleChange} required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>OSS Bucket *</label>
+                <input type="text" name="bucket" onChange={handleChange} placeholder="vm-backups" required style={inputStyle} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {provider === 'proxmox' && (
+          <div style={{ marginBottom: '12px', padding: '12px', backgroundColor: '#1a1a1a', borderRadius: '4px' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#fff' }}>Proxmox VE configuration</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              <div>
+                <label style={labelStyle}>Host *</label>
+                <input type="text" name="host" onChange={handleChange} placeholder="proxmox.example.com" required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Port</label>
+                <input type="number" name="port" onChange={handleChange} defaultValue="8006" style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Username *</label>
+                <input type="text" name="username" onChange={handleChange} placeholder="root@pam" required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Password *</label>
+                <input type="password" name="password" onChange={handleChange} required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Node *</label>
+                <input type="text" name="node" onChange={handleChange} placeholder="pve1" required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>VM ID *</label>
+                <input type="number" name="vmid" onChange={handleChange} required style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Storage</label>
+                <input type="text" name="storage" onChange={handleChange} placeholder="local" defaultValue="local" style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Backup Mode</label>
+                <select name="backup_mode" onChange={handleChange} style={inputStyle}>
+                  <option value="snapshot">Snapshot (recommended)</option>
+                  <option value="suspend">Suspend</option>
+                  <option value="stop">Stop</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Common Fields */}
+        <div style={{ marginBottom: '12px', padding: '12px', backgroundColor: '#1a1a1a', borderRadius: '4px' }}>
+          <h3 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#fff' }}>Export options</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+            <div>
+              <label style={labelStyle}>Job Name *</label>
+              <input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="My Export Job" required style={inputStyle} />
+            </div>
+            <div>
+              <label style={labelStyle}>Output Directory *</label>
+              <input type="text" name="output_dir" value={formData.output_dir} onChange={handleChange} required style={inputStyle} />
+            </div>
+            <div>
+              <label style={labelStyle}>Format *</label>
+              <select name="format" value={formData.format} onChange={handleChange} required style={inputStyle}>
+                {provider === 'aws' && <option value="vmdk">VMDK</option>}
+                {(provider === 'azure' || provider === 'gcp') && <option value="vhd">VHD</option>}
+                {provider === 'proxmox' && <option value="vzdump">Vzdump</option>}
+                {['vsphere', 'hyperv', 'oci', 'openstack', 'alibabacloud'].includes(provider) && (
+                  <>
+                    <option value="ova">OVA</option>
+                    <option value="ovf">OVF</option>
+                    <option value="qcow2">QCOW2</option>
+                    <option value="vmdk">VMDK</option>
+                    <option value="raw">RAW</option>
+                  </>
+                )}
+              </select>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: '28px' }}>
+              <input type="checkbox" name="compress" checked={formData.compress} onChange={handleChange} id="compress" style={{ width: '16px', height: '16px' }} />
+              <label htmlFor="compress" style={{ fontSize: '13px', cursor: 'pointer' }}>Compress output</label>
+            </div>
+          </div>
+        </div>
+
+        {/* Pipeline Integration */}
+        <div style={{ marginBottom: '12px', padding: '12px', backgroundColor: '#1a1a1a', borderRadius: '4px' }}>
+          <h3 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#fff' }}>
+            Pipeline integration <span style={{ fontSize: '11px', fontWeight: 'normal', color: '#f0583a' }}>(hyper2kvm + libvirt)</span>
+          </h3>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+            <input
+              type="checkbox"
+              name="enable_pipeline"
+              checked={formData.enable_pipeline}
+              onChange={handleChange}
+              id="enable_pipeline"
+              style={{ width: '16px', height: '16px' }}
+            />
+            <label htmlFor="enable_pipeline" style={{ fontSize: '13px', cursor: 'pointer', fontWeight: '600' }}>
+              Enable hyper2kvm pipeline after export
+            </label>
+          </div>
+
+          {formData.enable_pipeline && (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '16px' }}>
+                <div>
+                  <label style={labelStyle}>hyper2kvm Path</label>
+                  <input
+                    type="text"
+                    name="hyper2kvm_path"
+                    value={formData.hyper2kvm_path}
+                    onChange={handleChange}
+                    placeholder="/home/tt/hyper2kvm/hyper2kvm"
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={labelStyle}>Compression Level (1-9)</label>
+                  <input
+                    type="number"
+                    name="compress_level"
+                    value={formData.compress_level}
+                    onChange={handleChange}
+                    min="1"
+                    max="9"
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ ...labelStyle, marginBottom: '8px' }}>Pipeline Stages</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input
+                      type="checkbox"
+                      name="pipeline_inspect"
+                      checked={formData.pipeline_inspect}
+                      onChange={handleChange}
+                      id="pipeline_inspect"
+                      style={{ width: '16px', height: '16px' }}
+                    />
+                    <label htmlFor="pipeline_inspect" style={{ fontSize: '13px', cursor: 'pointer' }}>
+                      INSPECT (detect OS, drivers)
+                    </label>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input
+                      type="checkbox"
+                      name="pipeline_fix"
+                      checked={formData.pipeline_fix}
+                      onChange={handleChange}
+                      id="pipeline_fix"
+                      style={{ width: '16px', height: '16px' }}
+                    />
+                    <label htmlFor="pipeline_fix" style={{ fontSize: '13px', cursor: 'pointer' }}>
+                      FIX (fstab, grub, initramfs)
+                    </label>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input
+                      type="checkbox"
+                      name="pipeline_convert"
+                      checked={formData.pipeline_convert}
+                      onChange={handleChange}
+                      id="pipeline_convert"
+                      style={{ width: '16px', height: '16px' }}
+                    />
+                    <label htmlFor="pipeline_convert" style={{ fontSize: '13px', cursor: 'pointer' }}>
+                      CONVERT (vmdk → qcow2)
+                    </label>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input
+                      type="checkbox"
+                      name="pipeline_validate"
+                      checked={formData.pipeline_validate}
+                      onChange={handleChange}
+                      id="pipeline_validate"
+                      style={{ width: '16px', height: '16px' }}
+                    />
+                    <label htmlFor="pipeline_validate" style={{ fontSize: '13px', cursor: 'pointer' }}>
+                      VALIDATE (check integrity)
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ borderTop: '1px solid #333', paddingTop: '16px', marginTop: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                  <input
+                    type="checkbox"
+                    name="libvirt_integration"
+                    checked={formData.libvirt_integration}
+                    onChange={handleChange}
+                    id="libvirt_integration"
+                    style={{ width: '16px', height: '16px' }}
+                  />
+                  <label htmlFor="libvirt_integration" style={{ fontSize: '13px', cursor: 'pointer', fontWeight: '600' }}>
+                    Define VM in libvirt after conversion
+                  </label>
+                </div>
+
+                {formData.libvirt_integration && (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                    <div>
+                      <label style={labelStyle}>Libvirt URI</label>
+                      <input
+                        type="text"
+                        name="libvirt_uri"
+                        value={formData.libvirt_uri}
+                        onChange={handleChange}
+                        placeholder="qemu:///system"
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Network Bridge</label>
+                      <input
+                        type="text"
+                        name="libvirt_bridge"
+                        value={formData.libvirt_bridge}
+                        onChange={handleChange}
+                        placeholder="virbr0"
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Storage Pool</label>
+                      <input
+                        type="text"
+                        name="libvirt_pool"
+                        value={formData.libvirt_pool}
+                        onChange={handleChange}
+                        placeholder="default"
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: '28px' }}>
+                      <input
+                        type="checkbox"
+                        name="libvirt_autostart"
+                        checked={formData.libvirt_autostart}
+                        onChange={handleChange}
+                        id="libvirt_autostart"
+                        style={{ width: '16px', height: '16px' }}
+                      />
+                      <label htmlFor="libvirt_autostart" style={{ fontSize: '13px', cursor: 'pointer' }}>
+                        Enable VM auto-start
+                      </label>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* hyper2kvm Daemon Mode */}
+              <div style={{ borderTop: '1px solid #333', paddingTop: '16px', marginTop: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                  <input
+                    type="checkbox"
+                    name="hyper2kvm_daemon"
+                    checked={formData.hyper2kvm_daemon}
+                    onChange={handleChange}
+                    id="hyper2kvm_daemon"
+                    style={{ width: '16px', height: '16px' }}
+                  />
+                  <label htmlFor="hyper2kvm_daemon" style={{ fontSize: '13px', cursor: 'pointer', fontWeight: '600' }}>
+                    Use systemd daemon for VM conversion
+                  </label>
+                </div>
+
+                {formData.hyper2kvm_daemon && (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                    <div>
+                      <label style={labelStyle}>Daemon Instance</label>
+                      <input
+                        type="text"
+                        name="hyper2kvm_instance"
+                        value={formData.hyper2kvm_instance}
+                        onChange={handleChange}
+                        placeholder="(default) or vsphere-prod"
+                        style={inputStyle}
+                      />
+                      <div style={{ fontSize: '11px', color: '#999', marginTop: '4px' }}>
+                        For hyper2kvm@{'{'}instance{'}'}.service
+                      </div>
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Watch Directory</label>
+                      <input
+                        type="text"
+                        name="hyper2kvm_watch_dir"
+                        value={formData.hyper2kvm_watch_dir}
+                        onChange={handleChange}
+                        placeholder="/var/lib/hyper2kvm/queue"
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Output Directory</label>
+                      <input
+                        type="text"
+                        name="hyper2kvm_output_dir"
+                        value={formData.hyper2kvm_output_dir}
+                        onChange={handleChange}
+                        placeholder="/var/lib/hyper2kvm/output"
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Poll Interval (seconds)</label>
+                      <input
+                        type="number"
+                        name="hyper2kvm_poll_interval"
+                        value={formData.hyper2kvm_poll_interval}
+                        onChange={handleChange}
+                        min="1"
+                        max="60"
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Timeout (minutes)</label>
+                      <input
+                        type="number"
+                        name="hyper2kvm_daemon_timeout"
+                        value={formData.hyper2kvm_daemon_timeout}
+                        onChange={handleChange}
+                        min="1"
+                        max="240"
+                        style={inputStyle}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Submit */}
+        <div style={{ display: 'flex', gap: '16px', justifyContent: 'flex-end', marginTop: '40px' }}>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            onMouseEnter={(e) => {
+              if (!isSubmitting) {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.backgroundColor = '#d94b32';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isSubmitting) {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.backgroundColor = '#f0583a';
+              }
+            }}
+            style={{
+              padding: '16px 40px',
+              borderRadius: '4px',
+              border: 'none',
+              backgroundColor: isSubmitting ? '#666' : '#f0583a',
+              color: '#fff',
+              fontSize: '16px',
+              fontWeight: '600',
+              cursor: isSubmitting ? 'not-allowed' : 'pointer',
+              transition: 'all 0.25s cubic-bezier(0.215, 0.61, 0.355, 1)',
+            }}
+          >
+            {isSubmitting ? 'Submitting...' : 'Submit job'}
+          </button>
+        </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  );
+};

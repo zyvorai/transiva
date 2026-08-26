@@ -1,0 +1,247 @@
+name: K3d Integration Test
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'deployments/kubernetes/**'
+      - 'deployments/docker/dockerfiles/**'
+      - 'cmd/hypervisord/**'
+      - '.github/workflows/k3d-test.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'deployments/kubernetes/**'
+      - 'deployments/docker/dockerfiles/**'
+      - 'cmd/hypervisord/**'
+  workflow_dispatch:
+
+jobs:
+  k3d-test:
+    name: Test Deployment on k3d
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+
+      - name: Install k3d
+        run: |
+          curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+          k3d version
+
+      - name: Create k3d cluster
+        run: |
+          k3d cluster create transiva-test \
+            --agents 2 \
+            --port "8080:80@loadbalancer" \
+            --wait \
+            --timeout 5m
+
+      - name: Verify cluster
+        run: |
+          export KUBECONFIG="$(k3d kubeconfig write transiva-test)"
+          kubectl cluster-info
+          kubectl get nodes
+          kubectl wait --for=condition=ready node --all --timeout=300s
+
+      - name: Create namespace
+        run: |
+          export KUBECONFIG="$(k3d kubeconfig write transiva-test)"
+          kubectl create namespace transiva
+
+      - name: Create secrets
+        run: |
+          export KUBECONFIG="$(k3d kubeconfig write transiva-test)"
+          kubectl create secret generic vsphere-credentials \
+            --from-literal=url="https://vcenter.example.com/sdk" \
+            --from-literal=username="administrator@vsphere.local" \
+            --from-literal=password="test-password" \
+            --from-literal=insecure="1" \
+            -n transiva
+
+      - name: Deploy HyperSDK
+        run: |
+          export KUBECONFIG="$(k3d kubeconfig write transiva-test)"
+          kubectl apply -k deployments/kubernetes/overlays/development
+          kubectl get all -n transiva
+
+      - name: Wait for deployment
+        run: |
+          export KUBECONFIG="$(k3d kubeconfig write transiva-test)"
+          kubectl wait --for=condition=ready pod \
+            -l app=hypervisord \
+            -n transiva \
+            --timeout=300s
+
+      - name: Check deployment status
+        run: |
+          export KUBECONFIG="$(k3d kubeconfig write transiva-test)"
+          echo "=== Pods ==="
+          kubectl get pods -n transiva
+          echo ""
+          echo "=== Services ==="
+          kubectl get svc -n transiva
+          echo ""
+          echo "=== PVCs ==="
+          kubectl get pvc -n transiva
+          echo ""
+          echo "=== Events ==="
+          kubectl get events -n transiva --sort-by='.lastTimestamp' | tail -20
+
+      - name: Test API endpoints
+        run: |
+          export KUBECONFIG="$(k3d kubeconfig write transiva-test)"
+
+          # Get LoadBalancer IP
+          LB_IP=$(kubectl get svc hypervisord-external -n transiva \
+            -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+
+          echo "LoadBalancer IP: $LB_IP"
+
+          # Test health endpoint
+          echo "Testing /health endpoint..."
+          curl -f -s http://$LB_IP/health | jq .
+
+          # Test status endpoint
+          echo "Testing /status endpoint..."
+          curl -f -s http://$LB_IP/status | jq .
+
+          # Test capabilities endpoint
+          echo "Testing /capabilities endpoint..."
+          curl -f -s http://$LB_IP/capabilities | jq .
+
+      - name: Run test suite
+        run: |
+          export KUBECONFIG="$(k3d kubeconfig write transiva-test)"
+          chmod +x deployments/scripts/test-k3d.sh
+          ./deployments/scripts/test-k3d.sh --name transiva-test --output test-results.md
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k3d-test-results
+          path: test-results.md
+          retention-days: 30
+
+      - name: Check pod logs on failure
+        if: failure()
+        run: |
+          export KUBECONFIG="$(k3d kubeconfig write transiva-test)"
+          echo "=== Pod Logs ==="
+          kubectl logs -n transiva -l app=hypervisord --tail=100
+          echo ""
+          echo "=== Pod Description ==="
+          kubectl describe pod -n transiva -l app=hypervisord
+
+      - name: Cleanup
+        if: always()
+        run: |
+          k3d cluster delete transiva-test
+
+  k3d-multi-env-test:
+    name: Test Multiple Environments
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        environment: [development, staging, production]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install k3d
+        run: |
+          curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+
+      - name: Test ${{ matrix.environment }} environment
+        run: |
+          # Create cluster
+          k3d cluster create test-${{ matrix.environment }} \
+            --agents 2 \
+            --port "8080:80@loadbalancer" \
+            --wait
+
+          # Deploy
+          export KUBECONFIG="$(k3d kubeconfig write test-${{ matrix.environment }})"
+          kubectl create namespace transiva
+
+          kubectl create secret generic vsphere-credentials \
+            --from-literal=url="https://vcenter.example.com/sdk" \
+            --from-literal=username="test" \
+            --from-literal=password="test" \
+            -n transiva
+
+          kubectl apply -k deployments/kubernetes/overlays/${{ matrix.environment }}
+
+          # Wait and verify
+          kubectl wait --for=condition=ready pod \
+            -l app=hypervisord \
+            -n transiva \
+            --timeout=300s
+
+          kubectl get all -n transiva
+
+          # Cleanup
+          k3d cluster delete test-${{ matrix.environment }}
+
+  k3d-load-test:
+    name: Load Test on k3d
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+          go install github.com/rakyll/hey@latest
+
+      - name: Create and deploy
+        run: |
+          k3d cluster create loadtest --agents 3 --wait
+          export KUBECONFIG="$(k3d kubeconfig write loadtest)"
+
+          kubectl create namespace transiva
+          kubectl create secret generic vsphere-credentials \
+            --from-literal=url="https://vcenter.example.com/sdk" \
+            --from-literal=username="test" \
+            --from-literal=password="test" \
+            -n transiva
+
+          kubectl apply -k deployments/kubernetes/overlays/development
+          kubectl wait --for=condition=ready pod -l app=hypervisord -n transiva --timeout=300s
+
+      - name: Run load test
+        run: |
+          export KUBECONFIG="$(k3d kubeconfig write loadtest)"
+          LB_IP=$(kubectl get svc hypervisord-external -n transiva \
+            -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+
+          echo "Running load test against http://$LB_IP/health"
+          ~/go/bin/hey -z 60s -c 50 -q 10 http://$LB_IP/health
+
+          echo "Running load test against http://$LB_IP/status"
+          ~/go/bin/hey -z 60s -c 50 -q 10 http://$LB_IP/status
+
+      - name: Check resource usage
+        run: |
+          export KUBECONFIG="$(k3d kubeconfig write loadtest)"
+          kubectl top nodes
+          kubectl top pods -n transiva
+
+      - name: Cleanup
+        if: always()
+        run: |
+          k3d cluster delete loadtest

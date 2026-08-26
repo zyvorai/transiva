@@ -1,0 +1,113 @@
+suite: test service
+templates:
+  - service.yaml
+tests:
+  - it: should create a ClusterIP service by default
+    asserts:
+      - isKind:
+          of: Service
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-transiva
+      - equal:
+          path: spec.type
+          value: ClusterIP
+
+  - it: should expose correct ports
+    asserts:
+      - contains:
+          path: spec.ports
+          content:
+            port: 8080
+            targetPort: http
+            protocol: TCP
+            name: http
+      - contains:
+          path: spec.ports
+          content:
+            port: 8081
+            targetPort: metrics
+            protocol: TCP
+            name: metrics
+
+  - it: should create LoadBalancer service when specified
+    set:
+      service.type: LoadBalancer
+    asserts:
+      - equal:
+          path: spec.type
+          value: LoadBalancer
+
+  - it: should create NodePort service with nodePort
+    set:
+      service:
+        type: NodePort
+        nodePort: 30080
+    asserts:
+      - equal:
+          path: spec.type
+          value: NodePort
+      - contains:
+          path: spec.ports
+          content:
+            port: 8080
+            targetPort: http
+            protocol: TCP
+            name: http
+            nodePort: 30080
+
+  - it: should set loadBalancerIP when specified
+    set:
+      service:
+        type: LoadBalancer
+        loadBalancerIP: "203.0.113.10"
+    asserts:
+      - equal:
+          path: spec.loadBalancerIP
+          value: "203.0.113.10"
+
+  - it: should set loadBalancerSourceRanges when specified
+    set:
+      service:
+        type: LoadBalancer
+        loadBalancerSourceRanges:
+          - "10.0.0.0/8"
+          - "172.16.0.0/12"
+    asserts:
+      - contains:
+          path: spec.loadBalancerSourceRanges
+          content: "10.0.0.0/8"
+      - contains:
+          path: spec.loadBalancerSourceRanges
+          content: "172.16.0.0/12"
+
+  - it: should add custom annotations
+    set:
+      service:
+        annotations:
+          service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+          service.beta.kubernetes.io/aws-load-balancer-internal: "true"
+    asserts:
+      - equal:
+          path: metadata.annotations["service.beta.kubernetes.io/aws-load-balancer-type"]
+          value: "nlb"
+      - equal:
+          path: metadata.annotations["service.beta.kubernetes.io/aws-load-balancer-internal"]
+          value: "true"
+
+  - it: should have correct selector labels
+    asserts:
+      - equal:
+          path: spec.selector["app.kubernetes.io/name"]
+          value: transiva
+      - equal:
+          path: spec.selector["app.kubernetes.io/instance"]
+          value: RELEASE-NAME
+
+  - it: should set sessionAffinity when specified
+    set:
+      service.sessionAffinity: ClientIP
+    asserts:
+      - equal:
+          path: spec.sessionAffinity
+          value: ClientIP

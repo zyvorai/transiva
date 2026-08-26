@@ -1,0 +1,56 @@
+# k3d Local Development Values
+# For k3d (k3s in Docker) local testing and development
+
+# Single replica for local development
+replicaCount: 1
+
+# Use local-path storage class (k3d default)
+persistence:
+  data:
+    storageClass: "local-path"
+    size: 5Gi
+  exports:
+    storageClass: "local-path"
+    size: 20Gi
+
+# LoadBalancer service (k3d has built-in load balancer)
+externalService:
+  enabled: true
+  type: LoadBalancer
+  port: 8080
+
+# Minimal resources for local development
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "100m"
+  limits:
+    memory: "1Gi"
+    cpu: "500m"
+
+# Debug logging for development
+config:
+  logLevel: debug
+  downloadWorkers: 2
+
+# Disable autoscaling for local development
+autoscaling:
+  enabled: false
+
+# Disable network policy for easier local access
+networkPolicy:
+  enabled: false
+
+# vSphere credentials for testing
+credentials:
+  vsphere:
+    enabled: true
+    url: "https://vcenter.example.com/sdk"
+    username: "admin"
+    password: "change-me"
+    insecure: "1"
+
+# Optional: Enable monitoring if Prometheus is available
+monitoring:
+  serviceMonitor:
+    enabled: false

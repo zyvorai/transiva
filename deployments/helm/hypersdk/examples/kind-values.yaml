@@ -1,0 +1,63 @@
+# KIND (Kubernetes in Docker) Values
+# For local KIND cluster testing and CI/CD
+
+# Single replica (can scale for testing)
+replicaCount: 1
+
+# Use standard storage class (KIND default)
+persistence:
+  data:
+    storageClass: "standard"
+    size: 5Gi
+  exports:
+    storageClass: "standard"
+    size: 20Gi
+
+# NodePort service (KIND doesn't have built-in LoadBalancer without MetalLB)
+externalService:
+  enabled: true
+  type: NodePort
+  port: 8080
+  nodePort: 30080
+
+# Minimal resources for CI/CD environments
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "100m"
+  limits:
+    memory: "1Gi"
+    cpu: "1000m"
+
+# Info level logging
+config:
+  logLevel: info
+  downloadWorkers: 2
+
+# Disable autoscaling
+autoscaling:
+  enabled: false
+
+# Disable network policy for easier testing
+networkPolicy:
+  enabled: false
+
+# Test credentials
+credentials:
+  vsphere:
+    enabled: false
+    # Set to true and provide credentials for integration tests
+
+# Disable monitoring by default
+monitoring:
+  serviceMonitor:
+    enabled: false
+
+# Tolerations for KIND control-plane nodes
+tolerations:
+  - key: node-role.kubernetes.io/control-plane
+    operator: Exists
+    effect: NoSchedule
+  - key: node-role.kubernetes.io/master
+    operator: Exists
+    effect: NoSchedule

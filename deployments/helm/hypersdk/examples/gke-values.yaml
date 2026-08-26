@@ -1,0 +1,70 @@
+# GKE Production Values
+# For Google Kubernetes Engine deployment
+
+# Use Workload Identity
+serviceAccount:
+  create: true
+  annotations:
+    iam.gke.io/gcp-service-account: transiva@PROJECT_ID.iam.gserviceaccount.com
+
+# Production replicas (requires PostgreSQL)
+replicaCount: 3
+
+# Use GKE storage classes
+persistence:
+  data:
+    storageClass: "standard-rwo"  # GCE Persistent Disk
+    size: 20Gi
+  exports:
+    storageClass: "standard-rwo"
+    size: 1Ti
+
+# GKE LoadBalancer
+externalService:
+  enabled: true
+  type: LoadBalancer
+  annotations:
+    # Use internal LoadBalancer
+    cloud.google.com/load-balancer-type: "Internal"
+
+# Production resources
+resources:
+  requests:
+    memory: "1Gi"
+    cpu: "500m"
+  limits:
+    memory: "4Gi"
+    cpu: "2000m"
+
+# Enable autoscaling
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+# Enable monitoring (requires Prometheus Operator)
+monitoring:
+  serviceMonitor:
+    enabled: true
+    labels:
+      release: prometheus
+
+# Enable NetworkPolicy
+networkPolicy:
+  enabled: true
+
+# Spread across zones
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: ScheduleAnyway
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: transiva
+
+# vSphere credentials (use existing secret)
+credentials:
+  vsphere:
+    enabled: true
+    existingSecret: "vsphere-credentials"

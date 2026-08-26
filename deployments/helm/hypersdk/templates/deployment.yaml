@@ -1,0 +1,158 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "transiva.fullname" . }}
+  labels:
+    {{- include "transiva.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  strategy:
+    type: {{ if gt (.Values.replicaCount | int) 1 }}RollingUpdate{{ else }}Recreate{{ end }}
+  selector:
+    matchLabels:
+      {{- include "transiva.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "transiva.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "transiva.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if .Values.priorityClassName }}
+      priorityClassName: {{ .Values.priorityClassName }}
+      {{- end }}
+      {{- if .Values.initContainers }}
+      initContainers:
+        {{- toYaml .Values.initContainers | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: metrics
+              containerPort: 8081
+              protocol: TCP
+          env:
+            - name: LOG_LEVEL
+              value: {{ .Values.config.logLevel | quote }}
+            - name: LOG_FORMAT
+              value: {{ .Values.config.logFormat | quote }}
+            - name: DAEMON_ADDR
+              value: {{ .Values.config.daemonAddr | quote }}
+            - name: DATABASE_PATH
+              value: {{ .Values.config.databasePath | quote }}
+            - name: DOWNLOAD_WORKERS
+              value: {{ .Values.config.downloadWorkers | quote }}
+            - name: CHUNK_SIZE
+              value: {{ .Values.config.chunkSize | quote }}
+            - name: RETRY_ATTEMPTS
+              value: {{ .Values.config.retryAttempts | quote }}
+            {{- if .Values.credentials.vsphere.enabled }}
+            - name: GOVC_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ if .Values.credentials.vsphere.existingSecret }}{{ .Values.credentials.vsphere.existingSecret }}{{ else }}{{ include "transiva.fullname" . }}-vsphere{{ end }}
+                  key: url
+            - name: GOVC_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ if .Values.credentials.vsphere.existingSecret }}{{ .Values.credentials.vsphere.existingSecret }}{{ else }}{{ include "transiva.fullname" . }}-vsphere{{ end }}
+                  key: username
+            - name: GOVC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ if .Values.credentials.vsphere.existingSecret }}{{ .Values.credentials.vsphere.existingSecret }}{{ else }}{{ include "transiva.fullname" . }}-vsphere{{ end }}
+                  key: password
+            - name: GOVC_INSECURE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ if .Values.credentials.vsphere.existingSecret }}{{ .Values.credentials.vsphere.existingSecret }}{{ else }}{{ include "transiva.fullname" . }}-vsphere{{ end }}
+                  key: insecure
+            {{- end }}
+            {{- if .Values.credentials.aws.enabled }}
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ if .Values.credentials.aws.existingSecret }}{{ .Values.credentials.aws.existingSecret }}{{ else }}{{ include "transiva.fullname" . }}-aws{{ end }}
+                  key: accessKeyId
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ if .Values.credentials.aws.existingSecret }}{{ .Values.credentials.aws.existingSecret }}{{ else }}{{ include "transiva.fullname" . }}-aws{{ end }}
+                  key: secretAccessKey
+            - name: AWS_REGION
+              valueFrom:
+                secretKeyRef:
+                  name: {{ if .Values.credentials.aws.existingSecret }}{{ .Values.credentials.aws.existingSecret }}{{ else }}{{ include "transiva.fullname" . }}-aws{{ end }}
+                  key: region
+            {{- end }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          startupProbe:
+            {{- toYaml .Values.startupProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: exports
+              mountPath: /exports
+            - name: config
+              mountPath: /config
+              readOnly: true
+            {{- with .Values.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "transiva.fullname" . }}-data
+        - name: exports
+          persistentVolumeClaim:
+            claimName: {{ if .Values.persistence.exports.existingClaim }}{{ .Values.persistence.exports.existingClaim }}{{ else }}{{ include "transiva.fullname" . }}-exports{{ end }}
+        - name: config
+          configMap:
+            name: {{ include "transiva.fullname" . }}
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

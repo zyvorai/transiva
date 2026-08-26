@@ -1,0 +1,793 @@
+// SPDX-License-Identifier: Apache-2.0
+
+package main
+
+import (
+	"context"
+	"fmt"
+	"strings"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/zyvorai/transiva/logger"
+)
+
+// Cloud storage provider types
+type CloudProvider string
+
+const (
+	CloudProviderNone  CloudProvider = "none"
+	CloudProviderS3    CloudProvider = "s3"
+	CloudProviderAzure CloudProvider = "azure"
+	CloudProviderGCS   CloudProvider = "gcs"
+	CloudProviderSFTP  CloudProvider = "sftp"
+)
+
+// Cloud configuration for TUI
+type cloudConfig struct {
+	provider   CloudProvider
+	bucket     string // S3 bucket, Azure container, GCS bucket
+	region     string // AWS region
+	endpoint   string // Custom endpoint
+	accessKey  string // AWS access key, Azure account name, SFTP username
+	secretKey  string // AWS secret key, Azure account key, SFTP password
+	host       string // SFTP host
+	port       string // SFTP port
+	prefix     string // Path prefix
+	privateKey string // SFTP private key path
+}
+
+// cloudSelectionModel handles cloud provider selection
+type cloudSelectionModel struct {
+	providers     []cloudProviderOption
+	cursor        int
+	selected      CloudProvider
+	uploadEnabled bool
+	streamUpload  bool
+	keepLocal     bool
+
+	// Parent model reference
+	parent *tuiModel
+}
+
+type cloudProviderOption struct {
+	provider    CloudProvider
+	name        string
+	description string
+	icon        string
+	available   bool
+}
+
+// Available cloud providers
+var cloudProviders = []cloudProviderOption{
+	{
+		provider:    CloudProviderNone,
+		name:        "Skip Cloud Upload",
+		description: "Export to local storage only",
+		icon:        "💾",
+		available:   true,
+	},
+	{
+		provider:    CloudProviderS3,
+		name:        "Amazon S3",
+		description: "AWS S3 or S3-compatible storage",
+		icon:        "☁️",
+		available:   true,
+	},
+	{
+		provider:    CloudProviderAzure,
+		name:        "Azure Blob Storage",
+		description: "Microsoft Azure Blob Storage",
+		icon:        "🔷",
+		available:   true,
+	},
+	{
+		provider:    CloudProviderGCS,
+		name:        "Google Cloud Storage",
+		description: "Google Cloud Platform Storage",
+		icon:        "🌩️",
+		available:   true,
+	},
+	{
+		provider:    CloudProviderSFTP,
+		name:        "SFTP Server",
+		description: "Secure File Transfer Protocol",
+		icon:        "🔐",
+		available:   true,
+	},
+}
+
+// Cloud credentials input model
+type cloudCredentialsModel struct {
+	provider CloudProvider
+	config   *cloudConfig
+	phase    string // "bucket", "region", "accessKey", "secretKey", "host", "port", "prefix"
+	cursor   int
+	input    string
+	message  string
+
+	parent *tuiModel
+}
+
+// Cloud upload progress model
+type cloudUploadModel struct {
+	provider      CloudProvider
+	currentFile   string
+	currentBytes  int64
+	totalBytes    int64
+	filesUploaded int
+	totalFiles    int
+	speed         float64 // MB/s
+	err           error
+	done          bool
+
+	parent *tuiModel
+}
+
+// Cloud browser model for browsing and downloading exports
+type cloudBrowserModel struct {
+	provider CloudProvider
+	files    []CloudFile
+	cursor   int
+	loading  bool
+	message  string
+	err      error
+
+	parent *tuiModel
+}
+
+// Messages
+type cloudProviderSelectedMsg struct {
+	provider CloudProvider
+}
+
+type cloudConfigCompleteMsg struct {
+	config *cloudConfig
+}
+
+type cloudUploadProgressMsg struct {
+	file          string
+	bytes         int64
+	totalBytes    int64
+	filesUploaded int
+	totalFiles    int
+	speed         float64
+}
+
+type cloudUploadDoneMsg struct {
+	err error
+}
+
+type cloudFilesLoadedMsg struct {
+	files []CloudFile
+	err   error
+}
+
+// Initialize cloud selection model
+func newCloudSelectionModel(parent *tuiModel) cloudSelectionModel {
+	return cloudSelectionModel{
+		providers:     cloudProviders,
+		cursor:        0,
+		selected:      CloudProviderNone,
+		uploadEnabled: true,
+		streamUpload:  false,
+		keepLocal:     true,
+		parent:        parent,
+	}
+}
+
+func (m cloudSelectionModel) Init() tea.Cmd {
+	return nil
+}
+
+func (m cloudSelectionModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "ctrl+c", "q":
+			return m, tea.Quit
+		case "escape":
+			// Go back to main selection
+			m.parent.phase = "select"
+			return m.parent, nil
+		case "up", "k":
+			if m.cursor > 0 {
+				m.cursor--
+			}
+		case "down", "j":
+			if m.cursor < len(m.providers)-1 {
+				m.cursor++
+			}
+		case "enter", " ":
+			m.selected = m.providers[m.cursor].provider
+
+			if m.selected == CloudProviderNone {
+				// No cloud upload, proceed to export
+				m.parent.phase = "confirm"
+				return m.parent, nil
+			}
+
+			// Go to credentials input
+			credsModel := newCloudCredentialsModel(m.selected, m.parent)
+			return credsModel, nil
+
+		case "s":
+			// Toggle stream upload
+			m.streamUpload = !m.streamUpload
+		case "l":
+			// Toggle keep local
+			m.keepLocal = !m.keepLocal
+		}
+	}
+
+	return m, nil
+}
+
+func (m cloudSelectionModel) View() string {
+	var b strings.Builder
+
+	b.WriteString(titleStyleTUI.Render("☁️  Cloud Storage Provider"))
+	b.WriteString("\n\n")
+
+	b.WriteString(infoStyleTUI.Render("Select a cloud storage provider for backup:"))
+	b.WriteString("\n\n")
+
+	// Provider list
+	for i, provider := range m.providers {
+		cursor := "  "
+		if i == m.cursor {
+			cursor = "▶ "
+		}
+
+		style := unselectedStyleTUI
+		if i == m.cursor {
+			style = selectedStyleTUI
+		}
+
+		line := fmt.Sprintf("%s%s %s",
+			cursor,
+			provider.icon,
+			provider.name)
+
+		if i == m.cursor {
+			line = style.Bold(true).Underline(true).Render(line)
+		} else {
+			line = style.Render(line)
+		}
+
+		b.WriteString(line)
+		b.WriteString("\n")
+
+		// Description
+		desc := "    " + provider.description
+		if !provider.available {
+			desc += " (Not configured)"
+		}
+		b.WriteString(helpStyleTUI.Render(desc))
+		b.WriteString("\n\n")
+	}
+
+	// Options
+	b.WriteString("\n")
+	b.WriteString(titleStyleTUI.Render("⚙️  Upload Options"))
+	b.WriteString("\n")
+
+	streamStatus := "❌"
+	if m.streamUpload {
+		streamStatus = "✅"
+	}
+	b.WriteString(helpStyleTUI.Render(fmt.Sprintf("  s: Stream upload (no local copy): %s", streamStatus)))
+	b.WriteString("\n")
+
+	keepStatus := "❌"
+	if m.keepLocal {
+		keepStatus = "✅"
+	}
+	b.WriteString(helpStyleTUI.Render(fmt.Sprintf("  l: Keep local copy: %s", keepStatus)))
+	b.WriteString("\n\n")
+
+	// Help
+	b.WriteString(helpStyleTUI.Render("↑/↓: Navigate | Enter: Select | Esc: Back | q: Quit"))
+
+	return b.String()
+}
+
+// Initialize cloud credentials model
+func newCloudCredentialsModel(provider CloudProvider, parent *tuiModel) cloudCredentialsModel {
+	return cloudCredentialsModel{
+		provider: provider,
+		config: &cloudConfig{
+			provider: provider,
+		},
+		phase:  "bucket",
+		cursor: 0,
+		input:  "",
+		parent: parent,
+	}
+}
+
+func (m cloudCredentialsModel) Init() tea.Cmd {
+	return nil
+}
+
+func (m cloudCredentialsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "ctrl+c", "q":
+			return m, tea.Quit
+		case "escape":
+			// Go back to cloud provider selection
+			cloudModel := newCloudSelectionModel(m.parent)
+			return cloudModel, nil
+
+		case "enter":
+			// Save current input and move to next phase
+			switch m.phase {
+			case "bucket":
+				m.config.bucket = m.input
+				switch m.provider {
+				case CloudProviderS3:
+					m.phase = "region"
+				case CloudProviderAzure:
+					m.phase = "accessKey"
+				case CloudProviderGCS:
+					m.phase = "prefix"
+				case CloudProviderSFTP:
+					m.phase = "host"
+				}
+				m.input = ""
+
+			case "region":
+				m.config.region = m.input
+				m.phase = "accessKey"
+				m.input = ""
+
+			case "accessKey":
+				m.config.accessKey = m.input
+				if m.provider == CloudProviderSFTP {
+					m.phase = "password"
+				} else {
+					m.phase = "secretKey"
+				}
+				m.input = ""
+
+			case "secretKey", "password":
+				m.config.secretKey = m.input
+				m.phase = "prefix"
+				m.input = ""
+
+			case "host":
+				m.config.host = m.input
+				m.phase = "port"
+				m.input = "22"
+
+			case "port":
+				m.config.port = m.input
+				m.phase = "accessKey"
+				m.input = ""
+
+			case "prefix":
+				m.config.prefix = m.input
+				// Configuration complete
+				m.parent.phase = "confirm"
+				// Store cloud config in parent
+				return m.parent, func() tea.Msg {
+					return cloudConfigCompleteMsg{config: m.config}
+				}
+			}
+
+		case "backspace", "delete":
+			if len(m.input) > 0 {
+				m.input = m.input[:len(m.input)-1]
+			}
+
+		default:
+			// Add character to input
+			if len(msg.String()) == 1 {
+				m.input += msg.String()
+			}
+		}
+	}
+
+	return m, nil
+}
+
+func (m cloudCredentialsModel) View() string {
+	var b strings.Builder
+
+	providerName := string(m.provider)
+	switch m.provider {
+	case CloudProviderS3:
+		providerName = "Amazon S3"
+	case CloudProviderAzure:
+		providerName = "Azure Blob Storage"
+	case CloudProviderGCS:
+		providerName = "Google Cloud Storage"
+	case CloudProviderSFTP:
+		providerName = "SFTP Server"
+	}
+
+	b.WriteString(titleStyleTUI.Render(fmt.Sprintf("🔧 Configure %s", providerName)))
+	b.WriteString("\n\n")
+
+	// Show current phase
+	var prompt string
+	var placeholder string
+	var helpText string
+
+	switch m.phase {
+	case "bucket":
+		switch m.provider {
+		case CloudProviderS3:
+			prompt = "S3 Bucket Name:"
+			placeholder = "my-backup-bucket"
+			helpText = "Enter the S3 bucket name (without s3:// prefix)"
+		case CloudProviderAzure:
+			prompt = "Container Name:"
+			placeholder = "vm-backups"
+			helpText = "Enter the Azure container name"
+		case CloudProviderGCS:
+			prompt = "GCS Bucket Name:"
+			placeholder = "my-gcs-bucket"
+			helpText = "Enter the Google Cloud Storage bucket name"
+		}
+
+	case "region":
+		prompt = "AWS Region:"
+		placeholder = "us-east-1"
+		helpText = "Enter the AWS region (e.g., us-east-1, eu-west-1)"
+
+	case "accessKey":
+		switch m.provider {
+		case CloudProviderS3:
+			prompt = "AWS Access Key ID:"
+			placeholder = "AKIAIOSFODNN7EXAMPLE"
+			helpText = "Enter your AWS access key ID"
+		case CloudProviderAzure:
+			prompt = "Storage Account Name:"
+			placeholder = "mystorageaccount"
+			helpText = "Enter your Azure storage account name"
+		case CloudProviderSFTP:
+			prompt = "Username:"
+			placeholder = "admin"
+			helpText = "Enter the SFTP username"
+		}
+
+	case "secretKey":
+		switch m.provider {
+		case CloudProviderS3:
+			prompt = "AWS Secret Access Key:"
+			placeholder = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+			helpText = "Enter your AWS secret access key (will be hidden)"
+		case CloudProviderAzure:
+			prompt = "Storage Account Key:"
+			placeholder = "••••••••"
+			helpText = "Enter your Azure storage account key (will be hidden)"
+		}
+
+	case "password":
+		prompt = "Password:"
+		placeholder = "••••••••"
+		helpText = "Enter the SFTP password (or leave empty for key-based auth)"
+
+	case "host":
+		prompt = "SFTP Host:"
+		placeholder = "sftp.example.com"
+		helpText = "Enter the SFTP server hostname or IP"
+
+	case "port":
+		prompt = "SFTP Port:"
+		placeholder = "22"
+		helpText = "Enter the SFTP port (default: 22)"
+
+	case "prefix":
+		prompt = "Path Prefix:"
+		placeholder = "vm-exports/prod"
+		helpText = "Enter the path prefix for uploads (optional)"
+	}
+
+	b.WriteString(infoStyleTUI.Render(prompt))
+	b.WriteString("\n")
+	b.WriteString(helpStyleTUI.Render(helpText))
+	b.WriteString("\n\n")
+
+	// Input field
+	displayInput := m.input
+	if m.phase == "secretKey" || m.phase == "password" {
+		displayInput = strings.Repeat("•", len(m.input))
+	}
+	b.WriteString(selectedStyleTUI.Render(fmt.Sprintf("%s█", displayInput)))
+	b.WriteString("\n")
+
+	if m.input == "" && placeholder != "" {
+		b.WriteString(helpStyleTUI.Render(fmt.Sprintf("Example: %s", placeholder)))
+		b.WriteString("\n")
+	}
+
+	b.WriteString("\n")
+
+	// Progress indicator
+	steps := getConfigSteps(m.provider)
+	currentStep := getConfigStep(m.provider, m.phase)
+	b.WriteString(infoStyleTUI.Render(fmt.Sprintf("Step %d of %d", currentStep, steps)))
+	b.WriteString("\n\n")
+
+	// Show what we've configured so far
+	if m.config.bucket != "" {
+		b.WriteString(successStyleTUI.Render("✓ "))
+		b.WriteString(helpStyleTUI.Render(fmt.Sprintf("Bucket: %s", m.config.bucket)))
+		b.WriteString("\n")
+	}
+	if m.config.region != "" {
+		b.WriteString(successStyleTUI.Render("✓ "))
+		b.WriteString(helpStyleTUI.Render(fmt.Sprintf("Region: %s", m.config.region)))
+		b.WriteString("\n")
+	}
+	if m.config.host != "" {
+		b.WriteString(successStyleTUI.Render("✓ "))
+		b.WriteString(helpStyleTUI.Render(fmt.Sprintf("Host: %s", m.config.host)))
+		b.WriteString("\n")
+	}
+	if m.config.accessKey != "" {
+		b.WriteString(successStyleTUI.Render("✓ "))
+		label := "Access Key"
+		if m.provider == CloudProviderSFTP {
+			label = "Username"
+		}
+		b.WriteString(helpStyleTUI.Render(fmt.Sprintf("%s: %s", label, m.config.accessKey)))
+		b.WriteString("\n")
+	}
+
+	b.WriteString("\n")
+	b.WriteString(helpStyleTUI.Render("Enter: Continue | Backspace: Delete | Esc: Back | q: Quit"))
+
+	return b.String()
+}
+
+// Helper functions
+func getConfigSteps(provider CloudProvider) int {
+	switch provider {
+	case CloudProviderS3:
+		return 5 // bucket, region, accessKey, secretKey, prefix
+	case CloudProviderAzure:
+		return 4 // bucket, accessKey, secretKey, prefix
+	case CloudProviderGCS:
+		return 2 // bucket, prefix
+	case CloudProviderSFTP:
+		return 5 // host, port, username, password, prefix
+	default:
+		return 1
+	}
+}
+
+func getConfigStep(provider CloudProvider, phase string) int {
+	steps := map[string]int{
+		"bucket":    1,
+		"region":    2,
+		"host":      1,
+		"port":      2,
+		"accessKey": 3,
+		"secretKey": 4,
+		"password":  4,
+		"prefix":    5,
+	}
+
+	if provider == CloudProviderAzure {
+		if phase == "accessKey" {
+			return 2
+		}
+		if phase == "secretKey" {
+			return 3
+		}
+		if phase == "prefix" {
+			return 4
+		}
+	}
+
+	if provider == CloudProviderGCS {
+		if phase == "bucket" {
+			return 1
+		}
+		if phase == "prefix" {
+			return 2
+		}
+	}
+
+	if step, ok := steps[phase]; ok {
+		return step
+	}
+	return 1
+}
+
+
+// Cloud browser for downloading/browsing exports
+func newCloudBrowserModel(provider CloudProvider, parent *tuiModel) cloudBrowserModel {
+	return cloudBrowserModel{
+		provider: provider,
+		files:    []CloudFile{},
+		cursor:   0,
+		loading:  true,
+		parent:   parent,
+	}
+}
+
+func (m cloudBrowserModel) Init() tea.Cmd {
+	return m.loadCloudFiles
+}
+
+func (m cloudBrowserModel) loadCloudFiles() tea.Msg {
+	// TODO: Load files from cloud storage
+	// This would call the CloudStorage.List() method
+	return cloudFilesLoadedMsg{
+		files: []CloudFile{},
+		err:   nil,
+	}
+}
+
+func (m cloudBrowserModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case cloudFilesLoadedMsg:
+		m.loading = false
+		if msg.err != nil {
+			m.err = msg.err
+			return m, nil
+		}
+		m.files = msg.files
+		return m, nil
+
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "ctrl+c", "q":
+			return m, tea.Quit
+		case "escape":
+			m.parent.phase = "select"
+			return m.parent, nil
+		case "up", "k":
+			if m.cursor > 0 {
+				m.cursor--
+			}
+		case "down", "j":
+			if m.cursor < len(m.files)-1 {
+				m.cursor++
+			}
+		case "enter", "d":
+			// Download selected file
+			if m.cursor < len(m.files) {
+				// TODO: Trigger download
+				m.message = fmt.Sprintf("Downloading %s...", m.files[m.cursor].Path)
+			}
+		case "del", "x":
+			// Delete selected file
+			if m.cursor < len(m.files) {
+				m.message = fmt.Sprintf("Delete %s? (y/n)", m.files[m.cursor].Path)
+			}
+		case "r":
+			// Refresh file list
+			m.loading = true
+			return m, m.loadCloudFiles
+		}
+	}
+
+	return m, nil
+}
+
+func (m cloudBrowserModel) View() string {
+	var b strings.Builder
+
+	providerName := string(m.provider)
+	icon := "☁️"
+	switch m.provider {
+	case CloudProviderS3:
+		providerName = "Amazon S3"
+		icon = "☁️"
+	case CloudProviderAzure:
+		providerName = "Azure"
+		icon = "🔷"
+	case CloudProviderGCS:
+		providerName = "GCS"
+		icon = "🌩️"
+	case CloudProviderSFTP:
+		providerName = "SFTP"
+		icon = "🔐"
+	}
+
+	b.WriteString(titleStyleTUI.Render(fmt.Sprintf("%s Cloud Storage Browser - %s", icon, providerName)))
+	b.WriteString("\n\n")
+
+	if m.loading {
+		b.WriteString(infoStyleTUI.Render("Loading files..."))
+		return b.String()
+	}
+
+	if m.err != nil {
+		b.WriteString(errorStyleTUI.Render(fmt.Sprintf("Error: %v", m.err)))
+		b.WriteString("\n\n")
+		b.WriteString(helpStyleTUI.Render("r: Retry | Esc: Back"))
+		return b.String()
+	}
+
+	if len(m.files) == 0 {
+		b.WriteString(infoStyleTUI.Render("No files found in cloud storage"))
+		b.WriteString("\n\n")
+		b.WriteString(helpStyleTUI.Render("r: Refresh | Esc: Back"))
+		return b.String()
+	}
+
+	// File list
+	b.WriteString(infoStyleTUI.Render(fmt.Sprintf("Found %d files:", len(m.files))))
+	b.WriteString("\n\n")
+
+	for i, file := range m.files {
+		cursor := "  "
+		if i == m.cursor {
+			cursor = "▶ "
+		}
+
+		style := unselectedStyleTUI
+		if i == m.cursor {
+			style = selectedStyleTUI
+		}
+
+		line := fmt.Sprintf("%s📄 %-50s %10s %s",
+			cursor,
+			truncateString(file.Path, 50),
+			formatBytesCompact(file.Size),
+			file.LastModified.Format("2006-01-02 15:04"))
+
+		if i == m.cursor {
+			line = style.Bold(true).Underline(true).Render(line)
+		} else {
+			line = style.Render(line)
+		}
+
+		b.WriteString(line)
+		b.WriteString("\n")
+	}
+
+	b.WriteString("\n")
+	if m.message != "" {
+		b.WriteString(infoStyleTUI.Render(m.message))
+		b.WriteString("\n")
+	}
+
+	b.WriteString(helpStyleTUI.Render("↑/↓: Navigate | Enter/d: Download | x: Delete | r: Refresh | Esc: Back | q: Quit"))
+
+	return b.String()
+}
+
+// Integration helper: Update tuiModel to handle cloud phases
+func (m *tuiModel) handleCloudPhase() (tea.Model, tea.Cmd) {
+	// Check if user wants to upload to cloud
+	cloudModel := newCloudSelectionModel(m)
+	return cloudModel, nil
+}
+
+// Integration helper: Start cloud upload after export
+func (m *tuiModel) startCloudUpload(ctx context.Context, exportDir string, config *cloudConfig, log logger.Logger) tea.Cmd {
+	return func() tea.Msg {
+		// Build cloud storage URL
+		var storageURL string
+		switch config.provider {
+		case CloudProviderS3:
+			storageURL = fmt.Sprintf("s3://%s/%s", config.bucket, config.prefix)
+		case CloudProviderAzure:
+			storageURL = fmt.Sprintf("azure://%s/%s", config.bucket, config.prefix)
+		case CloudProviderGCS:
+			storageURL = fmt.Sprintf("gcs://%s/%s", config.bucket, config.prefix)
+		case CloudProviderSFTP:
+			storageURL = fmt.Sprintf("sftp://%s@%s:%s/%s",
+				config.accessKey, config.host, config.port, config.prefix)
+		}
+
+		// Create cloud storage client
+		storage, err := NewCloudStorage(storageURL, log)
+		if err != nil {
+			return cloudUploadDoneMsg{err: err}
+		}
+		defer storage.Close()
+
+		// Upload directory
+		err = UploadDirectory(ctx, storage, exportDir, config.prefix, log)
+		return cloudUploadDoneMsg{err: err}
+	}
+}

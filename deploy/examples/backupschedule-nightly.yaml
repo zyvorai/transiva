@@ -1,0 +1,73 @@
+---
+# Example BackupSchedule for nightly backups
+apiVersion: transiva.zyvor.ai/v1alpha1
+kind: BackupSchedule
+metadata:
+  name: nightly-vm-backup
+  namespace: default
+  labels:
+    app: transiva
+    schedule-type: nightly
+spec:
+  # Schedule: Every night at 2 AM PST
+  schedule: "0 2 * * *"
+  timezone: America/Los_Angeles
+
+  # Don't run if suspended
+  suspend: false
+
+  # Concurrency: Don't allow concurrent backups
+  concurrencyPolicy: Forbid
+
+  # Starting deadline: 1 hour
+  startingDeadlineSeconds: 3600
+
+  # History limits
+  successfulJobsHistoryLimit: 7
+  failedJobsHistoryLimit: 3
+
+  # Job template
+  jobTemplate:
+    metadata:
+      labels:
+        scheduled: "true"
+        schedule-name: nightly-vm-backup
+    spec:
+      source:
+        provider: kubevirt
+        namespace: production
+        tags:
+          backup: enabled
+          tier: production
+
+      destination:
+        type: s3
+        bucket: prod-vm-backups
+        prefix: nightly/{{ .Year }}/{{ .Month }}/{{ .Day }}
+        region: us-west-2
+        credentials:
+          secretRef:
+            name: aws-credentials
+            namespace: default
+
+      format:
+        type: ova
+        compression: true
+
+      # Always use carbon-aware scheduling
+      carbonAware:
+        enabled: true
+        zone: US-CAL-CISO
+        maxIntensity: 200.0
+        maxDelayHours: 6.0
+
+      # Incremental backups (after first full backup)
+      incremental:
+        enabled: true
+
+      # Retention: Keep 7 daily, 4 weekly, 12 monthly
+      retention:
+        keepDaily: 7
+        keepWeekly: 4
+        keepMonthly: 12
+        keepYearly: 1

@@ -1,0 +1,240 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: ['1.26']
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v6
+      with:
+        go-version: ${{ matrix.go-version }}
+
+    - name: Cache Go modules
+      uses: actions/cache@v4
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Download dependencies
+      run: go mod download
+
+    - name: Verify dependencies
+      run: go mod verify
+
+    - name: Install libvirt client
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libvirt-clients
+
+    - name: Run tests
+      env:
+        LIBVIRT_DEFAULT_URI: test:///default
+      # -p 2: cap package-level test parallelism. -race + -coverprofile's
+      # GOCOVERDIR-based coverage merging occasionally raced on the shared
+      # temp dir tree when many packages ran concurrently on the 4-vCPU
+      # runner (all tests passed; only coverage-file writing failed with
+      # "gocoverdir inaccessible ... no such file or directory").
+      run: go test -v -race -p 2 -coverprofile=coverage.txt -covermode=atomic ./...
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.txt
+        flags: unittests
+        name: codecov-umbrella
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v6
+      with:
+        go-version: '1.26'
+
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v9
+      with:
+        version: latest
+        args: --timeout=5m
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v6
+      with:
+        go-version: '1.26'
+
+    - name: Build binaries
+      run: |
+        go build -v -o hyperexport ./cmd/hyperexport
+        go build -v -o hypervisord ./cmd/hypervisord
+
+    - name: Verify binaries
+      run: |
+        ./hypervisord --version
+        file hyperexport hypervisord
+
+    - name: Upload binaries
+      uses: actions/upload-artifact@v4
+      with:
+        name: binaries
+        path: |
+          hyperexport
+          hypervisord
+
+  build-rpm:
+    name: Build RPM
+    runs-on: ubuntu-latest
+    container: fedora:latest
+
+    steps:
+    - name: Install dependencies
+      run: |
+        dnf install -y rpm-build rpmdevtools golang git
+
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up RPM build tree
+      run: |
+        rpmdev-setuptree
+        mkdir -p ~/rpmbuild/SOURCES
+
+    - name: Create source tarball
+      run: |
+        VERSION=$(grep '^Version:' transiva.spec | awk '{print $2}')
+        mkdir -p transiva-${VERSION}
+        cp -r * transiva-${VERSION}/ || true
+        tar czf ~/rpmbuild/SOURCES/transiva-${VERSION}.tar.gz transiva-${VERSION}
+
+    - name: Build RPM
+      run: |
+        rpmbuild -ba transiva.spec
+
+    - name: Upload RPM
+      uses: actions/upload-artifact@v4
+      with:
+        name: rpm-packages
+        path: |
+          ~/rpmbuild/RPMS/**/*.rpm
+          ~/rpmbuild/SRPMS/*.rpm
+
+  build-daemon-rpm:
+    name: Build hyper2kvm-daemon RPM
+    runs-on: ubuntu-latest
+    container: fedora:latest
+
+    steps:
+    - name: Install dependencies
+      run: |
+        dnf install -y rpm-build rpmdevtools git systemd-rpm-macros
+
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Build daemon RPM
+      run: |
+        cd packaging/rpm
+        ./build.sh
+
+    - name: Verify RPM package
+      run: |
+        rpm -qpi ~/rpmbuild/RPMS/noarch/hyper2kvm-daemon-*.rpm
+        rpm -qpl ~/rpmbuild/RPMS/noarch/hyper2kvm-daemon-*.rpm
+
+    - name: Test RPM installation
+      run: |
+        # --nodeps: this container doesn't have the runtime Requires
+        # (libvirt-daemon, qemu-img, hyper2kvm user/group) installed.
+        # --noscripts: %post runs systemctl, which doesn't work without a
+        # running systemd. This step only verifies the package's file layout.
+        rpm -ivh --nodeps --noscripts ~/rpmbuild/RPMS/noarch/hyper2kvm-daemon-*.rpm
+        test -f /usr/lib/systemd/system/hyper2kvm.service || exit 1
+        test -f /usr/lib/systemd/system/hyper2kvm@.service || exit 1
+        echo "Daemon RPM installation verified"
+
+    - name: Upload daemon RPM
+      uses: actions/upload-artifact@v4
+      with:
+        name: daemon-rpm-packages
+        path: |
+          ~/rpmbuild/RPMS/noarch/*.rpm
+          ~/rpmbuild/SRPMS/*.rpm
+
+  integration-test:
+    name: Integration Test
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download binaries
+      uses: actions/download-artifact@v4
+      with:
+        name: binaries
+
+    - name: Make binaries executable
+      run: chmod +x hyperexport hypervisord
+
+    - name: Test daemon start
+      run: |
+        # Test daemon starts with default config
+        timeout 5 ./hypervisord --version || true
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Gosec Security Scanner
+      uses: securego/gosec@master
+      with:
+        args: ./...
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v4
+      with:
+        sarif_file: 'trivy-results.sarif'

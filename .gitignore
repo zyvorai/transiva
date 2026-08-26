@@ -1,0 +1,59 @@
+# Binaries
+build/
+bin/
+/migration_orchestrator_example
+/network-monitor-demo
+/hyperexport
+/hypervisord
+/hyperctl
+cmd/hyperexport/hyperexport
+cmd/hypervisord/hypervisord
+cmd/hyperctl/hyperctl
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test binaries
+*.test
+*.out
+coverage.out
+coverage.txt
+
+# Go workspace files
+go.work
+go.work.sum
+
+# Temporary files
+*.swp
+*.swo
+*~
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# Logs
+*.log
+
+# Config with secrets
+config.yaml
+!config.yaml.example
+
+# RPM build
+rpmbuild/
+*.rpm
+*.src.rpm
+
+# Export directories
+exports/
+export-*/
+
+# Deployment environment files
+deployments/docker/.env
+deployments/docker/config/
+deployments/docker/exports/
+__pycache__/
+*.pyc

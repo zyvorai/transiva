@@ -1,0 +1,123 @@
+🎉 HyperSDK Operator has been successfully installed!
+
+Namespace: {{ include "transiva-operator.namespace" . }}
+Release:   {{ .Release.Name }}
+Version:   {{ .Chart.AppVersion }}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 What's Installed:
+
+{{- if .Values.crds.install }}
+  ✅ Custom Resource Definitions (BackupJob, BackupSchedule, RestoreJob)
+{{- end }}
+{{- if .Values.rbac.create }}
+  ✅ RBAC (ServiceAccount, ClusterRole, ClusterRoleBinding)
+{{- end }}
+  ✅ Operator Deployment ({{ .Values.operator.replicaCount }} replica{{ if gt (int .Values.operator.replicaCount) 1 }}s{{ end }})
+  ✅ Service ({{ .Values.service.type }})
+{{- if .Values.metrics.enabled }}
+  ✅ Metrics Service (Prometheus integration)
+{{- end }}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔍 Verify Installation:
+
+  # Check operator pod status
+  kubectl get pods -n {{ include "transiva-operator.namespace" . }} -l app.kubernetes.io/name={{ include "transiva-operator.name" . }}
+
+  # View operator logs
+  kubectl logs -n {{ include "transiva-operator.namespace" . }} -l app.kubernetes.io/name={{ include "transiva-operator.name" . }} -f
+
+  # Verify CRDs
+  kubectl get crds | grep transiva
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 Quick Start:
+
+  # Create a BackupJob for a KubeVirt VM
+  cat <<EOF | kubectl apply -f -
+  apiVersion: transiva.zyvor.ai/v1alpha1
+  kind: BackupJob
+  metadata:
+    name: my-vm-backup
+    namespace: default
+  spec:
+    source:
+      provider: kubevirt
+      namespace: default
+      vmName: my-vm
+    destination:
+      type: s3
+      bucket: my-backups
+      region: us-west-2
+{{- if .Values.carbonAware.defaultEnabled }}
+    carbonAware:
+      enabled: true
+      zone: {{ .Values.carbonAware.defaultZone }}
+{{- end }}
+  EOF
+
+  # Check backup status
+  kubectl get backupjobs
+
+  # Create a BackupSchedule for nightly backups
+  cat <<EOF | kubectl apply -f -
+  apiVersion: transiva.zyvor.ai/v1alpha1
+  kind: BackupSchedule
+  metadata:
+    name: nightly-backup
+    namespace: default
+  spec:
+    schedule: "0 2 * * *"
+    timezone: {{ .Values.scheduleDefaults.timezone }}
+    jobTemplate:
+      spec:
+        source:
+          provider: kubevirt
+          namespace: default
+          vmName: my-vm
+        destination:
+          type: s3
+          bucket: my-backups
+  EOF
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 Documentation:
+
+  Homepage:    https://github.com/ssahani/transiva
+  Quick Start: https://github.com/ssahani/transiva/blob/main/docs/CARBON_AWARE_QUICK_START.md
+  Examples:    https://github.com/ssahani/transiva/tree/main/deploy/examples
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚙️  Configuration:
+
+  Workers per controller: {{ .Values.operator.args.workers }}
+  Log level:              {{ .Values.operator.args.logLevel }}
+{{- if .Values.carbonAware.defaultEnabled }}
+  Carbon-aware:           ✅ Enabled (zone: {{ .Values.carbonAware.defaultZone }})
+{{- else }}
+  Carbon-aware:           ❌ Disabled
+{{- end }}
+{{- if .Values.operator.args.namespace }}
+  Watching namespace:     {{ .Values.operator.args.namespace }}
+{{- else }}
+  Watching namespace:     All namespaces
+{{- end }}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💡 Next Steps:
+
+  1. Configure cloud credentials (see docs for AWS/Azure/GCS setup)
+  2. Create your first BackupJob or BackupSchedule
+  3. Monitor backups with: kubectl get backupjobs -w
+  4. Explore examples at: deploy/examples/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Happy backing up! 🌍💚

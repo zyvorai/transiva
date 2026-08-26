@@ -1,0 +1,110 @@
+suite: test persistent volume claims
+templates:
+  - pvc.yaml
+tests:
+  - it: should create data PVC
+    asserts:
+      - isKind:
+          of: PersistentVolumeClaim
+        documentIndex: 0
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-transiva-data
+        documentIndex: 0
+      - equal:
+          path: spec.resources.requests.storage
+          value: 10Gi
+        documentIndex: 0
+      - contains:
+          path: spec.accessModes
+          content: ReadWriteOnce
+        documentIndex: 0
+
+  - it: should create exports PVC
+    asserts:
+      - isKind:
+          of: PersistentVolumeClaim
+        documentIndex: 1
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-transiva-exports
+        documentIndex: 1
+      - equal:
+          path: spec.resources.requests.storage
+          value: 500Gi
+        documentIndex: 1
+      - contains:
+          path: spec.accessModes
+          content: ReadWriteOnce
+        documentIndex: 1
+
+  - it: should set custom storage sizes
+    set:
+      persistence:
+        data:
+          size: 20Gi
+        exports:
+          size: 1Ti
+    asserts:
+      - equal:
+          path: spec.resources.requests.storage
+          value: 20Gi
+        documentIndex: 0
+      - equal:
+          path: spec.resources.requests.storage
+          value: 1Ti
+        documentIndex: 1
+
+  - it: should set storageClassName when specified
+    set:
+      persistence:
+        data:
+          storageClass: premium-ssd
+        exports:
+          storageClass: standard-hdd
+    asserts:
+      - equal:
+          path: spec.storageClassName
+          value: premium-ssd
+        documentIndex: 0
+      - equal:
+          path: spec.storageClassName
+          value: standard-hdd
+        documentIndex: 1
+
+  - it: should disable data PVC when persistence disabled
+    set:
+      persistence:
+        data:
+          enabled: false
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-transiva-exports
+        documentIndex: 0
+
+  - it: should disable exports PVC when persistence disabled
+    set:
+      persistence:
+        exports:
+          enabled: false
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-transiva-data
+        documentIndex: 0
+
+  - it: should use existing claim when specified
+    set:
+      persistence:
+        data:
+          existingClaim: my-existing-data-pvc
+        exports:
+          existingClaim: my-existing-exports-pvc
+    asserts:
+      - hasDocuments:
+          count: 0
