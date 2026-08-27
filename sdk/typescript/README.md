@@ -15,7 +15,7 @@ TypeScript/JavaScript client library for the HyperSDK VM migration and export pl
   - Schedule management
   - Webhook configuration
   - Libvirt integration
-  - Hyper2KVM conversion
+  - H2KVM conversion
   - **Carbon-aware scheduling** (NEW in v2.0)
 
 ## Installation
@@ -255,7 +255,7 @@ for (const snapshot of snapshots) {
 }
 ```
 
-### Hyper2KVM Conversion
+### H2KVM Conversion
 
 ```typescript
 // Convert a VM
@@ -577,7 +577,7 @@ async function monitorJob(jobId: string): Promise<void> {
 - `listSnapshots(domain)` - List snapshots
 - `createSnapshot(domain, name, description?)` - Create snapshot
 
-#### Hyper2KVM Integration
+#### H2KVM Integration
 - `convertVM(sourcePath, outputPath)` - Convert VM
 - `getConversionStatus(conversionId)` - Get conversion status
 
@@ -625,5 +625,5 @@ Apache-2.0
 
 ## Support
 
-- **Issues**: https://github.com/ssahani/transiva/issues
-- **Documentation**: https://github.com/ssahani/transiva
+- **Issues**: https://github.com/zyvorai/transiva/issues
+- **Documentation**: https://github.com/zyvorai/transiva

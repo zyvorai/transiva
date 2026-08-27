@@ -16,17 +16,17 @@ contact_links:
     url: https://zyvor.dev/roi?utm_source=github&utm_medium=transiva
     about: Estimate savings from VMware exit and platform migration
   - name: "Discussions"
-    url: https://github.com/transiva/transiva/discussions
+    url: https://github.com/zyvorai/transiva/discussions
     about: Ask questions and discuss ideas with the community
   - name: "CE vs Enterprise"
-    url: https://github.com/transiva/transiva/blob/main/docs/enterprise.md
+    url: https://github.com/zyvorai/transiva/blob/main/docs/enterprise.md
     about: When to use GitHub vs contact Zyvor for production
   - name: "Documentation"
-    url: https://github.com/transiva/transiva/blob/main/README.md
+    url: https://github.com/zyvorai/transiva/blob/main/README.md
     about: Install, quick start, and enterprise options
   - name: "API schema"
-    url: https://github.com/transiva/transiva/blob/main/openapi.yaml
+    url: https://github.com/zyvorai/transiva/blob/main/openapi.yaml
     about: REST API OpenAPI specification
   - name: "Security"
-    url: https://github.com/transiva/transiva/blob/main/SECURITY.md
+    url: https://github.com/zyvorai/transiva/blob/main/SECURITY.md
     about: Report vulnerabilities privately

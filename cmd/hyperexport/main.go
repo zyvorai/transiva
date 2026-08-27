@@ -64,16 +64,16 @@ var (
 	createDefaults = flag.Bool("create-default-profiles", false, "Create default profiles")
 
 	// Artifact Manifest v1.0 options
-	generateManifest     = flag.Bool("manifest", false, "Generate Artifact Manifest v1.0 for hyper2kvm")
+	generateManifest     = flag.Bool("manifest", false, "Generate Artifact Manifest v1.0 for h2kvm")
 	verifyManifestFlag   = flag.Bool("verify-manifest", false, "Verify manifest after generation")
 	manifestChecksum     = flag.Bool("manifest-checksum", true, "Compute SHA-256 checksums for disks in manifest")
 	manifestTargetFormat = flag.String("manifest-target", "qcow2", "Target disk format for conversion (qcow2, raw, vdi)")
 
 	// Pipeline integration options
-	enablePipeline  = flag.Bool("pipeline", false, "Enable hyper2kvm pipeline after export")
-	hyper2kvmPath   = flag.String("hyper2kvm-path", "/home/tt/hyper2kvm/hyper2kvm", "Path to hyper2kvm executable")
+	enablePipeline  = flag.Bool("pipeline", false, "Enable h2kvm pipeline after export")
+	h2kvmPath       = flag.String("h2kvm-path", "/home/tt/h2kvm/h2kvmctl", "Path to h2kvm executable")
 	pipelineTimeout = flag.Duration("pipeline-timeout", 30*time.Minute, "Timeout for pipeline execution")
-	streamPipeline  = flag.Bool("stream-pipeline", true, "Stream hyper2kvm output to console")
+	streamPipeline  = flag.Bool("stream-pipeline", true, "Stream h2kvm output to console")
 	pipelineDryRun  = flag.Bool("pipeline-dry-run", false, "Run pipeline in dry-run mode (no modifications)")
 
 	// Pipeline stage configuration
@@ -91,13 +91,13 @@ var (
 	libvirtBridge      = flag.String("libvirt-bridge", "virbr0", "Network bridge for VM")
 	libvirtPool        = flag.String("libvirt-pool", "default", "Storage pool for disks")
 
-	// hyper2kvm daemon options
-	hyper2kvmDaemon        = flag.Bool("hyper2kvm-daemon", false, "Use systemd daemon instead of direct execution")
-	hyper2kvmInstance      = flag.String("hyper2kvm-instance", "", "Systemd instance name (e.g., 'vsphere-prod' for hyper2kvm@vsphere-prod.service)")
-	hyper2kvmWatchDir      = flag.String("hyper2kvm-watch-dir", "/var/lib/hyper2kvm/queue", "Daemon watch directory")
-	hyper2kvmOutputDir     = flag.String("hyper2kvm-output-dir", "/var/lib/hyper2kvm/output", "Daemon output directory")
-	hyper2kvmPollInterval  = flag.Int("hyper2kvm-poll-interval", 5, "Poll interval in seconds (daemon mode)")
-	hyper2kvmDaemonTimeout = flag.Int("hyper2kvm-daemon-timeout", 60, "Daemon processing timeout in minutes")
+	// h2kvm daemon options
+	h2kvmDaemon        = flag.Bool("h2kvm-daemon", false, "Use systemd daemon instead of direct execution")
+	h2kvmInstance      = flag.String("h2kvm-instance", "", "Systemd instance name (e.g., 'vsphere-prod' for h2kvm@vsphere-prod.service)")
+	h2kvmWatchDir      = flag.String("h2kvm-watch-dir", "/var/lib/h2kvm/queue", "Daemon watch directory")
+	h2kvmOutputDir     = flag.String("h2kvm-output-dir", "/var/lib/h2kvm/output", "Daemon output directory")
+	h2kvmPollInterval  = flag.Int("h2kvm-poll-interval", 5, "Poll interval in seconds (daemon mode)")
+	h2kvmDaemonTimeout = flag.Int("h2kvm-daemon-timeout", 60, "Daemon processing timeout in minutes")
 
 	// Phase 6: Orchestration & Monitoring options
 	enableOrchestration = flag.Bool("orchestrate", false, "Enable Phase 6 migration orchestration")
@@ -125,6 +125,19 @@ var (
 	// Shell completion
 	completionShell = flag.String("completion", "", "Generate shell completion script (bash, zsh, fish)")
 )
+
+// Deprecated flag aliases: pre-rename "hyper2kvm-*" flag names kept pointing
+// at the same variables as their "h2kvm-*" replacements, so existing scripts
+// keep working for one release.
+func init() {
+	flag.StringVar(h2kvmPath, "hyper2kvm-path", *h2kvmPath, "Deprecated: use --h2kvm-path")
+	flag.BoolVar(h2kvmDaemon, "hyper2kvm-daemon", *h2kvmDaemon, "Deprecated: use --h2kvm-daemon")
+	flag.StringVar(h2kvmInstance, "hyper2kvm-instance", *h2kvmInstance, "Deprecated: use --h2kvm-instance")
+	flag.StringVar(h2kvmWatchDir, "hyper2kvm-watch-dir", *h2kvmWatchDir, "Deprecated: use --h2kvm-watch-dir")
+	flag.StringVar(h2kvmOutputDir, "hyper2kvm-output-dir", *h2kvmOutputDir, "Deprecated: use --h2kvm-output-dir")
+	flag.IntVar(h2kvmPollInterval, "hyper2kvm-poll-interval", *h2kvmPollInterval, "Deprecated: use --h2kvm-poll-interval")
+	flag.IntVar(h2kvmDaemonTimeout, "hyper2kvm-daemon-timeout", *h2kvmDaemonTimeout, "Deprecated: use --h2kvm-daemon-timeout")
+}
 
 // Vision-optimized color styles (based on human eye sensitivity: green > yellow > red).
 // Sweet spot dark orange #D35400 - #C75B12: high contrast, no glare, no vibration.
@@ -415,8 +428,8 @@ func main() {
 
 		// Apply pipeline settings from profile
 		*enablePipeline = loadedProfile.AutoConvert
-		if loadedProfile.Hyper2KVMBinary != "" {
-			*hyper2kvmPath = loadedProfile.Hyper2KVMBinary
+		if loadedProfile.H2KVMBinary != "" {
+			*h2kvmPath = loadedProfile.H2KVMBinary
 		}
 		*streamPipeline = loadedProfile.StreamConversion
 	}
@@ -972,7 +985,7 @@ func run(ctx context.Context, cfg *config.Config, log logger.Logger) error {
 
 	// Pipeline integration options
 	opts.EnablePipeline = *enablePipeline
-	opts.Hyper2KVMPath = *hyper2kvmPath
+	opts.H2KVMPath = *h2kvmPath
 	opts.PipelineTimeout = *pipelineTimeout
 	opts.StreamPipelineOutput = *streamPipeline
 	opts.PipelineDryRun = *pipelineDryRun
@@ -990,13 +1003,13 @@ func run(ctx context.Context, cfg *config.Config, log logger.Logger) error {
 	opts.LibvirtNetworkBridge = *libvirtBridge
 	opts.LibvirtStoragePool = *libvirtPool
 
-	// hyper2kvm daemon options
-	opts.Hyper2KVMDaemon = *hyper2kvmDaemon
-	opts.Hyper2KVMInstance = *hyper2kvmInstance
-	opts.Hyper2KVMWatchDir = *hyper2kvmWatchDir
-	opts.Hyper2KVMOutputDir = *hyper2kvmOutputDir
-	opts.Hyper2KVMPollInterval = *hyper2kvmPollInterval
-	opts.Hyper2KVMDaemonTimeout = *hyper2kvmDaemonTimeout
+	// h2kvm daemon options
+	opts.H2KVMDaemon = *h2kvmDaemon
+	opts.H2KVMInstance = *h2kvmInstance
+	opts.H2KVMWatchDir = *h2kvmWatchDir
+	opts.H2KVMOutputDir = *h2kvmOutputDir
+	opts.H2KVMPollInterval = *h2kvmPollInterval
+	opts.H2KVMDaemonTimeout = *h2kvmDaemonTimeout
 
 	// If pipeline is enabled, force manifest generation
 	if opts.EnablePipeline {

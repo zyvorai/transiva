@@ -1,14 +1,14 @@
-# hyper2kvm Daemon Configuration (AWS Instance)
+# h2kvm Daemon Configuration (AWS Instance)
 #
-# This file is sourced by the hyper2kvm@aws.service unit.
-# Copy to /etc/hyper2kvm/hyper2kvm-aws.conf and customize.
+# This file is sourced by the h2kvm@aws.service unit.
+# Copy to /etc/h2kvm/h2kvm-aws.conf and customize.
 #
 # systemctl daemon-reload
-# systemctl restart hyper2kvm@aws.service
+# systemctl restart h2kvm@aws.service
 
 # AWS-specific directories
-WATCH_DIR=/var/lib/hyper2kvm/aws/queue
-OUTPUT_DIR=/var/lib/hyper2kvm/aws/output
+WATCH_DIR=/var/lib/h2kvm/aws/queue
+OUTPUT_DIR=/var/lib/h2kvm/aws/output
 
 # Log level
 LOG_LEVEL=info

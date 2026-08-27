@@ -283,7 +283,7 @@ nutanix:
 #        --output-dir /var/lib/transiva/nutanix --mounts 'default-container-12345:/mnt/nutanix/default'
 #   3. go run ./cmd/nutanix-pickup --plan-in plan.json --execute \
 #        --output-dir /var/lib/transiva/nutanix --mounts 'default-container-12345:/mnt/nutanix/default'
-#   4. artifact-manifest.json per VM is written for hyper2kvm pipeline
+#   4. artifact-manifest.json per VM is written for h2kvm pipeline
 #
 # Export via daemon API:
 #   curl -X POST 'http://localhost:8080/vms/export?provider=nutanix' \

@@ -7,7 +7,7 @@ CE is free forever for PoC. The moment you need CBT cutover windows, waves, SSO,
 
 Canonical Enterprise tree: commercial HyperSDK Platform builds (private). Product: [zyvor.dev/transiva](https://zyvor.dev/transiva?utm_source=github&utm_medium=transiva) · [Book a Platform demo](https://zyvor.dev/contact?intent=demo) · [30-day PoC](https://zyvor.dev/poc) · [sales@zyvor.dev](mailto:sales@zyvor.dev)
 
-Pipeline: **HyperSDK → [hyper2kvm](https://github.com/transiva/hyper2kvm) → [GuestKit](https://github.com/transiva/guestkit) → [Zeus OS](https://zyvor.dev/zeus-os)**
+Pipeline: **HyperSDK → [h2kvm](https://github.com/zyvorai/h2kvm) → [GuestKit](https://github.com/zyvorai/guestkit) → [Zeus OS](https://zyvor.dev/zeus-os)**
 
 ---
 
@@ -41,7 +41,7 @@ Pipeline: **HyperSDK → [hyper2kvm](https://github.com/transiva/hyper2kvm) → 
 
 | Capability | Community | Enterprise |
 | --- | --- | --- |
-| Hand off to hyper2kvm | ✅ | ✅ In-pipeline orchestration |
+| Hand off to h2kvm | ✅ | ✅ In-pipeline orchestration |
 | Migration wizard | — | ✅ |
 | 17-point readiness checks | — | ✅ |
 | Wave planning · approvals · blackout calendars | — | ✅ |
@@ -54,8 +54,8 @@ Pipeline: **HyperSDK → [hyper2kvm](https://github.com/transiva/hyper2kvm) → 
 
 | Capability | Community | Enterprise |
 | --- | --- | --- |
-| Local artifacts → hyper2kvm | ✅ | ✅ |
-| libvirt / KVM deploy | Via hyper2kvm | ✅ Integrated |
+| Local artifacts → h2kvm | ✅ | ✅ |
+| libvirt / KVM deploy | Via h2kvm | ✅ Integrated |
 | KubeVirt / OpenShift | — / DIY | ✅ Operator · PVC · VM CR |
 | OpenStack Glance (+ Nova boot) | — | ✅ |
 | Live libvirt → KubeVirt path | — | ✅ |

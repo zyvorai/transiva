@@ -183,7 +183,7 @@ func (csm *CloudStorageManager) UploadConvertedImages(ctx context.Context, resul
 		CompressionLevel: 0, // Already compressed by converter
 		Metadata: map[string]string{
 			"source":          "transiva",
-			"conversion-tool": "hyper2kvm",
+			"conversion-tool": "h2kvm",
 		},
 	}
 

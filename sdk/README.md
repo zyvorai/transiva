@@ -75,7 +75,7 @@ Both SDKs provide complete coverage of the HyperSDK API:
 
 ### 🚀 Advanced Features
 - **Libvirt Integration** - Manage domains, snapshots, and volumes
-- **Hyper2KVM Conversion** - Convert VMs to KVM/QCOW2 format
+- **H2KVM Conversion** - Convert VMs to KVM/QCOW2 format
 - **Real-time Progress** - Track job progress with ETA calculations
 - **Batch Operations** - Submit and manage multiple jobs simultaneously
 - **Error Handling** - Comprehensive error types and handling
@@ -261,8 +261,8 @@ We welcome contributions! To add support for a new language:
 
 ## Support
 
-- **Issues**: https://github.com/ssahani/transiva/issues
-- **Documentation**: https://github.com/ssahani/transiva
+- **Issues**: https://github.com/zyvorai/transiva/issues
+- **Documentation**: https://github.com/zyvorai/transiva
 - **OpenAPI Spec**: [openapi.yaml](../openapi.yaml)
 
 ## License

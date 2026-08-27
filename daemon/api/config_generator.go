@@ -12,7 +12,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// ConfigGeneratorRequest represents a request to generate hyper2kvm config
+// ConfigGeneratorRequest represents a request to generate h2kvm config
 type ConfigGeneratorRequest struct {
 	OSType          string `json:"os_type"`          // windows, linux
 	OSFlavor        string `json:"os_flavor"`        // windows-10, windows-11, ubuntu-22, rhel-10, photon-os
@@ -29,8 +29,8 @@ type ConfigGeneratorRequest struct {
 	GenerateService bool   `json:"generate_service"` // Generate systemd service
 }
 
-// Hyper2KVMConfig represents the full hyper2kvm YAML configuration
-type Hyper2KVMConfig struct {
+// H2KVMConfig represents the full h2kvm YAML configuration
+type H2KVMConfig struct {
 	Cmd              string `yaml:"cmd"`
 	VMDK             string `yaml:"vmdk"`
 	OutputDir        string `yaml:"output_dir"`
@@ -69,7 +69,7 @@ type ConfigGeneratorResponse struct {
 	ServicePath string `json:"service_path,omitempty"`
 }
 
-// handleGenerateConfig generates hyper2kvm configuration files
+// handleGenerateConfig generates h2kvm configuration files
 func (s *Server) handleGenerateConfig(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -97,7 +97,7 @@ func (s *Server) handleGenerateConfig(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Generate config
-	config := s.buildHyper2KVMConfig(req)
+	config := s.buildH2KVMConfig(req)
 
 	// Convert to YAML
 	yamlBytes, err := yaml.Marshal(config)
@@ -110,9 +110,9 @@ func (s *Server) handleGenerateConfig(w http.ResponseWriter, r *http.Request) {
 	yamlContent := s.generateConfigHeader(req) + string(yamlBytes)
 
 	// Generate config path
-	configFilename := fmt.Sprintf("hyper2kvm-%s.yaml", strings.ToLower(req.VMName))
+	configFilename := fmt.Sprintf("h2kvm-%s.yaml", strings.ToLower(req.VMName))
 	if req.VMName == "" {
-		configFilename = fmt.Sprintf("hyper2kvm-%s-%s.yaml", req.OSType, req.OSFlavor)
+		configFilename = fmt.Sprintf("h2kvm-%s-%s.yaml", req.OSType, req.OSFlavor)
 	}
 	configPath := filepath.Join(req.OutputDir, configFilename)
 
@@ -124,7 +124,7 @@ func (s *Server) handleGenerateConfig(w http.ResponseWriter, r *http.Request) {
 	// Generate systemd service if requested
 	if req.GenerateService {
 		serviceContent := s.generateSystemdService(req, configPath)
-		servicePath := fmt.Sprintf("/etc/systemd/system/hyper2kvm-%s.service", strings.ToLower(req.VMName))
+		servicePath := fmt.Sprintf("/etc/systemd/system/h2kvm-%s.service", strings.ToLower(req.VMName))
 		response.ServiceFile = serviceContent
 		response.ServicePath = servicePath
 	}
@@ -132,14 +132,14 @@ func (s *Server) handleGenerateConfig(w http.ResponseWriter, r *http.Request) {
 	s.jsonResponse(w, http.StatusOK, response)
 }
 
-// buildHyper2KVMConfig builds the hyper2kvm config based on request
-func (s *Server) buildHyper2KVMConfig(req ConfigGeneratorRequest) *Hyper2KVMConfig {
+// buildH2KVMConfig builds the h2kvm config based on request
+func (s *Server) buildH2KVMConfig(req ConfigGeneratorRequest) *H2KVMConfig {
 	outputFilename := fmt.Sprintf("%s-fixed.qcow2", strings.ToLower(req.VMName))
 	if req.VMName == "" {
 		outputFilename = fmt.Sprintf("%s-%s-fixed.qcow2", req.OSType, req.OSFlavor)
 	}
 
-	config := &Hyper2KVMConfig{
+	config := &H2KVMConfig{
 		Cmd:            "local",
 		VMDK:           req.VMDKPath,
 		OutputDir:      req.OutputDir,
@@ -155,8 +155,8 @@ func (s *Server) buildHyper2KVMConfig(req ConfigGeneratorRequest) *Hyper2KVMConf
 		NoBackup:       false,
 		DryRun:         false,
 		Verbose:        2,
-		LogFile:        filepath.Join(req.OutputDir, "hyper2kvm.log"),
-		Report:         filepath.Join(req.OutputDir, "hyper2kvm-report.md"),
+		LogFile:        filepath.Join(req.OutputDir, "h2kvm.log"),
+		Report:         filepath.Join(req.OutputDir, "h2kvm-report.md"),
 	}
 
 	if req.Flatten {
@@ -228,7 +228,7 @@ func (s *Server) generateConfigHeader(req ConfigGeneratorRequest) string {
 # VM Name: %s
 #
 # Usage:
-#   hyper2kvm --config %s local
+#   h2kvm --config %s local
 #
 # Features:
 #   ✅ Automatic fstab stabilization (UUID-based)
@@ -240,7 +240,7 @@ func (s *Server) generateConfigHeader(req ConfigGeneratorRequest) string {
 #
 # ==============================================================================
 
-`, emoji, name, req.OSType, req.OSFlavor, req.VMName, filepath.Base(fmt.Sprintf("hyper2kvm-%s.yaml", req.VMName)))
+`, emoji, name, req.OSType, req.OSFlavor, req.VMName, filepath.Base(fmt.Sprintf("h2kvm-%s.yaml", req.VMName)))
 
 	return header
 }
@@ -254,11 +254,14 @@ func (s *Server) generateSystemdService(req ConfigGeneratorRequest, configPath s
 
 	service := fmt.Sprintf(`[Unit]
 Description=HyperSDK VM Conversion - %s
-Documentation=https://github.com/photon-platform/hyper2kvm
+Documentation=https://github.com/zyvorai/h2kvm
 After=network.target
 
 [Service]
 Type=oneshot
+# NOTE: invokes the pre-rename "hyper2kvm" Python module; the upstream
+# project (github.com/zyvorai/h2kvm) now ships an "h2kvmctl" CLI with a
+# different flag surface that this generated unit hasn't been re-verified against.
 ExecStart=/usr/bin/python3 -m hyper2kvm --config %s local
 WorkingDirectory=%s
 StandardOutput=journal

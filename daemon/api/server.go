@@ -92,7 +92,7 @@ func NewServer(manager *jobs.Manager, detector *capabilities.Detector, log logge
 	mux.HandleFunc("/alert-rules/create", s.handleCreateAlertRule)
 	mux.HandleFunc("/webhooks/test", s.handleTestWebhook)
 
-	// Hyper2KVM Integration
+	// H2KVM Integration
 	mux.HandleFunc("/convert/vm", s.handleConvertVM)
 	mux.HandleFunc("/convert/list", s.handleListConversions)
 	mux.HandleFunc("/convert/status", s.handleConversionStatus)

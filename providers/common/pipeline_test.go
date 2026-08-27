@@ -38,9 +38,9 @@ func (m *mockLogger) With(keysAndValues ...interface{}) Logger         { return 
 
 func TestNewPipelineExecutor(t *testing.T) {
 	logger := &mockLogger{}
-	config := &Hyper2KVMConfig{
+	config := &H2KVMConfig{
 		Enabled:       true,
-		Hyper2KVMPath: "/path/to/hyper2kvm",
+		H2KVMPath: "/path/to/h2kvm",
 		ManifestPath:  "/path/to/manifest.json",
 	}
 
@@ -50,52 +50,52 @@ func TestNewPipelineExecutor(t *testing.T) {
 	assert.NotNil(t, executor.logger)
 }
 
-func TestHyper2KVMConfigValidation(t *testing.T) {
+func TestH2KVMConfigValidation(t *testing.T) {
 	tests := []struct {
 		name    string
-		config  Hyper2KVMConfig
+		config  H2KVMConfig
 		valid   bool
 		errMsg  string
 	}{
 		{
 			name: "valid config",
-			config: Hyper2KVMConfig{
+			config: H2KVMConfig{
 				Enabled:       true,
-				Hyper2KVMPath: "/usr/bin/hyper2kvm",
+				H2KVMPath: "/usr/bin/h2kvm",
 				ManifestPath:  "/tmp/manifest.json",
 			},
 			valid: true,
 		},
 		{
 			name: "disabled config",
-			config: Hyper2KVMConfig{
+			config: H2KVMConfig{
 				Enabled: false,
 			},
 			valid: true, // Valid but won't execute
 		},
 		{
-			name: "missing hyper2kvm path",
-			config: Hyper2KVMConfig{
+			name: "missing h2kvm path",
+			config: H2KVMConfig{
 				Enabled:      true,
 				ManifestPath: "/tmp/manifest.json",
 			},
 			valid:  false,
-			errMsg: "hyper2kvm path required",
+			errMsg: "h2kvm path required",
 		},
 		{
 			name: "missing manifest path",
-			config: Hyper2KVMConfig{
+			config: H2KVMConfig{
 				Enabled:       true,
-				Hyper2KVMPath: "/usr/bin/hyper2kvm",
+				H2KVMPath: "/usr/bin/h2kvm",
 			},
 			valid:  false,
 			errMsg: "manifest path required",
 		},
 		{
 			name: "libvirt integration enabled",
-			config: Hyper2KVMConfig{
+			config: H2KVMConfig{
 				Enabled:            true,
-				Hyper2KVMPath:      "/usr/bin/hyper2kvm",
+				H2KVMPath:      "/usr/bin/h2kvm",
 				ManifestPath:       "/tmp/manifest.json",
 				LibvirtIntegration: true,
 				LibvirtURI:         "qemu:///system",
@@ -108,7 +108,7 @@ func TestHyper2KVMConfigValidation(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			isValid := true
 			if tt.config.Enabled {
-				if tt.config.Hyper2KVMPath == "" {
+				if tt.config.H2KVMPath == "" {
 					isValid = false
 				}
 				if tt.config.ManifestPath == "" {
@@ -121,19 +121,19 @@ func TestHyper2KVMConfigValidation(t *testing.T) {
 	}
 }
 
-func TestFindHyper2KVM(t *testing.T) {
-	t.Skip("Skipping hyper2kvm discovery test - depends on filesystem")
+func TestFindH2KVM(t *testing.T) {
+	t.Skip("Skipping h2kvm discovery test - depends on filesystem")
 
 	// Create a temporary directory structure
 	tempDir := t.TempDir()
-	hyper2kvmPath := filepath.Join(tempDir, "hyper2kvm")
+	h2kvmPath := filepath.Join(tempDir, "h2kvm")
 
-	// Create a mock hyper2kvm executable
-	err := os.WriteFile(hyper2kvmPath, []byte("#!/bin/bash\necho 'mock hyper2kvm'\n"), 0755)
+	// Create a mock h2kvm executable
+	err := os.WriteFile(h2kvmPath, []byte("#!/bin/bash\necho 'mock h2kvm'\n"), 0755)
 	require.NoError(t, err)
 
 	// Test discovery
-	found := findHyper2KVM()
+	found := findH2KVM()
 	assert.NotEmpty(t, found)
 }
 
@@ -177,9 +177,9 @@ func TestPipelineStagesValidation(t *testing.T) {
 
 func TestExecuteContextCancellation(t *testing.T) {
 	logger := &mockLogger{}
-	config := &Hyper2KVMConfig{
+	config := &H2KVMConfig{
 		Enabled:       true,
-		Hyper2KVMPath: "/nonexistent/hyper2kvm",
+		H2KVMPath: "/nonexistent/h2kvm",
 		ManifestPath:  "/tmp/manifest.json",
 	}
 
@@ -197,9 +197,9 @@ func TestExecuteWithTimeout(t *testing.T) {
 	t.Skip("Skipping timeout test - requires mock execution")
 
 	logger := &mockLogger{}
-	config := &Hyper2KVMConfig{
+	config := &H2KVMConfig{
 		Enabled:       true,
-		Hyper2KVMPath: "/usr/bin/sleep",
+		H2KVMPath: "/usr/bin/sleep",
 		ManifestPath:  "100", // sleep for 100 seconds
 	}
 
@@ -216,9 +216,9 @@ func TestExecuteWithTimeout(t *testing.T) {
 
 func TestPipelineDryRun(t *testing.T) {
 	logger := &mockLogger{}
-	config := &Hyper2KVMConfig{
+	config := &H2KVMConfig{
 		Enabled:       true,
-		Hyper2KVMPath: "/usr/bin/hyper2kvm",
+		H2KVMPath: "/usr/bin/h2kvm",
 		ManifestPath:  "/tmp/manifest.json",
 		DryRun:        true,
 	}
@@ -285,7 +285,7 @@ func TestLibvirtConfigValidation(t *testing.T) {
 }
 
 func TestPipelineOutputParsing(t *testing.T) {
-	// Mock hyper2kvm output
+	// Mock h2kvm output
 	mockOutput := `
 [INSPECT] Detecting guest OS...
 [INSPECT] OS detected: Ubuntu 20.04 LTS
@@ -344,8 +344,8 @@ func TestPipelineErrorHandling(t *testing.T) {
 		fatal    bool
 	}{
 		{
-			name:     "hyper2kvm not found",
-			errorMsg: "hyper2kvm not found at /path/to/hyper2kvm",
+			name:     "h2kvm not found",
+			errorMsg: "h2kvm not found at /path/to/h2kvm",
 			fatal:    true,
 		},
 		{
@@ -373,7 +373,7 @@ func TestPipelineErrorHandling(t *testing.T) {
 			// Non-fatal errors should be logged but allow export to succeed
 			if tt.fatal {
 				assert.Contains(t, []string{
-					"hyper2kvm not found",
+					"h2kvm not found",
 					"manifest file not found",
 				}, tt.name)
 			}

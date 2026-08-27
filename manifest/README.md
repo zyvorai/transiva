@@ -1,13 +1,13 @@
 # Artifact Manifest v1.0 Package
 
-This package implements the **Artifact Manifest v1.0** integration contract between transiva and hyper2kvm.
+This package implements the **Artifact Manifest v1.0** integration contract between transiva and h2kvm.
 
 ## Overview
 
 The Artifact Manifest v1.0 is a versioned JSON/YAML specification that describes VM disk artifacts and conversion pipeline configuration. It serves as the integration contract between:
 
 - **transiva** (export/fetch daemon) - handles provider-specific operations
-- **hyper2kvm** (fix/convert engine) - performs deterministic offline transformations
+- **h2kvm** (fix/convert engine) - performs deterministic offline transformations
 
 ## Key Features
 
@@ -160,7 +160,7 @@ for diskID, valid := range results {
 | `AddNote()` | Adds an informational note |
 | `AddWarning()` | Adds a warning message |
 | `WithMetadata()` | Sets transiva metadata (version, job ID, tags) |
-| `WithPipeline()` | Configures hyper2kvm pipeline stages |
+| `WithPipeline()` | Configures h2kvm pipeline stages |
 | `WithOutput()` | Sets output configuration |
 | `WithOptions()` | Sets runtime options |
 | `Build()` | Returns the constructed manifest or an error |
@@ -277,10 +277,10 @@ go test ./manifest/... -v
 ## Compliance
 
 This package implements the **Artifact Manifest v1.0** specification as documented in:
-- `/home/ssahani/tt/hyper2kvm/docs/Integration-Contract.md`
-- `/home/ssahani/tt/hyper2kvm/docs/artifact-manifest-v1.0.schema.json`
+- `/home/ssahani/tt/h2kvm/docs/Integration-Contract.md`
+- `/home/ssahani/tt/h2kvm/docs/artifact-manifest-v1.0.schema.json`
 
-The manifest format is fully compatible with hyper2kvm's ManifestLoader.
+The manifest format is fully compatible with h2kvm's ManifestLoader.
 
 ## Examples
 

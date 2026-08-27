@@ -13,7 +13,7 @@ import (
 func TestHandleConvertVMMethodNotAllowed(t *testing.T) {
 	server := setupTestBasicServer(t)
 
-	req := httptest.NewRequest(http.MethodGet, "/hyper2kvm/convert", nil)
+	req := httptest.NewRequest(http.MethodGet, "/h2kvm/convert", nil)
 	w := httptest.NewRecorder()
 
 	server.handleConvertVM(w, req)
@@ -26,7 +26,7 @@ func TestHandleConvertVMMethodNotAllowed(t *testing.T) {
 func TestHandleConvertVMInvalidJSON(t *testing.T) {
 	server := setupTestBasicServer(t)
 
-	req := httptest.NewRequest(http.MethodPost, "/hyper2kvm/convert", bytes.NewReader([]byte("invalid json")))
+	req := httptest.NewRequest(http.MethodPost, "/h2kvm/convert", bytes.NewReader([]byte("invalid json")))
 	w := httptest.NewRecorder()
 
 	server.handleConvertVM(w, req)
@@ -44,7 +44,7 @@ func TestHandleConvertVMMissingSourcePath(t *testing.T) {
 	}
 
 	body, _ := json.Marshal(reqBody)
-	req := httptest.NewRequest(http.MethodPost, "/hyper2kvm/convert", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/h2kvm/convert", bytes.NewReader(body))
 	w := httptest.NewRecorder()
 
 	server.handleConvertVM(w, req)
@@ -65,12 +65,12 @@ func TestHandleConvertVM(t *testing.T) {
 	}
 
 	body, _ := json.Marshal(reqBody)
-	req := httptest.NewRequest(http.MethodPost, "/hyper2kvm/convert", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/h2kvm/convert", bytes.NewReader(body))
 	w := httptest.NewRecorder()
 
 	server.handleConvertVM(w, req)
 
-	// Will fail with 500 if hyper2kvm command fails (file doesn't exist, command not found, etc.)
+	// Will fail with 500 if h2kvm command fails (file doesn't exist, command not found, etc.)
 	if w.Code != http.StatusOK && w.Code != http.StatusInternalServerError {
 		t.Errorf("Expected status 200 or 500, got %d: %s", w.Code, w.Body.String())
 	}
@@ -79,7 +79,7 @@ func TestHandleConvertVM(t *testing.T) {
 func TestHandleImportToKVMMethodNotAllowed(t *testing.T) {
 	server := setupTestBasicServer(t)
 
-	req := httptest.NewRequest(http.MethodGet, "/hyper2kvm/import", nil)
+	req := httptest.NewRequest(http.MethodGet, "/h2kvm/import", nil)
 	w := httptest.NewRecorder()
 
 	server.handleImportToKVM(w, req)
@@ -92,7 +92,7 @@ func TestHandleImportToKVMMethodNotAllowed(t *testing.T) {
 func TestHandleImportToKVMInvalidJSON(t *testing.T) {
 	server := setupTestBasicServer(t)
 
-	req := httptest.NewRequest(http.MethodPost, "/hyper2kvm/import", bytes.NewReader([]byte("invalid json")))
+	req := httptest.NewRequest(http.MethodPost, "/h2kvm/import", bytes.NewReader([]byte("invalid json")))
 	w := httptest.NewRecorder()
 
 	server.handleImportToKVM(w, req)
@@ -114,7 +114,7 @@ func TestHandleImportToKVM(t *testing.T) {
 	}
 
 	body, _ := json.Marshal(reqBody)
-	req := httptest.NewRequest(http.MethodPost, "/hyper2kvm/import", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/h2kvm/import", bytes.NewReader(body))
 	w := httptest.NewRecorder()
 
 	server.handleImportToKVM(w, req)
@@ -128,7 +128,7 @@ func TestHandleImportToKVM(t *testing.T) {
 func TestHandleVMDKParserMethodNotAllowed(t *testing.T) {
 	server := setupTestBasicServer(t)
 
-	req := httptest.NewRequest(http.MethodPost, "/hyper2kvm/parse?path=/tmp/test.vmdk", nil)
+	req := httptest.NewRequest(http.MethodPost, "/h2kvm/parse?path=/tmp/test.vmdk", nil)
 	w := httptest.NewRecorder()
 
 	server.handleVMDKParser(w, req)
@@ -141,7 +141,7 @@ func TestHandleVMDKParserMethodNotAllowed(t *testing.T) {
 func TestHandleVMDKParserMissingPath(t *testing.T) {
 	server := setupTestBasicServer(t)
 
-	req := httptest.NewRequest(http.MethodGet, "/hyper2kvm/parse", nil)
+	req := httptest.NewRequest(http.MethodGet, "/h2kvm/parse", nil)
 	w := httptest.NewRecorder()
 
 	server.handleVMDKParser(w, req)
@@ -154,7 +154,7 @@ func TestHandleVMDKParserMissingPath(t *testing.T) {
 func TestHandleVMDKParser(t *testing.T) {
 	server := setupTestBasicServer(t)
 
-	req := httptest.NewRequest(http.MethodGet, "/hyper2kvm/parse?path=/tmp/test.vmdk", nil)
+	req := httptest.NewRequest(http.MethodGet, "/h2kvm/parse?path=/tmp/test.vmdk", nil)
 	w := httptest.NewRecorder()
 
 	server.handleVMDKParser(w, req)
@@ -168,7 +168,7 @@ func TestHandleVMDKParser(t *testing.T) {
 func TestHandleListConversionsMethodNotAllowed(t *testing.T) {
 	server := setupTestBasicServer(t)
 
-	req := httptest.NewRequest(http.MethodPost, "/hyper2kvm/conversions", nil)
+	req := httptest.NewRequest(http.MethodPost, "/h2kvm/conversions", nil)
 	w := httptest.NewRecorder()
 
 	server.handleListConversions(w, req)
@@ -181,7 +181,7 @@ func TestHandleListConversionsMethodNotAllowed(t *testing.T) {
 func TestHandleListConversions(t *testing.T) {
 	server := setupTestBasicServer(t)
 
-	req := httptest.NewRequest(http.MethodGet, "/hyper2kvm/conversions", nil)
+	req := httptest.NewRequest(http.MethodGet, "/h2kvm/conversions", nil)
 	w := httptest.NewRecorder()
 
 	server.handleListConversions(w, req)
@@ -203,7 +203,7 @@ func TestHandleListConversions(t *testing.T) {
 func TestHandleConversionStatusMethodNotAllowed(t *testing.T) {
 	server := setupTestBasicServer(t)
 
-	req := httptest.NewRequest(http.MethodPost, "/hyper2kvm/status?id=conv-123", nil)
+	req := httptest.NewRequest(http.MethodPost, "/h2kvm/status?id=conv-123", nil)
 	w := httptest.NewRecorder()
 
 	server.handleConversionStatus(w, req)
@@ -216,7 +216,7 @@ func TestHandleConversionStatusMethodNotAllowed(t *testing.T) {
 func TestHandleConversionStatusMissingID(t *testing.T) {
 	server := setupTestBasicServer(t)
 
-	req := httptest.NewRequest(http.MethodGet, "/hyper2kvm/status", nil)
+	req := httptest.NewRequest(http.MethodGet, "/h2kvm/status", nil)
 	w := httptest.NewRecorder()
 
 	server.handleConversionStatus(w, req)
@@ -229,7 +229,7 @@ func TestHandleConversionStatusMissingID(t *testing.T) {
 func TestHandleConversionStatus(t *testing.T) {
 	server := setupTestBasicServer(t)
 
-	req := httptest.NewRequest(http.MethodGet, "/hyper2kvm/status?id=conv-123", nil)
+	req := httptest.NewRequest(http.MethodGet, "/h2kvm/status?id=conv-123", nil)
 	w := httptest.NewRecorder()
 
 	server.handleConversionStatus(w, req)

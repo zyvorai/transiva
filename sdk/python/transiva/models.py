@@ -54,7 +54,8 @@ class ExportOptions:
     remove_cdrom: bool = False
     show_individual_progress: bool = False
     enable_pipeline: bool = False
-    hyper2kvm_path: Optional[str] = None
+    h2kvm_path: Optional[str] = None
+    hyper2kvm_path: Optional[str] = None  # Deprecated: use h2kvm_path
     pipeline_inspect: bool = False
     pipeline_fix: bool = False
     pipeline_convert: bool = False

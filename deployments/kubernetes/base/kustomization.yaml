@@ -44,4 +44,4 @@ images:
 # Common annotations
 commonAnnotations:
   description: "HyperSDK multi-cloud VM migration platform"
-  documentation: "https://github.com/ssahani/transiva"
+  documentation: "https://github.com/zyvorai/transiva"

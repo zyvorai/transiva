@@ -1,6 +1,6 @@
-# hyper2kvm-daemon Packaging
+# h2kvm-daemon Packaging
 
-This directory contains packaging files for distributing hyper2kvm systemd daemon integration.
+This directory contains packaging files for distributing h2kvm systemd daemon integration.
 
 ## Available Packages
 
@@ -14,7 +14,7 @@ RPM packages for Red Hat-based distributions.
 ```bash
 cd rpm
 ./build.sh
-sudo rpm -ivh ~/rpmbuild/RPMS/noarch/hyper2kvm-daemon-*.rpm
+sudo rpm -ivh ~/rpmbuild/RPMS/noarch/h2kvm-daemon-*.rpm
 ```
 
 **Documentation**: [rpm/README.md](rpm/README.md)
@@ -32,24 +32,24 @@ sudo rpm -ivh ~/rpmbuild/RPMS/noarch/hyper2kvm-daemon-*.rpm
 All packages install:
 
 ### Systemd Service Units
-- `hyper2kvm.service` - Default daemon instance
-- `hyper2kvm@.service` - Template for named instances (vsphere, aws, etc.)
-- `hyper2kvm.target` - Target to manage all instances
+- `h2kvm.service` - Default daemon instance
+- `h2kvm@.service` - Template for named instances (vsphere, aws, etc.)
+- `h2kvm.target` - Target to manage all instances
 
 ### Configuration Templates
-- `hyper2kvm.conf.example` - Default configuration
-- `hyper2kvm-vsphere.conf.example` - vSphere-optimized settings
-- `hyper2kvm-aws.conf.example` - AWS-optimized settings
+- `h2kvm.conf.example` - Default configuration
+- `h2kvm-vsphere.conf.example` - vSphere-optimized settings
+- `h2kvm-aws.conf.example` - AWS-optimized settings
 
 ### Runtime Directories
-- `/var/lib/hyper2kvm/queue` - Watch directory for manifest files
-- `/var/lib/hyper2kvm/output` - Output directory for converted VMs
-- `/var/log/hyper2kvm` - Log directory
-- `/var/cache/hyper2kvm` - Cache directory
+- `/var/lib/h2kvm/queue` - Watch directory for manifest files
+- `/var/lib/h2kvm/output` - Output directory for converted VMs
+- `/var/log/h2kvm` - Log directory
+- `/var/cache/h2kvm` - Cache directory
 
 ### System User
-- User: `hyper2kvm` (system account)
-- Group: `hyper2kvm`
+- User: `h2kvm` (system account)
+- Group: `h2kvm`
 - Additional groups: `kvm`, `libvirt` (if available)
 
 ### Documentation
@@ -70,40 +70,40 @@ All packages require:
 
 **RPM**:
 ```bash
-sudo rpm -ivh hyper2kvm-daemon-1.0.0-1.el9.noarch.rpm
+sudo rpm -ivh h2kvm-daemon-1.0.0-1.el9.noarch.rpm
 ```
 
 ### 2. Configure
 
 ```bash
 # Copy example configuration
-sudo cp /etc/hyper2kvm/hyper2kvm.conf.example /etc/hyper2kvm/hyper2kvm.conf
+sudo cp /etc/h2kvm/h2kvm.conf.example /etc/h2kvm/h2kvm.conf
 
 # Edit as needed
-sudo vi /etc/hyper2kvm/hyper2kvm.conf
+sudo vi /etc/h2kvm/h2kvm.conf
 ```
 
 ### 3. Start Service
 
 ```bash
 # Enable and start
-sudo systemctl enable --now hyper2kvm.service
+sudo systemctl enable --now h2kvm.service
 
 # Check status
-sudo systemctl status hyper2kvm.service
+sudo systemctl status h2kvm.service
 ```
 
 ### 4. Verify
 
 ```bash
 # Check directories
-ls -ld /var/lib/hyper2kvm/{queue,output}
+ls -ld /var/lib/h2kvm/{queue,output}
 
 # Check user
-id hyper2kvm
+id h2kvm
 
 # View logs
-sudo journalctl -u hyper2kvm.service -f
+sudo journalctl -u h2kvm.service -f
 ```
 
 ## Usage with HyperSDK
@@ -117,7 +117,7 @@ hyperexport --vm "Ubuntu-Server" \
   --output /tmp/export \
   --manifest \
   --pipeline \
-  --hyper2kvm-daemon
+  --h2kvm-daemon
 ```
 
 ### Interactive TUI
@@ -149,38 +149,38 @@ Deploy multiple daemon instances for different cloud providers:
 
 ```bash
 # Install package (if not already installed)
-sudo rpm -ivh hyper2kvm-daemon-*.rpm
+sudo rpm -ivh h2kvm-daemon-*.rpm
 
 # Configure vSphere instance
-sudo cp /etc/hyper2kvm/hyper2kvm-vsphere.conf.example /etc/hyper2kvm/hyper2kvm-vsphere.conf
-sudo vi /etc/hyper2kvm/hyper2kvm-vsphere.conf
+sudo cp /etc/h2kvm/h2kvm-vsphere.conf.example /etc/h2kvm/h2kvm-vsphere.conf
+sudo vi /etc/h2kvm/h2kvm-vsphere.conf
 
 # Start instance
-sudo systemctl enable --now hyper2kvm@vsphere.service
+sudo systemctl enable --now h2kvm@vsphere.service
 
 # Check status
-sudo systemctl status hyper2kvm@vsphere.service
+sudo systemctl status h2kvm@vsphere.service
 ```
 
 ### AWS Instance
 
 ```bash
 # Configure AWS instance
-sudo cp /etc/hyper2kvm/hyper2kvm-aws.conf.example /etc/hyper2kvm/hyper2kvm-aws.conf
-sudo vi /etc/hyper2kvm/hyper2kvm-aws.conf
+sudo cp /etc/h2kvm/h2kvm-aws.conf.example /etc/h2kvm/h2kvm-aws.conf
+sudo vi /etc/h2kvm/h2kvm-aws.conf
 
 # Start instance
-sudo systemctl enable --now hyper2kvm@aws.service
+sudo systemctl enable --now h2kvm@aws.service
 ```
 
 ### Manage All Instances
 
 ```bash
 # Start all instances
-sudo systemctl start hyper2kvm.target
+sudo systemctl start h2kvm.target
 
 # Check all instances
-sudo systemctl status 'hyper2kvm@*'
+sudo systemctl status 'h2kvm@*'
 ```
 
 ## Uninstallation
@@ -189,16 +189,16 @@ sudo systemctl status 'hyper2kvm@*'
 
 ```bash
 # Stop services
-sudo systemctl stop hyper2kvm.service 'hyper2kvm@*'
+sudo systemctl stop h2kvm.service 'h2kvm@*'
 
 # Remove package
-sudo rpm -e hyper2kvm-daemon
+sudo rpm -e h2kvm-daemon
 
 # Optionally remove data (careful!)
-sudo rm -rf /var/lib/hyper2kvm
-sudo rm -rf /var/log/hyper2kvm
-sudo rm -rf /etc/hyper2kvm
-sudo userdel hyper2kvm
+sudo rm -rf /var/lib/h2kvm
+sudo rm -rf /var/log/h2kvm
+sudo rm -rf /etc/h2kvm
+sudo userdel h2kvm
 ```
 
 ## Building from Source
@@ -236,16 +236,16 @@ Create a local repository:
 
 ```bash
 # Create repo directory
-mkdir -p ~/hyper2kvm-repo/el9/x86_64
+mkdir -p ~/h2kvm-repo/el9/x86_64
 
 # Copy RPM
-cp ~/rpmbuild/RPMS/noarch/hyper2kvm-daemon-*.rpm ~/hyper2kvm-repo/el9/x86_64/
+cp ~/rpmbuild/RPMS/noarch/h2kvm-daemon-*.rpm ~/h2kvm-repo/el9/x86_64/
 
 # Create metadata
-createrepo ~/hyper2kvm-repo/el9/x86_64
+createrepo ~/h2kvm-repo/el9/x86_64
 
 # Serve via HTTP
-cd ~/hyper2kvm-repo
+cd ~/h2kvm-repo
 python3 -m http.server 8080
 ```
 
@@ -253,16 +253,16 @@ Configure clients:
 
 ```bash
 # Create repo file
-sudo tee /etc/yum.repos.d/hyper2kvm.repo << EOF
-[hyper2kvm]
-name=hyper2kvm Repository
+sudo tee /etc/yum.repos.d/h2kvm.repo << EOF
+[h2kvm]
+name=h2kvm Repository
 baseurl=http://your-server:8080/el9/x86_64
 enabled=1
 gpgcheck=0
 EOF
 
 # Install
-sudo dnf install hyper2kvm-daemon
+sudo dnf install h2kvm-daemon
 ```
 
 ## Security
@@ -272,16 +272,16 @@ sudo dnf install hyper2kvm-daemon
 **RPM**:
 ```bash
 # Verify package integrity
-rpm -V hyper2kvm-daemon
+rpm -V h2kvm-daemon
 
 # Check signatures (if GPG signed)
-rpm -K ~/rpmbuild/RPMS/noarch/hyper2kvm-daemon-*.rpm
+rpm -K ~/rpmbuild/RPMS/noarch/h2kvm-daemon-*.rpm
 ```
 
 ### Service Security
 
 The daemon runs with security hardening:
-- **Non-root user**: Runs as `hyper2kvm` system user
+- **Non-root user**: Runs as `h2kvm` system user
 - **Resource limits**: Memory (4GB), CPU (200%)
 - **Filesystem restrictions**: Read-only system, specific write paths
 - **System call filtering**: Only allowed syscalls
@@ -295,43 +295,43 @@ The daemon runs with security hardening:
 **RPM**:
 ```bash
 # Check dependencies
-rpm -qpR hyper2kvm-daemon-*.rpm
+rpm -qpR h2kvm-daemon-*.rpm
 
 # Force install (not recommended)
-sudo rpm -ivh --nodeps hyper2kvm-daemon-*.rpm
+sudo rpm -ivh --nodeps h2kvm-daemon-*.rpm
 ```
 
 ### Service Won't Start
 
 ```bash
-# Check if hyper2kvm binary exists
-which hyper2kvm
+# Check if h2kvm binary exists
+which h2kvm
 
 # Note: This package only installs systemd units.
-# The hyper2kvm binary must be installed separately.
+# The h2kvm binary must be installed separately.
 
 # Check logs
-sudo journalctl -u hyper2kvm.service -n 50
+sudo journalctl -u h2kvm.service -n 50
 ```
 
 ### Permission Issues
 
 ```bash
 # Fix directory ownership
-sudo chown -R hyper2kvm:hyper2kvm /var/lib/hyper2kvm
-sudo chown -R hyper2kvm:hyper2kvm /var/log/hyper2kvm
+sudo chown -R h2kvm:h2kvm /var/lib/h2kvm
+sudo chown -R h2kvm:h2kvm /var/log/h2kvm
 
 # Check user groups
-groups hyper2kvm
+groups h2kvm
 
 # Add to required groups
-sudo usermod -aG kvm,libvirt hyper2kvm
+sudo usermod -aG kvm,libvirt h2kvm
 ```
 
 ## Support
 
 For issues or questions:
-- GitHub Issues: https://github.com/ssahani/transiva/issues
+- GitHub Issues: https://github.com/zyvorai/transiva/issues
 - Documentation: See [systemd/README.md](../systemd/README.md)
 
 ## License

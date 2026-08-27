@@ -1,36 +1,36 @@
 [Unit]
-Description=hyper2kvm VM Conversion Daemon (Default Instance)
-Documentation=https://github.com/ssahani/hyper2kvm
+Description=h2kvm VM Conversion Daemon (Default Instance)
+Documentation=https://github.com/zyvorai/h2kvm
 After=network.target
 
 [Service]
 Type=simple
-User=hyper2kvm
-Group=hyper2kvm
+User=h2kvm
+Group=h2kvm
 
 # Environment configuration
-EnvironmentFile=-/etc/hyper2kvm/hyper2kvm.conf
+EnvironmentFile=-/etc/h2kvm/h2kvm.conf
 
 # Working directories
-WorkingDirectory=/var/lib/hyper2kvm
-StateDirectory=hyper2kvm
+WorkingDirectory=/var/lib/h2kvm
+StateDirectory=h2kvm
 StateDirectoryMode=0755
-CacheDirectory=hyper2kvm
+CacheDirectory=h2kvm
 CacheDirectoryMode=0755
-LogsDirectory=hyper2kvm
+LogsDirectory=h2kvm
 LogsDirectoryMode=0755
 
 # Runtime directories
-RuntimeDirectory=hyper2kvm
+RuntimeDirectory=h2kvm
 RuntimeDirectoryMode=0755
 
 # Watch and output directories
-Environment="WATCH_DIR=/var/lib/hyper2kvm/queue"
-Environment="OUTPUT_DIR=/var/lib/hyper2kvm/output"
+Environment="WATCH_DIR=/var/lib/h2kvm/queue"
+Environment="OUTPUT_DIR=/var/lib/h2kvm/output"
 Environment="LOG_LEVEL=info"
 
 # Binary path (update this to match your installation)
-ExecStart=/usr/local/bin/hyper2kvm daemon \
+ExecStart=/usr/local/bin/h2kvm daemon \
     --watch-dir=${WATCH_DIR} \
     --output-dir=${OUTPUT_DIR} \
     --log-level=${LOG_LEVEL}
@@ -53,7 +53,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/var/lib/hyper2kvm /var/log/hyper2kvm
+ReadWritePaths=/var/lib/h2kvm /var/log/h2kvm
 ProtectKernelTunables=true
 ProtectKernelModules=true
 ProtectControlGroups=true
@@ -70,3 +70,6 @@ AmbientCapabilities=CAP_DAC_OVERRIDE CAP_FOWNER
 
 [Install]
 WantedBy=multi-user.target
+# Compat: "systemctl enable" also creates a hyper2kvm.service symlink so
+# tooling/scripts written against the pre-rename unit name keep working.
+Alias=hyper2kvm.service

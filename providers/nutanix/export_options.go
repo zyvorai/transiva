@@ -19,7 +19,7 @@ type nutanixExportOptions struct {
 	ResolveContainers bool
 	EnablePipeline    bool
 	PipelineTimeout   time.Duration
-	Pipeline          common.Hyper2KVMConfig
+	Pipeline          common.H2KVMConfig
 }
 
 func mergeExportOptions(p *Provider, opts providers.ExportOptions) (nutanixExportOptions, error) {
@@ -101,9 +101,11 @@ func applyExportMetadata(out *nutanixExportOptions, meta map[string]interface{})
 	applyPipelineMetadata(&out.Pipeline, meta)
 }
 
-func applyPipelineMetadata(cfg *common.Hyper2KVMConfig, meta map[string]interface{}) {
-	if v, ok := metaString(meta, "hyper2kvm_path"); ok {
-		cfg.Hyper2KVMPath = v
+func applyPipelineMetadata(cfg *common.H2KVMConfig, meta map[string]interface{}) {
+	// h2kvm_* keys are primary; hyper2kvm_* are accepted as deprecated aliases
+	// for configs written before the h2kvm rename.
+	if v, ok := metaString(meta, "h2kvm_path", "hyper2kvm_path"); ok {
+		cfg.H2KVMPath = v
 	}
 	if v, ok := metaBool(meta, "libvirt_integration"); ok {
 		cfg.LibvirtIntegration = v
@@ -117,22 +119,22 @@ func applyPipelineMetadata(cfg *common.Hyper2KVMConfig, meta map[string]interfac
 	if v, ok := metaBool(meta, "pipeline_dry_run"); ok {
 		cfg.DryRun = v
 	}
-	if v, ok := metaBool(meta, "hyper2kvm_daemon", "use_daemon"); ok {
+	if v, ok := metaBool(meta, "h2kvm_daemon", "hyper2kvm_daemon", "use_daemon"); ok {
 		cfg.UseDaemon = v
 	}
-	if v, ok := metaString(meta, "hyper2kvm_instance", "daemon_instance"); ok {
+	if v, ok := metaString(meta, "h2kvm_instance", "hyper2kvm_instance", "daemon_instance"); ok {
 		cfg.DaemonInstance = v
 	}
-	if v, ok := metaString(meta, "hyper2kvm_watch_dir", "daemon_watch_dir"); ok {
+	if v, ok := metaString(meta, "h2kvm_watch_dir", "hyper2kvm_watch_dir", "daemon_watch_dir"); ok {
 		cfg.DaemonWatchDir = v
 	}
-	if v, ok := metaString(meta, "hyper2kvm_output_dir", "daemon_output_dir"); ok {
+	if v, ok := metaString(meta, "h2kvm_output_dir", "hyper2kvm_output_dir", "daemon_output_dir"); ok {
 		cfg.DaemonOutputDir = v
 	}
-	if v, ok := metaInt(meta, "hyper2kvm_poll_interval", "daemon_poll_interval"); ok {
+	if v, ok := metaInt(meta, "h2kvm_poll_interval", "hyper2kvm_poll_interval", "daemon_poll_interval"); ok {
 		cfg.DaemonPollInterval = v
 	}
-	if v, ok := metaInt(meta, "hyper2kvm_daemon_timeout", "daemon_timeout"); ok {
+	if v, ok := metaInt(meta, "h2kvm_daemon_timeout", "hyper2kvm_daemon_timeout", "daemon_timeout"); ok {
 		cfg.DaemonTimeout = v
 	}
 }

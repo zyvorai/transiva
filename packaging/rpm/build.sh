@@ -1,9 +1,9 @@
 #!/bin/bash
 # SPDX-License-Identifier: Apache-2.0
 #
-# RPM Build Script for hyper2kvm-daemon
+# RPM Build Script for h2kvm-daemon
 #
-# This script builds RPM packages for the hyper2kvm systemd daemon.
+# This script builds RPM packages for the h2kvm systemd daemon.
 #
 # Usage:
 #   ./build.sh [options]
@@ -48,7 +48,7 @@ step() {
 # Function to show usage
 show_usage() {
     cat << EOF
-RPM Build Script for hyper2kvm-daemon
+RPM Build Script for h2kvm-daemon
 
 Usage:
   $0 [options]
@@ -136,11 +136,11 @@ info "RPM build tree ready"
 # Clean if requested
 if $CLEAN; then
     step "Cleaning previous build artifacts..."
-    rm -rf ~/rpmbuild/BUILD/hyper2kvm-daemon-*
-    rm -rf ~/rpmbuild/BUILDROOT/hyper2kvm-daemon-*
-    rm -f ~/rpmbuild/SOURCES/hyper2kvm-daemon-*.tar.gz
-    rm -f ~/rpmbuild/RPMS/noarch/hyper2kvm-daemon-*.rpm
-    rm -f ~/rpmbuild/SRPMS/hyper2kvm-daemon-*.rpm
+    rm -rf ~/rpmbuild/BUILD/h2kvm-daemon-*
+    rm -rf ~/rpmbuild/BUILDROOT/h2kvm-daemon-*
+    rm -f ~/rpmbuild/SOURCES/h2kvm-daemon-*.tar.gz
+    rm -f ~/rpmbuild/RPMS/noarch/h2kvm-daemon-*.rpm
+    rm -f ~/rpmbuild/SRPMS/h2kvm-daemon-*.rpm
     info "Cleaned build artifacts"
 fi
 
@@ -152,7 +152,7 @@ step "Creating source tarball..."
 
 # Create temporary directory for tarball
 TEMP_DIR=$(mktemp -d)
-PACKAGE_DIR="$TEMP_DIR/hyper2kvm-daemon-$VERSION"
+PACKAGE_DIR="$TEMP_DIR/h2kvm-daemon-$VERSION"
 
 mkdir -p "$PACKAGE_DIR"
 
@@ -191,31 +191,31 @@ fi
 
 # Create tarball
 cd "$TEMP_DIR"
-tar czf "hyper2kvm-daemon-${VERSION}.tar.gz" "hyper2kvm-daemon-${VERSION}"
+tar czf "h2kvm-daemon-${VERSION}.tar.gz" "h2kvm-daemon-${VERSION}"
 
 # Move tarball to SOURCES
-mv "hyper2kvm-daemon-${VERSION}.tar.gz" ~/rpmbuild/SOURCES/
+mv "h2kvm-daemon-${VERSION}.tar.gz" ~/rpmbuild/SOURCES/
 
 # Cleanup temp dir
 rm -rf "$TEMP_DIR"
 
-info "Source tarball created: ~/rpmbuild/SOURCES/hyper2kvm-daemon-${VERSION}.tar.gz"
+info "Source tarball created: ~/rpmbuild/SOURCES/h2kvm-daemon-${VERSION}.tar.gz"
 
 # Copy spec file
 step "Copying spec file..."
 
-cp "$SCRIPT_DIR/hyper2kvm-daemon.spec" ~/rpmbuild/SPECS/
+cp "$SCRIPT_DIR/h2kvm-daemon.spec" ~/rpmbuild/SPECS/
 
 # Update version and release in spec file
-sed -i "s/^Version:.*/Version:        $VERSION/" ~/rpmbuild/SPECS/hyper2kvm-daemon.spec
-sed -i "s/^Release:.*/Release:        $RELEASE%{?dist}/" ~/rpmbuild/SPECS/hyper2kvm-daemon.spec
+sed -i "s/^Version:.*/Version:        $VERSION/" ~/rpmbuild/SPECS/h2kvm-daemon.spec
+sed -i "s/^Release:.*/Release:        $RELEASE%{?dist}/" ~/rpmbuild/SPECS/h2kvm-daemon.spec
 
-info "Spec file ready: ~/rpmbuild/SPECS/hyper2kvm-daemon.spec"
+info "Spec file ready: ~/rpmbuild/SPECS/h2kvm-daemon.spec"
 
 # Build RPM
 step "Building RPM package..."
 
-rpmbuild -ba ~/rpmbuild/SPECS/hyper2kvm-daemon.spec
+rpmbuild -ba ~/rpmbuild/SPECS/h2kvm-daemon.spec
 
 # Check build results
 if [ $? -eq 0 ]; then
@@ -223,20 +223,20 @@ if [ $? -eq 0 ]; then
     info "✅ RPM build completed successfully!"
     echo
     info "Built packages:"
-    ls -lh ~/rpmbuild/RPMS/noarch/hyper2kvm-daemon-*.rpm 2>/dev/null || true
-    ls -lh ~/rpmbuild/SRPMS/hyper2kvm-daemon-*.rpm 2>/dev/null || true
+    ls -lh ~/rpmbuild/RPMS/noarch/h2kvm-daemon-*.rpm 2>/dev/null || true
+    ls -lh ~/rpmbuild/SRPMS/h2kvm-daemon-*.rpm 2>/dev/null || true
     echo
     info "To install:"
-    echo "  sudo rpm -ivh ~/rpmbuild/RPMS/noarch/hyper2kvm-daemon-${VERSION}-${RELEASE}.*.rpm"
+    echo "  sudo rpm -ivh ~/rpmbuild/RPMS/noarch/h2kvm-daemon-${VERSION}-${RELEASE}.*.rpm"
     echo
     info "To upgrade:"
-    echo "  sudo rpm -Uvh ~/rpmbuild/RPMS/noarch/hyper2kvm-daemon-${VERSION}-${RELEASE}.*.rpm"
+    echo "  sudo rpm -Uvh ~/rpmbuild/RPMS/noarch/h2kvm-daemon-${VERSION}-${RELEASE}.*.rpm"
     echo
     info "To query package info:"
-    echo "  rpm -qpi ~/rpmbuild/RPMS/noarch/hyper2kvm-daemon-${VERSION}-${RELEASE}.*.rpm"
+    echo "  rpm -qpi ~/rpmbuild/RPMS/noarch/h2kvm-daemon-${VERSION}-${RELEASE}.*.rpm"
     echo
     info "To list package contents:"
-    echo "  rpm -qpl ~/rpmbuild/RPMS/noarch/hyper2kvm-daemon-${VERSION}-${RELEASE}.*.rpm"
+    echo "  rpm -qpl ~/rpmbuild/RPMS/noarch/h2kvm-daemon-${VERSION}-${RELEASE}.*.rpm"
 else
     error "RPM build failed"
     exit 1

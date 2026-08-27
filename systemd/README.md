@@ -1,10 +1,10 @@
-# hyper2kvm Systemd Integration
+# h2kvm Systemd Integration
 
-This directory contains systemd unit files for deploying hyper2kvm as a system daemon.
+This directory contains systemd unit files for deploying h2kvm as a system daemon.
 
 ## Overview
 
-The hyper2kvm daemon watches a directory for VM conversion jobs (Artifact Manifest files) and automatically processes them. It supports:
+The h2kvm daemon watches a directory for VM conversion jobs (Artifact Manifest files) and automatically processes them. It supports:
 
 - **Default instance**: Single daemon for general use
 - **Named instances**: Multiple daemons with different configurations (e.g., vsphere, aws, azure)
@@ -15,77 +15,77 @@ The hyper2kvm daemon watches a directory for VM conversion jobs (Artifact Manife
 
 ## Files
 
-- `hyper2kvm.service` - Default daemon instance
-- `hyper2kvm@.service` - Template for named instances
-- `hyper2kvm.target` - Target to manage all instances
-- `hyper2kvm.conf.example` - Default configuration
-- `hyper2kvm-vsphere.conf.example` - vSphere-specific configuration
-- `hyper2kvm-aws.conf.example` - AWS-specific configuration
+- `h2kvm.service` - Default daemon instance
+- `h2kvm@.service` - Template for named instances
+- `h2kvm.target` - Target to manage all instances
+- `h2kvm.conf.example` - Default configuration
+- `h2kvm-vsphere.conf.example` - vSphere-specific configuration
+- `h2kvm-aws.conf.example` - AWS-specific configuration
 
 ## Installation
 
 ### Prerequisites
 
-1. **hyper2kvm binary**: Install to `/usr/local/bin/hyper2kvm`
+1. **h2kvm binary**: Install to `/usr/local/bin/h2kvm`
 2. **System user**: Create dedicated user for the daemon
 3. **Directories**: Create required directories with correct permissions
 
 ### Step 1: Create System User
 
 ```bash
-# Create hyper2kvm user and group
-sudo useradd --system --no-create-home --shell /usr/sbin/nologin hyper2kvm
+# Create h2kvm user and group
+sudo useradd --system --no-create-home --shell /usr/sbin/nologin h2kvm
 
-# Add hyper2kvm to kvm and libvirt groups (if using libvirt)
-sudo usermod -aG kvm,libvirt hyper2kvm
+# Add h2kvm to kvm and libvirt groups (if using libvirt)
+sudo usermod -aG kvm,libvirt h2kvm
 ```
 
-### Step 2: Install hyper2kvm Binary
+### Step 2: Install h2kvm Binary
 
 ```bash
 # Copy binary (adjust path as needed)
-sudo cp /path/to/hyper2kvm /usr/local/bin/
-sudo chmod 755 /usr/local/bin/hyper2kvm
-sudo chown root:root /usr/local/bin/hyper2kvm
+sudo cp /path/to/h2kvm /usr/local/bin/
+sudo chmod 755 /usr/local/bin/h2kvm
+sudo chown root:root /usr/local/bin/h2kvm
 
 # Verify installation
-hyper2kvm --version
+h2kvm --version
 ```
 
 ### Step 3: Create Directories
 
 ```bash
 # Create base directories
-sudo mkdir -p /var/lib/hyper2kvm/{queue,output}
-sudo mkdir -p /var/log/hyper2kvm
-sudo mkdir -p /var/cache/hyper2kvm
-sudo mkdir -p /etc/hyper2kvm
+sudo mkdir -p /var/lib/h2kvm/{queue,output}
+sudo mkdir -p /var/log/h2kvm
+sudo mkdir -p /var/cache/h2kvm
+sudo mkdir -p /etc/h2kvm
 
 # Set ownership
-sudo chown -R hyper2kvm:hyper2kvm /var/lib/hyper2kvm
-sudo chown -R hyper2kvm:hyper2kvm /var/log/hyper2kvm
-sudo chown -R hyper2kvm:hyper2kvm /var/cache/hyper2kvm
+sudo chown -R h2kvm:h2kvm /var/lib/h2kvm
+sudo chown -R h2kvm:h2kvm /var/log/h2kvm
+sudo chown -R h2kvm:h2kvm /var/cache/h2kvm
 
 # Set permissions
-sudo chmod 755 /var/lib/hyper2kvm
-sudo chmod 755 /var/lib/hyper2kvm/queue
-sudo chmod 755 /var/lib/hyper2kvm/output
-sudo chmod 755 /var/log/hyper2kvm
-sudo chmod 755 /var/cache/hyper2kvm
+sudo chmod 755 /var/lib/h2kvm
+sudo chmod 755 /var/lib/h2kvm/queue
+sudo chmod 755 /var/lib/h2kvm/output
+sudo chmod 755 /var/log/h2kvm
+sudo chmod 755 /var/cache/h2kvm
 ```
 
 ### Step 4: Install Systemd Units
 
 ```bash
 # Copy unit files
-sudo cp systemd/hyper2kvm.service /etc/systemd/system/
-sudo cp systemd/hyper2kvm@.service /etc/systemd/system/
-sudo cp systemd/hyper2kvm.target /etc/systemd/system/
+sudo cp systemd/h2kvm.service /etc/systemd/system/
+sudo cp systemd/h2kvm@.service /etc/systemd/system/
+sudo cp systemd/h2kvm.target /etc/systemd/system/
 
 # Set permissions
-sudo chmod 644 /etc/systemd/system/hyper2kvm.service
-sudo chmod 644 /etc/systemd/system/hyper2kvm@.service
-sudo chmod 644 /etc/systemd/system/hyper2kvm.target
+sudo chmod 644 /etc/systemd/system/h2kvm.service
+sudo chmod 644 /etc/systemd/system/h2kvm@.service
+sudo chmod 644 /etc/systemd/system/h2kvm.target
 
 # Reload systemd
 sudo systemctl daemon-reload
@@ -95,28 +95,28 @@ sudo systemctl daemon-reload
 
 ```bash
 # Copy example configuration
-sudo cp systemd/hyper2kvm.conf.example /etc/hyper2kvm/hyper2kvm.conf
+sudo cp systemd/h2kvm.conf.example /etc/h2kvm/h2kvm.conf
 
 # Edit configuration
-sudo vi /etc/hyper2kvm/hyper2kvm.conf
+sudo vi /etc/h2kvm/h2kvm.conf
 
 # Set permissions
-sudo chmod 640 /etc/hyper2kvm/hyper2kvm.conf
-sudo chown root:hyper2kvm /etc/hyper2kvm/hyper2kvm.conf
+sudo chmod 640 /etc/h2kvm/h2kvm.conf
+sudo chown root:h2kvm /etc/h2kvm/h2kvm.conf
 ```
 
 ### Step 6: Start Daemon
 
 ```bash
 # Enable and start default instance
-sudo systemctl enable hyper2kvm.service
-sudo systemctl start hyper2kvm.service
+sudo systemctl enable h2kvm.service
+sudo systemctl start h2kvm.service
 
 # Check status
-sudo systemctl status hyper2kvm.service
+sudo systemctl status h2kvm.service
 
 # View logs
-sudo journalctl -u hyper2kvm.service -f
+sudo journalctl -u h2kvm.service -f
 ```
 
 ## Named Instances
@@ -127,35 +127,35 @@ Deploy multiple daemons with different configurations for different cloud provid
 
 ```bash
 # Create instance directories
-sudo mkdir -p /var/lib/hyper2kvm/vsphere/{queue,output}
-sudo chown -R hyper2kvm:hyper2kvm /var/lib/hyper2kvm/vsphere
+sudo mkdir -p /var/lib/h2kvm/vsphere/{queue,output}
+sudo chown -R h2kvm:h2kvm /var/lib/h2kvm/vsphere
 
 # Copy instance configuration
-sudo cp systemd/hyper2kvm-vsphere.conf.example /etc/hyper2kvm/hyper2kvm-vsphere.conf
-sudo vi /etc/hyper2kvm/hyper2kvm-vsphere.conf
+sudo cp systemd/h2kvm-vsphere.conf.example /etc/h2kvm/h2kvm-vsphere.conf
+sudo vi /etc/h2kvm/h2kvm-vsphere.conf
 
 # Start instance
-sudo systemctl enable hyper2kvm@vsphere.service
-sudo systemctl start hyper2kvm@vsphere.service
+sudo systemctl enable h2kvm@vsphere.service
+sudo systemctl start h2kvm@vsphere.service
 
 # Check status
-sudo systemctl status hyper2kvm@vsphere.service
+sudo systemctl status h2kvm@vsphere.service
 ```
 
 ### Example: Multiple Instances
 
 ```bash
 # Start multiple instances
-sudo systemctl start hyper2kvm@vsphere.service
-sudo systemctl start hyper2kvm@aws.service
-sudo systemctl start hyper2kvm@azure.service
+sudo systemctl start h2kvm@vsphere.service
+sudo systemctl start h2kvm@aws.service
+sudo systemctl start h2kvm@azure.service
 
 # Check all instances
-sudo systemctl status hyper2kvm@*.service
+sudo systemctl status h2kvm@*.service
 
 # Manage all instances via target
-sudo systemctl start hyper2kvm.target
-sudo systemctl stop hyper2kvm.target
+sudo systemctl start h2kvm.target
+sudo systemctl stop h2kvm.target
 ```
 
 ## Usage with HyperSDK
@@ -168,17 +168,17 @@ hyperexport --vm "Ubuntu-Server" \
   --output /tmp/export \
   --manifest \
   --pipeline \
-  --hyper2kvm-daemon
+  --h2kvm-daemon
 
 # Export with specific instance
 hyperexport --vm "Ubuntu-Server" \
   --output /tmp/export \
   --manifest \
   --pipeline \
-  --hyper2kvm-daemon \
-  --hyper2kvm-instance vsphere \
-  --hyper2kvm-watch-dir /var/lib/hyper2kvm/vsphere/queue \
-  --hyper2kvm-output-dir /var/lib/hyper2kvm/vsphere/output
+  --h2kvm-daemon \
+  --h2kvm-instance vsphere \
+  --h2kvm-watch-dir /var/lib/h2kvm/vsphere/queue \
+  --h2kvm-output-dir /var/lib/h2kvm/vsphere/output
 ```
 
 ### Interactive TUI
@@ -203,8 +203,8 @@ Submit jobs via the web dashboard with daemon mode enabled:
   "format": "ova",
   "options": {
     "enable_pipeline": true,
-    "hyper2kvm_daemon": true,
-    "hyper2kvm_instance": "vsphere",
+    "h2kvm_daemon": true,
+    "h2kvm_instance": "vsphere",
     "libvirt_integration": true
   }
 }
@@ -229,68 +229,68 @@ hyperctl daemon -op list
 
 ```bash
 # Default instance
-sudo systemctl start hyper2kvm.service
-sudo systemctl stop hyper2kvm.service
-sudo systemctl restart hyper2kvm.service
+sudo systemctl start h2kvm.service
+sudo systemctl stop h2kvm.service
+sudo systemctl restart h2kvm.service
 
 # Named instance
-sudo systemctl start hyper2kvm@vsphere.service
-sudo systemctl stop hyper2kvm@vsphere.service
-sudo systemctl restart hyper2kvm@vsphere.service
+sudo systemctl start h2kvm@vsphere.service
+sudo systemctl stop h2kvm@vsphere.service
+sudo systemctl restart h2kvm@vsphere.service
 
 # All instances
-sudo systemctl start hyper2kvm.target
-sudo systemctl stop hyper2kvm.target
+sudo systemctl start h2kvm.target
+sudo systemctl stop h2kvm.target
 ```
 
 ### Enable/Disable Auto-Start
 
 ```bash
 # Enable on boot
-sudo systemctl enable hyper2kvm.service
-sudo systemctl enable hyper2kvm@vsphere.service
+sudo systemctl enable h2kvm.service
+sudo systemctl enable h2kvm@vsphere.service
 
 # Disable on boot
-sudo systemctl disable hyper2kvm.service
-sudo systemctl disable hyper2kvm@vsphere.service
+sudo systemctl disable h2kvm.service
+sudo systemctl disable h2kvm@vsphere.service
 ```
 
 ### View Logs
 
 ```bash
 # Default instance
-sudo journalctl -u hyper2kvm.service -f
+sudo journalctl -u h2kvm.service -f
 
 # Named instance
-sudo journalctl -u hyper2kvm@vsphere.service -f
+sudo journalctl -u h2kvm@vsphere.service -f
 
 # All instances
-sudo journalctl -u 'hyper2kvm*' -f
+sudo journalctl -u 'h2kvm*' -f
 
 # Last 100 lines
-sudo journalctl -u hyper2kvm.service -n 100
+sudo journalctl -u h2kvm.service -n 100
 
 # Since yesterday
-sudo journalctl -u hyper2kvm.service --since yesterday
+sudo journalctl -u h2kvm.service --since yesterday
 
 # With priority (errors only)
-sudo journalctl -u hyper2kvm.service -p err
+sudo journalctl -u h2kvm.service -p err
 ```
 
 ### Check Status
 
 ```bash
 # Detailed status
-sudo systemctl status hyper2kvm.service
+sudo systemctl status h2kvm.service
 
 # Check if active
-systemctl is-active hyper2kvm.service
+systemctl is-active h2kvm.service
 
 # Check if enabled
-systemctl is-enabled hyper2kvm.service
+systemctl is-enabled h2kvm.service
 
 # Show properties
-systemctl show hyper2kvm.service
+systemctl show h2kvm.service
 ```
 
 ## Resource Management
@@ -302,7 +302,7 @@ The service files include memory limits to prevent runaway processes:
 - `MemoryMax=4G` - Hard limit (daemon will be killed if exceeded)
 - `MemoryHigh=3G` - Soft limit (daemon will be throttled)
 
-Adjust in `/etc/systemd/system/hyper2kvm.service`:
+Adjust in `/etc/systemd/system/h2kvm.service`:
 
 ```ini
 [Service]
@@ -314,7 +314,7 @@ Then reload:
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl restart hyper2kvm.service
+sudo systemctl restart h2kvm.service
 ```
 
 ### CPU Limits
@@ -334,7 +334,7 @@ CPUQuota=400%  # 4 cores
 
 ```bash
 # Current resource usage
-systemctl status hyper2kvm.service | grep -E 'Memory|CPU'
+systemctl status h2kvm.service | grep -E 'Memory|CPU'
 
 # Detailed cgroup stats
 systemd-cgtop -m
@@ -344,7 +344,7 @@ systemd-cgtop -m
 
 The service files include security hardening:
 
-- Runs as non-root `hyper2kvm` user
+- Runs as non-root `h2kvm` user
 - Private `/tmp` directory
 - Read-only filesystem (except specified paths)
 - Restricted system calls
@@ -360,8 +360,8 @@ If using AppArmor or SELinux, you may need to create profiles:
 sudo ausearch -m avc -ts recent
 
 # Generate policy (SELinux)
-sudo ausearch -m avc -ts recent | audit2allow -M hyper2kvm
-sudo semodule -i hyper2kvm.pp
+sudo ausearch -m avc -ts recent | audit2allow -M h2kvm
+sudo semodule -i h2kvm.pp
 ```
 
 ## Troubleshooting
@@ -370,90 +370,90 @@ sudo semodule -i hyper2kvm.pp
 
 ```bash
 # Check service status
-sudo systemctl status hyper2kvm.service
+sudo systemctl status h2kvm.service
 
 # Check logs for errors
-sudo journalctl -u hyper2kvm.service -n 50
+sudo journalctl -u h2kvm.service -n 50
 
 # Verify binary exists and is executable
-ls -l /usr/local/bin/hyper2kvm
+ls -l /usr/local/bin/h2kvm
 
 # Check permissions on directories
-ls -ld /var/lib/hyper2kvm
+ls -ld /var/lib/h2kvm
 ```
 
 ### Permission Denied
 
 ```bash
-# Verify hyper2kvm user ownership
-sudo chown -R hyper2kvm:hyper2kvm /var/lib/hyper2kvm
-sudo chown -R hyper2kvm:hyper2kvm /var/log/hyper2kvm
+# Verify h2kvm user ownership
+sudo chown -R h2kvm:h2kvm /var/lib/h2kvm
+sudo chown -R h2kvm:h2kvm /var/log/h2kvm
 
 # Check group membership (for libvirt)
-groups hyper2kvm
-# Should show: hyper2kvm kvm libvirt
+groups h2kvm
+# Should show: h2kvm kvm libvirt
 
 # Add to groups if missing
-sudo usermod -aG kvm,libvirt hyper2kvm
+sudo usermod -aG kvm,libvirt h2kvm
 ```
 
 ### Jobs Not Processing
 
 ```bash
 # Check watch directory
-ls -la /var/lib/hyper2kvm/queue/
+ls -la /var/lib/h2kvm/queue/
 
 # Verify daemon is watching correct directory
-systemctl show hyper2kvm.service | grep WATCH_DIR
+systemctl show h2kvm.service | grep WATCH_DIR
 
 # Check for errors in logs
-sudo journalctl -u hyper2kvm.service -p err
+sudo journalctl -u h2kvm.service -p err
 
 # Test manually
-echo '{"test": true}' | sudo -u hyper2kvm tee /var/lib/hyper2kvm/queue/test.json
+echo '{"test": true}' | sudo -u h2kvm tee /var/lib/h2kvm/queue/test.json
 ```
 
 ### High Resource Usage
 
 ```bash
 # Check current usage
-systemd-cgtop -m | grep hyper2kvm
+systemd-cgtop -m | grep h2kvm
 
 # Reduce concurrent conversions in config
-sudo vi /etc/hyper2kvm/hyper2kvm.conf
+sudo vi /etc/h2kvm/h2kvm.conf
 # Set: MAX_CONCURRENT=1
 
 # Restart daemon
-sudo systemctl restart hyper2kvm.service
+sudo systemctl restart h2kvm.service
 ```
 
 ## Uninstallation
 
 ```bash
 # Stop and disable services
-sudo systemctl stop hyper2kvm.service
-sudo systemctl disable hyper2kvm.service
-sudo systemctl stop hyper2kvm@*.service
+sudo systemctl stop h2kvm.service
+sudo systemctl disable h2kvm.service
+sudo systemctl stop h2kvm@*.service
 
 # Remove unit files
-sudo rm /etc/systemd/system/hyper2kvm.service
-sudo rm /etc/systemd/system/hyper2kvm@.service
-sudo rm /etc/systemd/system/hyper2kvm.target
+sudo rm /etc/systemd/system/h2kvm.service
+sudo rm /etc/systemd/system/h2kvm@.service
+sudo rm /etc/systemd/system/h2kvm.target
 
 # Reload systemd
 sudo systemctl daemon-reload
 
 # Remove binary
-sudo rm /usr/local/bin/hyper2kvm
+sudo rm /usr/local/bin/h2kvm
 
 # Remove directories (CAUTION: This deletes all data)
-sudo rm -rf /var/lib/hyper2kvm
-sudo rm -rf /var/log/hyper2kvm
-sudo rm -rf /var/cache/hyper2kvm
-sudo rm -rf /etc/hyper2kvm
+sudo rm -rf /var/lib/h2kvm
+sudo rm -rf /var/log/h2kvm
+sudo rm -rf /var/cache/h2kvm
+sudo rm -rf /etc/h2kvm
 
 # Remove user
-sudo userdel hyper2kvm
+sudo userdel h2kvm
 ```
 
 ## Examples
@@ -462,38 +462,38 @@ sudo userdel hyper2kvm
 
 ```bash
 # Single instance for development
-sudo systemctl start hyper2kvm.service
+sudo systemctl start h2kvm.service
 
 # Submit test job
 hyperexport --vm "test-vm" \
   --output /tmp/test \
   --manifest \
   --pipeline \
-  --hyper2kvm-daemon
+  --h2kvm-daemon
 ```
 
 ### Example 2: Production Multi-Cloud
 
 ```bash
 # Start instances for each cloud provider
-sudo systemctl start hyper2kvm@vsphere.service
-sudo systemctl start hyper2kvm@aws.service
-sudo systemctl start hyper2kvm@azure.service
+sudo systemctl start h2kvm@vsphere.service
+sudo systemctl start h2kvm@aws.service
+sudo systemctl start h2kvm@azure.service
 
 # Route jobs to appropriate instance
 hyperexport --vm "/DC1/vm/web01" \
   --output /exports/vsphere \
   --manifest \
   --pipeline \
-  --hyper2kvm-daemon \
-  --hyper2kvm-instance vsphere
+  --h2kvm-daemon \
+  --h2kvm-instance vsphere
 ```
 
 ### Example 3: Batch Processing
 
 ```bash
 # Start daemon
-sudo systemctl start hyper2kvm.service
+sudo systemctl start h2kvm.service
 
 # Batch export multiple VMs
 for vm in $(hyperctl list -filter prod | grep -v '^#' | awk '{print $2}'); do
@@ -501,16 +501,16 @@ for vm in $(hyperctl list -filter prod | grep -v '^#' | awk '{print $2}'); do
     --output /batch-exports \
     --manifest \
     --pipeline \
-    --hyper2kvm-daemon &
+    --h2kvm-daemon &
 done
 
 # Monitor progress
-watch -n 5 'ls -lh /var/lib/hyper2kvm/queue/ /var/lib/hyper2kvm/output/'
+watch -n 5 'ls -lh /var/lib/h2kvm/queue/ /var/lib/h2kvm/output/'
 ```
 
 ## See Also
 
 - [SYSTEMD_DAEMON_INTEGRATION.md](../SYSTEMD_DAEMON_INTEGRATION.md) - Integration architecture
 - [PIPELINE_INTEGRATION.md](../PIPELINE_INTEGRATION.md) - Pipeline details
-- hyper2kvm documentation: https://github.com/ssahani/hyper2kvm
+- h2kvm documentation: https://github.com/zyvorai/h2kvm
 - systemd documentation: https://www.freedesktop.org/software/systemd/man/

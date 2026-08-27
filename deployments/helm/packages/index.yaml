@@ -9,7 +9,7 @@ entries:
     created: "2026-01-30T20:49:22.168026929+05:30"
     description: Multi-cloud VM migration platform for Kubernetes
     digest: 6840f2c84bb3ce5936e277a0bbd696fcf37cee9d0829dcbe36fbdb41fa0478bd
-    home: https://github.com/ssahani/transiva
+    home: https://github.com/zyvorai/transiva
     icon: https://raw.githubusercontent.com/ssahani/transiva/main/docs/images/logo.png
     keywords:
     - vm-migration
@@ -23,7 +23,7 @@ entries:
       name: ZyvorAI Labs Private Limited
     name: transiva
     sources:
-    - https://github.com/ssahani/transiva
+    - https://github.com/zyvorai/transiva
     type: application
     urls:
     - https://ssahani.github.io/transiva/helm-charts/transiva-0.2.0.tgz

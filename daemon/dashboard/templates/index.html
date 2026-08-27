@@ -154,9 +154,9 @@
         <!-- Manifest Converter Tab -->
         <div class="tab-content" id="manifest-tab">
             <div class="manifest-container">
-                <h2>📦 Manifest Converter - One-Shot Hyper2KVM Conversion</h2>
+                <h2>📦 Manifest Converter - One-Shot H2KVM Conversion</h2>
                 <p class="manifest-description">
-                    Generate an Artifact Manifest from your exported VM and automatically convert it to KVM format using hyper2kvm.
+                    Generate an Artifact Manifest from your exported VM and automatically convert it to KVM format using h2kvm.
                     This combines export manifest generation with immediate conversion in a single operation.
                 </p>
 
@@ -209,8 +209,8 @@
                     <div class="manifest-section">
                         <h3>Step 2: Conversion Options</h3>
                         <div class="form-group">
-                            <label for="hyper2kvmBinary">Hyper2KVM Binary Path:</label>
-                            <input type="text" id="hyper2kvmBinary" name="hyper2kvmBinary" placeholder="Auto-detect" value="">
+                            <label for="h2kvmBinary">H2KVM Binary Path:</label>
+                            <input type="text" id="h2kvmBinary" name="h2kvmBinary" placeholder="Auto-detect" value="">
                             <small>Leave empty to auto-detect</small>
                         </div>
 
@@ -267,7 +267,7 @@
                     <ol>
                         <li><strong>Export:</strong> The VM is exported from vSphere in OVF/OVA format</li>
                         <li><strong>Manifest Generation:</strong> An Artifact Manifest v1.0 is automatically created with disk metadata and checksums</li>
-                        <li><strong>Conversion:</strong> Hyper2KVM reads the manifest and converts VM disks to your chosen format (QCOW2/RAW/VDI)</li>
+                        <li><strong>Conversion:</strong> H2KVM reads the manifest and converts VM disks to your chosen format (QCOW2/RAW/VDI)</li>
                         <li><strong>Verification:</strong> Checksums are verified to ensure data integrity</li>
                         <li><strong>Result:</strong> You get KVM-ready disk images and a complete conversion report</li>
                     </ol>

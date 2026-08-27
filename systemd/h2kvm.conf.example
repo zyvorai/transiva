@@ -1,18 +1,18 @@
-# hyper2kvm Daemon Configuration (Default Instance)
+# h2kvm Daemon Configuration (Default Instance)
 #
 # This file is sourced by the systemd service unit.
-# Copy to /etc/hyper2kvm/hyper2kvm.conf and customize as needed.
+# Copy to /etc/h2kvm/h2kvm.conf and customize as needed.
 #
 # systemctl daemon-reload
-# systemctl restart hyper2kvm.service
+# systemctl restart h2kvm.service
 
 # Watch directory where manifest files are placed for processing
-# Default: /var/lib/hyper2kvm/queue
-WATCH_DIR=/var/lib/hyper2kvm/queue
+# Default: /var/lib/h2kvm/queue
+WATCH_DIR=/var/lib/h2kvm/queue
 
 # Output directory where converted VMs are written
-# Default: /var/lib/hyper2kvm/output
-OUTPUT_DIR=/var/lib/hyper2kvm/output
+# Default: /var/lib/h2kvm/output
+OUTPUT_DIR=/var/lib/h2kvm/output
 
 # Log level: debug, info, warn, error
 # Default: info
@@ -62,8 +62,8 @@ LIBVIRT_AUTOSTART=false
 CONVERSION_TIMEOUT=60
 
 # Temporary directory for conversions
-# Default: /var/cache/hyper2kvm
-TEMP_DIR=/var/cache/hyper2kvm
+# Default: /var/cache/h2kvm
+TEMP_DIR=/var/cache/h2kvm
 
 # Enable detailed progress logging
 # Default: false

@@ -165,7 +165,7 @@ jobs:
         path: "*.rpm"
 
   build-daemon-rpm:
-    name: Build hyper2kvm-daemon RPM
+    name: Build h2kvm-daemon RPM
     runs-on: ubuntu-latest
     continue-on-error: true
     strategy:
@@ -196,7 +196,7 @@ jobs:
       id: get_version
       run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
-    - name: Build hyper2kvm-daemon RPM
+    - name: Build h2kvm-daemon RPM
       run: |
         cd packaging/rpm
         ./build.sh --version ${{ steps.get_version.outputs.VERSION }} --release 1
@@ -204,8 +204,8 @@ jobs:
     - name: Find and copy RPMs
       run: |
         mkdir -p rpms
-        find ~/rpmbuild/RPMS/noarch/ -name "hyper2kvm-daemon-*.rpm" -exec cp {} rpms/ \;
-        find ~/rpmbuild/SRPMS/ -name "hyper2kvm-daemon-*.rpm" -exec cp {} rpms/ \;
+        find ~/rpmbuild/RPMS/noarch/ -name "h2kvm-daemon-*.rpm" -exec cp {} rpms/ \;
+        find ~/rpmbuild/SRPMS/ -name "h2kvm-daemon-*.rpm" -exec cp {} rpms/ \;
         ls -lh rpms/
 
     - name: Upload daemon RPM artifacts
@@ -276,7 +276,7 @@ jobs:
     - name: Download Linux amd64 binary
       run: |
         VERSION=${GITHUB_REF#refs/tags/v}
-        wget https://github.com/ssahani/transiva/releases/download/v${VERSION}/hypervisord-linux-amd64
+        wget https://github.com/zyvorai/transiva/releases/download/v${VERSION}/hypervisord-linux-amd64
         chmod +x hypervisord-linux-amd64
         ./hypervisord-linux-amd64 --version || true
         file hypervisord-linux-amd64

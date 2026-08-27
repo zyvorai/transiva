@@ -14,7 +14,7 @@ const orbs = [
 
 const features = [
   { icon: '☁️', title: 'Multi-cloud export', desc: 'VMware vSphere, OVA/OVF, and artifact manifests' },
-  { icon: '⚡', title: 'hyper2kvm pipeline', desc: 'Inspect, fix, convert, validate — end to end' },
+  { icon: '⚡', title: 'h2kvm pipeline', desc: 'Inspect, fix, convert, validate — end to end' },
   { icon: '📦', title: 'Job orchestration', desc: 'Daemon-backed exports with live progress' },
   { icon: '🔐', title: 'Enterprise auth', desc: 'PAM, JWT sessions, audit-ready events' },
 ];
@@ -134,7 +134,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             <span className="sdk-login-hero-accent">VM export</span>
           </h2>
           <p className="sdk-login-hero-lead sdk-login-fade sdk-login-fade-d2">
-            Export from vSphere, ship artifacts, and run the hyper2kvm pipeline — from one control plane.
+            Export from vSphere, ship artifacts, and run the h2kvm pipeline — from one control plane.
           </p>
           <div className="sdk-login-fade sdk-login-fade-d3" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '1.25rem' }}>
             <span className="sdk-login-pill">PAM · JWT</span>
@@ -160,7 +160,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         </div>
 
         <p className="sdk-login-hero-foot" style={{ position: 'relative', zIndex: 1 }}>
-          transiva.cloud · hyper2kvm pipeline
+          transiva.cloud · h2kvm pipeline
         </p>
       </aside>
 

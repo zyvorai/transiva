@@ -441,7 +441,7 @@ HyperSDK v2.1 introduces Kubernetes operator. No changes to existing workflows.
 
 - **Documentation**: [Complete guides](../docs/)
 - **Examples**: [More examples](examples/)
-- **Issues**: [GitHub Issues](https://github.com/ssahani/transiva/issues)
+- **Issues**: [GitHub Issues](https://github.com/zyvorai/transiva/issues)
 
 ---
 

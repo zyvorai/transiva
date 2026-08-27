@@ -632,7 +632,7 @@ const VSphereExportWorkflow: React.FC = () => {
           </label>
         </div>
 
-        <h3 style={styles.sectionTitle}>Pipeline Integration (hyper2kvm + libvirt)</h3>
+        <h3 style={styles.sectionTitle}>Pipeline Integration (h2kvm + libvirt)</h3>
 
         <div style={styles.formGroup}>
           <label style={styles.checkboxLabel}>
@@ -642,7 +642,7 @@ const VSphereExportWorkflow: React.FC = () => {
               onChange={(e) => setExportOptions({ ...exportOptions, enablePipeline: e.target.checked })}
               style={styles.checkbox}
             />
-            Enable hyper2kvm pipeline after export
+            Enable h2kvm pipeline after export
           </label>
           <p style={styles.helpText}>
             Automatically convert exported VM to KVM format and import to libvirt
@@ -661,7 +661,7 @@ const VSphereExportWorkflow: React.FC = () => {
               Enable Remote Desktop (RDP) on first boot
             </label>
             <p style={styles.helpText}>
-              Passed to hyper2kvm fix stage (registry, firewall, TermService). Default on for Windows.
+              Passed to h2kvm fix stage (registry, firewall, TermService). Default on for Windows.
             </p>
           </div>
         )}

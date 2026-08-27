@@ -1,6 +1,6 @@
 # Nutanix AHV Migration Guide
 
-HyperSDK supports **Nutanix AHV** VM discovery and **offline NFS pickup export** for migration to KVM via [hyper2kvm](https://github.com/transiva/hyper2kvm).
+HyperSDK supports **Nutanix AHV** VM discovery and **offline NFS pickup export** for migration to KVM via [h2kvm](https://github.com/zyvorai/h2kvm).
 
 ## Overview
 
@@ -9,7 +9,7 @@ HyperSDK supports **Nutanix AHV** VM discovery and **offline NFS pickup export**
 | Discovery | List VMs from Prism Central (v4 API), fetch disk UUIDs and storage container IDs |
 | Pickup plan | Generate JSON with NFS-relative paths (`.acropolis/vmdisk/<uuid>/`) |
 | Export | `qemu-img convert` from mounted containers → qcow2/raw + `artifact-manifest.json` |
-| Pipeline | Optional hyper2kvm queue after export |
+| Pipeline | Optional h2kvm queue after export |
 
 Nutanix export is **not** a live API pull of disk bytes. You mount storage containers via NFS on the migration host, then HyperSDK locates and converts disk images offline.
 
@@ -169,7 +169,7 @@ NFS-mounted containers  →  .acropolis/vmdisk/<uuid>/
         ↓
 qemu-img convert        →  qcow2/raw per disk
         ↓
-artifact-manifest.json →  hyper2kvm pipeline
+artifact-manifest.json →  h2kvm pipeline
 ```
 
 See also: [`providers/nutanix/`](../providers/nutanix/) source, [`config.example.yaml`](../config.example.yaml).

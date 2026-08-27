@@ -40,6 +40,8 @@ export interface ExportOptions {
   remove_cdrom?: boolean;
   show_individual_progress?: boolean;
   enable_pipeline?: boolean;
+  h2kvm_path?: string;
+  /** @deprecated use h2kvm_path */
   hyper2kvm_path?: string;
   pipeline_inspect?: boolean;
   pipeline_fix?: boolean;

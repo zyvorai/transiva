@@ -905,10 +905,10 @@ class HyperSDK:
         """
         return self._request("POST", "/incremental/analyze", json={"vm_path": vm_path})
 
-    # Hyper2KVM Integration
+    # H2KVM Integration
 
     def convert_vm(self, source_path: str, output_path: str) -> str:
-        """Convert VM using hyper2kvm.
+        """Convert VM using h2kvm.
 
         Args:
             source_path: Source VM path

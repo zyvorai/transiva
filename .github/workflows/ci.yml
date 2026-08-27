@@ -156,7 +156,7 @@ jobs:
           ~/rpmbuild/SRPMS/*.rpm
 
   build-daemon-rpm:
-    name: Build hyper2kvm-daemon RPM
+    name: Build h2kvm-daemon RPM
     runs-on: ubuntu-latest
     container: fedora:latest
 
@@ -175,18 +175,18 @@ jobs:
 
     - name: Verify RPM package
       run: |
-        rpm -qpi ~/rpmbuild/RPMS/noarch/hyper2kvm-daemon-*.rpm
-        rpm -qpl ~/rpmbuild/RPMS/noarch/hyper2kvm-daemon-*.rpm
+        rpm -qpi ~/rpmbuild/RPMS/noarch/h2kvm-daemon-*.rpm
+        rpm -qpl ~/rpmbuild/RPMS/noarch/h2kvm-daemon-*.rpm
 
     - name: Test RPM installation
       run: |
         # --nodeps: this container doesn't have the runtime Requires
-        # (libvirt-daemon, qemu-img, hyper2kvm user/group) installed.
+        # (libvirt-daemon, qemu-img, h2kvm user/group) installed.
         # --noscripts: %post runs systemctl, which doesn't work without a
         # running systemd. This step only verifies the package's file layout.
-        rpm -ivh --nodeps --noscripts ~/rpmbuild/RPMS/noarch/hyper2kvm-daemon-*.rpm
-        test -f /usr/lib/systemd/system/hyper2kvm.service || exit 1
-        test -f /usr/lib/systemd/system/hyper2kvm@.service || exit 1
+        rpm -ivh --nodeps --noscripts ~/rpmbuild/RPMS/noarch/h2kvm-daemon-*.rpm
+        test -f /usr/lib/systemd/system/h2kvm.service || exit 1
+        test -f /usr/lib/systemd/system/h2kvm@.service || exit 1
         echo "Daemon RPM installation verified"
 
     - name: Upload daemon RPM

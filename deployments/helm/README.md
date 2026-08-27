@@ -105,7 +105,7 @@ spec:
 ### 5. Local Chart
 
 ```bash
-git clone https://github.com/ssahani/transiva.git
+git clone https://github.com/zyvorai/transiva.git
 helm install transiva ./transiva/deployments/helm/transiva
 ```
 

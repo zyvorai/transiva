@@ -1,14 +1,14 @@
-# hyper2kvm Daemon Configuration (vSphere Instance)
+# h2kvm Daemon Configuration (vSphere Instance)
 #
-# This file is sourced by the hyper2kvm@vsphere.service unit.
-# Copy to /etc/hyper2kvm/hyper2kvm-vsphere.conf and customize.
+# This file is sourced by the h2kvm@vsphere.service unit.
+# Copy to /etc/h2kvm/h2kvm-vsphere.conf and customize.
 #
 # systemctl daemon-reload
-# systemctl restart hyper2kvm@vsphere.service
+# systemctl restart h2kvm@vsphere.service
 
 # vSphere-specific directories
-WATCH_DIR=/var/lib/hyper2kvm/vsphere/queue
-OUTPUT_DIR=/var/lib/hyper2kvm/vsphere/output
+WATCH_DIR=/var/lib/h2kvm/vsphere/queue
+OUTPUT_DIR=/var/lib/h2kvm/vsphere/output
 
 # Log level
 LOG_LEVEL=info

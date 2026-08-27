@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package manifest implements the Artifact Manifest v1.0 integration contract
-// between transiva and hyper2kvm. This provides a versioned, structured format
+// between transiva and h2kvm. This provides a versioned, structured format
 // for describing VM disk artifacts and migration pipeline configuration.
 package manifest
 
@@ -11,7 +11,7 @@ import (
 
 // ArtifactManifest represents the complete Artifact Manifest v1.0 structure.
 // This is the integration contract between transiva (export/fetch) and
-// hyper2kvm (offline fix/convert).
+// h2kvm (offline fix/convert).
 type ArtifactManifest struct {
 	// ManifestVersion is the semantic version of this manifest schema (REQUIRED)
 	// Current version: "1.0"
@@ -220,8 +220,8 @@ type FixStageConfig struct {
 	// RemoveVMwareTools removes VMware tools packages
 	RemoveVMwareTools bool `json:"remove_vmware_tools,omitempty" yaml:"remove_vmware_tools,omitempty"`
 
-	// EnableRDP enables Windows Remote Desktop via hyper2kvm firstboot (registry, firewall, TermService).
-	// When omitted, hyper2kvm defaults to true when vm.os_hint is "windows".
+	// EnableRDP enables Windows Remote Desktop via h2kvm firstboot (registry, firewall, TermService).
+	// When omitted, h2kvm defaults to true when vm.os_hint is "windows".
 	EnableRDP *bool `json:"enable_rdp,omitempty" yaml:"enable_rdp,omitempty"`
 }
 

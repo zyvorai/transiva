@@ -378,7 +378,7 @@ func TestExportProfile_Fields(t *testing.T) {
 		ManifestChecksum:     true,
 		ManifestTargetFormat: "qcow2",
 		AutoConvert:          false,
-		Hyper2KVMBinary:      "/usr/bin/hyper2kvm",
+		H2KVMBinary:          "/usr/bin/h2kvm",
 		StreamConversion:     false,
 		RetentionDays:        30,
 		RetentionCount:       10,

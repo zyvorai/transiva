@@ -399,8 +399,8 @@ Use volume snapshots or backup tools like Velero for Kubernetes.
 
 ## Support
 
-- GitHub Issues: https://github.com/ssahani/transiva/issues
-- Documentation: https://github.com/ssahani/transiva/docs
+- GitHub Issues: https://github.com/zyvorai/transiva/issues
+- Documentation: https://github.com/zyvorai/transiva/docs
 
 ## License
 

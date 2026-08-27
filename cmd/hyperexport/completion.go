@@ -26,7 +26,7 @@ _hyperexport_completions()
           --encrypt --encrypt-method --passphrase --keyfile --gpg-recipient
           --profile --save-profile --list-profiles --delete-profile
           --create-default-profiles --manifest --verify-manifest --manifest-checksum
-          --manifest-target --convert --hyper2kvm-binary --conversion-timeout
+          --manifest-target --convert --h2kvm-binary --conversion-timeout
           --stream-conversion --audit-log --daemon --daemon-port --daemon-addr
           --daemon-schedule --daemon-url --daemon-list --daemon-status --daemon-watch
           --snapshot --delete-snapshot --snapshot-name --snapshot-memory
@@ -66,7 +66,7 @@ _hyperexport_completions()
             COMPREPLY=( $(compgen -W "bash zsh fish" -- ${cur}) )
             return 0
             ;;
-        --output|--batch|--report-file|--keyfile|--hyper2kvm-binary|--audit-log)
+        --output|--batch|--report-file|--keyfile|--h2kvm-binary|--audit-log)
             # File/directory completion
             COMPREPLY=( $(compgen -f -- ${cur}) )
             return 0
@@ -146,8 +146,8 @@ _hyperexport() {
         '--verify-manifest[Verify manifest]'
         '--manifest-checksum[Compute checksums]'
         '--manifest-target[Target disk format]:format:(qcow2 raw vdi)'
-        '--convert[Auto-convert with hyper2kvm]'
-        '--hyper2kvm-binary[Path to hyper2kvm]:file:_files'
+        '--convert[Auto-convert with h2kvm]'
+        '--h2kvm-binary[Path to h2kvm]:file:_files'
         '--conversion-timeout[Conversion timeout]:duration:'
         '--stream-conversion[Stream conversion output]'
         '--audit-log[Enable audit logging]:file:_files'
@@ -217,7 +217,7 @@ complete -c hyperexport -l output -d "Output directory" -r -F
 complete -c hyperexport -l batch -d "Batch file" -r -F
 complete -c hyperexport -l report-file -d "Report file" -r -F
 complete -c hyperexport -l keyfile -d "Key file" -r -F
-complete -c hyperexport -l hyper2kvm-binary -d "hyper2kvm binary" -r -F
+complete -c hyperexport -l h2kvm-binary -d "h2kvm binary" -r -F
 complete -c hyperexport -l audit-log -d "Audit log file" -r -F
 
 # String options

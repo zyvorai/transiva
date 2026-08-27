@@ -18,7 +18,7 @@ Transiva is a Zyvor AI Labs workload mobility and migration control plane. It pr
 - Interactive CLI (transivaexport, compat: hyperexport) for manual exports with terminal UI
 - Background daemon (transivad, compat: hypervisord) with comprehensive REST API
 - Web dashboard for browser-based VM management and console access
-- Integration with hyper2kvm for offline conversion to QCOW2
+- Integration with h2kvm for offline conversion to QCOW2
 - Job scheduling, webhooks, and monitoring (Prometheus metrics)
 - API-only mode (--disable-web) for security-conscious deployments
 - YAML/JSON configuration support for batch operations

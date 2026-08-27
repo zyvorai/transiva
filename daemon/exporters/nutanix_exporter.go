@@ -364,8 +364,10 @@ func applyPipelineOptionsFromJob(meta map[string]interface{}, job *models.JobDef
 		return
 	}
 	opts := job.Options
-	if opts.Hyper2KVMPath != "" {
-		meta["hyper2kvm_path"] = opts.Hyper2KVMPath
+	// Accept legacy hyper2kvm_* fields from configs written before the h2kvm rename.
+	opts.ApplyH2KVMCompat()
+	if opts.H2KVMPath != "" {
+		meta["h2kvm_path"] = opts.H2KVMPath
 	}
 	if opts.LibvirtIntegration {
 		meta["libvirt_integration"] = true
@@ -376,22 +378,22 @@ func applyPipelineOptionsFromJob(meta map[string]interface{}, job *models.JobDef
 	if opts.LibvirtAutoStart {
 		meta["libvirt_auto_start"] = true
 	}
-	if opts.Hyper2KVMDaemon {
-		meta["hyper2kvm_daemon"] = true
+	if opts.H2KVMDaemon {
+		meta["h2kvm_daemon"] = true
 	}
-	if opts.Hyper2KVMInstance != "" {
-		meta["hyper2kvm_instance"] = opts.Hyper2KVMInstance
+	if opts.H2KVMInstance != "" {
+		meta["h2kvm_instance"] = opts.H2KVMInstance
 	}
-	if opts.Hyper2KVMWatchDir != "" {
-		meta["hyper2kvm_watch_dir"] = opts.Hyper2KVMWatchDir
+	if opts.H2KVMWatchDir != "" {
+		meta["h2kvm_watch_dir"] = opts.H2KVMWatchDir
 	}
-	if opts.Hyper2KVMOutputDir != "" {
-		meta["hyper2kvm_output_dir"] = opts.Hyper2KVMOutputDir
+	if opts.H2KVMOutputDir != "" {
+		meta["h2kvm_output_dir"] = opts.H2KVMOutputDir
 	}
-	if opts.Hyper2KVMPollInterval > 0 {
-		meta["hyper2kvm_poll_interval"] = opts.Hyper2KVMPollInterval
+	if opts.H2KVMPollInterval > 0 {
+		meta["h2kvm_poll_interval"] = opts.H2KVMPollInterval
 	}
-	if opts.Hyper2KVMDaemonTimeout > 0 {
-		meta["hyper2kvm_daemon_timeout"] = opts.Hyper2KVMDaemonTimeout
+	if opts.H2KVMDaemonTimeout > 0 {
+		meta["h2kvm_daemon_timeout"] = opts.H2KVMDaemonTimeout
 	}
 }

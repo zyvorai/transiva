@@ -26,8 +26,8 @@ import (
 // Run with: go test -tags=integration -v ./manifest/...
 func TestIntegrationWithFedoraVMDK(t *testing.T) {
 	// Path to the Fedora/Photon OS VMDK (adjust as needed)
-	// This file is from the hyper2kvm repository
-	vmdkPath := "/home/ssahani/tt/hyper2kvm/photon.vmdk"
+	// This file is from the h2kvm repository
+	vmdkPath := "/home/ssahani/tt/h2kvm/photon.vmdk"
 
 	// Check if the VMDK exists
 	if _, err := os.Stat(vmdkPath); os.IsNotExist(err) {
@@ -105,8 +105,8 @@ func TestIntegrationWithFedoraVMDK(t *testing.T) {
 		},
 	)
 
-	// Configure hyper2kvm pipeline
-	// This tells hyper2kvm to run all stages:
+	// Configure h2kvm pipeline
+	// This tells h2kvm to run all stages:
 	// INSPECT → FIX → CONVERT → VALIDATE
 	builder.WithPipeline(
 		true, // inspect (detect OS, kernel version)
@@ -199,9 +199,9 @@ func TestIntegrationWithFedoraVMDK(t *testing.T) {
 	t.Logf("\n=== Generated Manifest (excerpt) ===\n%s\n", string(jsonData[:min(len(jsonData), 500)])+"...")
 
 	t.Log("\n✅ Integration test completed successfully!")
-	t.Log("   The generated manifest is compatible with hyper2kvm ManifestLoader")
-	t.Log("   Next step: Pass this manifest to hyper2kvm for conversion")
-	t.Logf("   Command: hyper2kvm --manifest %s", manifestPath)
+	t.Log("   The generated manifest is compatible with h2kvm ManifestLoader")
+	t.Log("   Next step: Pass this manifest to h2kvm for conversion")
+	t.Logf("   Command: h2kvm --manifest %s", manifestPath)
 }
 
 // TestMultiDiskIntegration tests creating a multi-disk manifest
@@ -278,15 +278,15 @@ func min(a, b int) int {
 	return b
 }
 
-func TestManifestCompatibilityWithHyper2KVM(t *testing.T) {
+func TestManifestCompatibilityWithH2KVM(t *testing.T) {
 	// This test verifies that the generated manifest matches
-	// the structure expected by hyper2kvm ManifestLoader
+	// the structure expected by h2kvm ManifestLoader
 
 	outputDir := t.TempDir()
 	diskPath := filepath.Join(outputDir, "test.vmdk")
 	os.WriteFile(diskPath, []byte("test"), 0644)
 
-	// Create a manifest that matches hyper2kvm's reference example
+	// Create a manifest that matches h2kvm's reference example
 	m, err := manifest.NewBuilder().
 		WithSource("vsphere", "vm-1234", "production-webserver-01", "DC1", "govc-export").
 		WithVM(4, 16, "uefi", "linux", "Ubuntu 22.04 LTS", false).
@@ -304,7 +304,7 @@ func TestManifestCompatibilityWithHyper2KVM(t *testing.T) {
 		t.Fatalf("Build() failed: %v", err)
 	}
 
-	// Verify structure matches hyper2kvm expectations
+	// Verify structure matches h2kvm expectations
 	if m.ManifestVersion != "1.0" {
 		t.Errorf("Expected manifest_version '1.0', got %q", m.ManifestVersion)
 	}
@@ -351,5 +351,5 @@ func TestManifestCompatibilityWithHyper2KVM(t *testing.T) {
 		t.Error("VALIDATE stage should be enabled")
 	}
 
-	t.Log("✅ Manifest structure is compatible with hyper2kvm ManifestLoader")
+	t.Log("✅ Manifest structure is compatible with h2kvm ManifestLoader")
 }

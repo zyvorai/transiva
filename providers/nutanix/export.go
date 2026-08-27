@@ -13,7 +13,7 @@ import (
 )
 
 // ExportVM converts Nutanix VM disks from mounted storage containers and writes
-// a hyper2kvm artifact manifest. Requires NFS mounts of storage containers.
+// a h2kvm artifact manifest. Requires NFS mounts of storage containers.
 func (p *Provider) ExportVM(ctx context.Context, identifier string, opts providers.ExportOptions) (*providers.ExportResult, error) {
 	nxOpts, err := mergeExportOptions(p, opts)
 	if err != nil {
@@ -185,7 +185,7 @@ func (p *Provider) runExportPipeline(ctx context.Context, nxOpts nutanixExportOp
 	}
 
 	if p.logger != nil {
-		p.logger.Info("starting hyper2kvm pipeline", "manifest", manifestPath)
+		p.logger.Info("starting h2kvm pipeline", "manifest", manifestPath)
 	}
 
 	pipelineConfig := nxOpts.Pipeline

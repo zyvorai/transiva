@@ -225,7 +225,7 @@ func (b *Builder) WithPipeline(inspect, fix, convert, validate bool) *Builder {
 	return b
 }
 
-// WithFixEnableRDP sets whether hyper2kvm firstboot should enable Windows RDP.
+// WithFixEnableRDP sets whether h2kvm firstboot should enable Windows RDP.
 func (b *Builder) WithFixEnableRDP(enable bool) *Builder {
 	if b.manifest.Pipeline == nil {
 		b.WithPipeline(false, false, false, false)

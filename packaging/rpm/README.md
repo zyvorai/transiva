@@ -1,10 +1,10 @@
-# RPM Packaging for hyper2kvm-daemon
+# RPM Packaging for h2kvm-daemon
 
-This directory contains RPM packaging files for the hyper2kvm systemd daemon.
+This directory contains RPM packaging files for the h2kvm systemd daemon.
 
 ## Files
 
-- **hyper2kvm-daemon.spec** - RPM spec file
+- **h2kvm-daemon.spec** - RPM spec file
 - **build.sh** - Automated build script
 - **README.md** - This file
 
@@ -79,8 +79,8 @@ This creates:
 cd /path/to/transiva
 
 # Create tarball with systemd files
-tar czf ~/rpmbuild/SOURCES/hyper2kvm-daemon-1.0.0.tar.gz \
-    --transform 's,^,hyper2kvm-daemon-1.0.0/,' \
+tar czf ~/rpmbuild/SOURCES/h2kvm-daemon-1.0.0.tar.gz \
+    --transform 's,^,h2kvm-daemon-1.0.0/,' \
     systemd/*.service \
     systemd/*.target \
     systemd/*.example \
@@ -92,20 +92,20 @@ tar czf ~/rpmbuild/SOURCES/hyper2kvm-daemon-1.0.0.tar.gz \
 ### 3. Copy Spec File
 
 ```bash
-cp packaging/rpm/hyper2kvm-daemon.spec ~/rpmbuild/SPECS/
+cp packaging/rpm/h2kvm-daemon.spec ~/rpmbuild/SPECS/
 ```
 
 ### 4. Build RPM
 
 ```bash
 # Build both binary and source RPMs
-rpmbuild -ba ~/rpmbuild/SPECS/hyper2kvm-daemon.spec
+rpmbuild -ba ~/rpmbuild/SPECS/h2kvm-daemon.spec
 
 # Or build only binary RPM
-rpmbuild -bb ~/rpmbuild/SPECS/hyper2kvm-daemon.spec
+rpmbuild -bb ~/rpmbuild/SPECS/h2kvm-daemon.spec
 
 # Or build only source RPM
-rpmbuild -bs ~/rpmbuild/SPECS/hyper2kvm-daemon.spec
+rpmbuild -bs ~/rpmbuild/SPECS/h2kvm-daemon.spec
 ```
 
 ## Installation
@@ -114,20 +114,20 @@ rpmbuild -bs ~/rpmbuild/SPECS/hyper2kvm-daemon.spec
 
 ```bash
 # Install
-sudo rpm -ivh ~/rpmbuild/RPMS/noarch/hyper2kvm-daemon-1.0.0-1.el*.noarch.rpm
+sudo rpm -ivh ~/rpmbuild/RPMS/noarch/h2kvm-daemon-1.0.0-1.el*.noarch.rpm
 
 # Or upgrade
-sudo rpm -Uvh ~/rpmbuild/RPMS/noarch/hyper2kvm-daemon-1.0.0-1.el*.noarch.rpm
+sudo rpm -Uvh ~/rpmbuild/RPMS/noarch/h2kvm-daemon-1.0.0-1.el*.noarch.rpm
 ```
 
 ### Using DNF/YUM
 
 ```bash
 # Install with dependencies
-sudo dnf install ~/rpmbuild/RPMS/noarch/hyper2kvm-daemon-1.0.0-1.el*.noarch.rpm
+sudo dnf install ~/rpmbuild/RPMS/noarch/h2kvm-daemon-1.0.0-1.el*.noarch.rpm
 
 # Or with yum
-sudo yum localinstall ~/rpmbuild/RPMS/noarch/hyper2kvm-daemon-1.0.0-1.el*.noarch.rpm
+sudo yum localinstall ~/rpmbuild/RPMS/noarch/h2kvm-daemon-1.0.0-1.el*.noarch.rpm
 ```
 
 ## Post-Installation
@@ -138,38 +138,38 @@ After installing the RPM:
 
 ```bash
 # Copy example configuration
-sudo cp /etc/hyper2kvm/hyper2kvm.conf.example /etc/hyper2kvm/hyper2kvm.conf
+sudo cp /etc/h2kvm/h2kvm.conf.example /etc/h2kvm/h2kvm.conf
 
 # Edit configuration
-sudo vi /etc/hyper2kvm/hyper2kvm.conf
+sudo vi /etc/h2kvm/h2kvm.conf
 ```
 
 ### 2. Start the Service
 
 ```bash
 # Enable and start
-sudo systemctl enable --now hyper2kvm.service
+sudo systemctl enable --now h2kvm.service
 
 # Check status
-sudo systemctl status hyper2kvm.service
+sudo systemctl status h2kvm.service
 
 # View logs
-sudo journalctl -u hyper2kvm.service -f
+sudo journalctl -u h2kvm.service -f
 ```
 
 ### 3. Verify Installation
 
 ```bash
-# Check if hyper2kvm user was created
-id hyper2kvm
+# Check if h2kvm user was created
+id h2kvm
 
 # Check directories
-ls -ld /var/lib/hyper2kvm
-ls -ld /var/lib/hyper2kvm/queue
-ls -ld /var/lib/hyper2kvm/output
+ls -ld /var/lib/h2kvm
+ls -ld /var/lib/h2kvm/queue
+ls -ld /var/lib/h2kvm/output
 
 # Check service files
-systemctl list-unit-files | grep hyper2kvm
+systemctl list-unit-files | grep h2kvm
 ```
 
 ## Package Information
@@ -178,29 +178,29 @@ systemctl list-unit-files | grep hyper2kvm
 
 ```bash
 # Show package info
-rpm -qi hyper2kvm-daemon
+rpm -qi h2kvm-daemon
 
 # List all files
-rpm -ql hyper2kvm-daemon
+rpm -ql h2kvm-daemon
 
 # Show documentation files
-rpm -qd hyper2kvm-daemon
+rpm -qd h2kvm-daemon
 
 # Show configuration files
-rpm -qc hyper2kvm-daemon
+rpm -qc h2kvm-daemon
 
 # Show dependencies
-rpm -qR hyper2kvm-daemon
+rpm -qR h2kvm-daemon
 ```
 
 ### Verify Package
 
 ```bash
 # Verify all files in package
-rpm -V hyper2kvm-daemon
+rpm -V h2kvm-daemon
 
 # Show pre/post install scripts
-rpm -q --scripts hyper2kvm-daemon
+rpm -q --scripts h2kvm-daemon
 ```
 
 ## Uninstallation
@@ -209,16 +209,16 @@ rpm -q --scripts hyper2kvm-daemon
 
 ```bash
 # Remove package (keeps config files)
-sudo rpm -e hyper2kvm-daemon
+sudo rpm -e h2kvm-daemon
 
 # Note: User, group, and data directories are NOT removed on uninstall
 # Remove manually if needed:
-sudo userdel hyper2kvm
-sudo groupdel hyper2kvm
-sudo rm -rf /var/lib/hyper2kvm
-sudo rm -rf /var/log/hyper2kvm
-sudo rm -rf /var/cache/hyper2kvm
-sudo rm -rf /etc/hyper2kvm
+sudo userdel h2kvm
+sudo groupdel h2kvm
+sudo rm -rf /var/lib/h2kvm
+sudo rm -rf /var/log/h2kvm
+sudo rm -rf /var/cache/h2kvm
+sudo rm -rf /etc/h2kvm
 ```
 
 ## Package Contents
@@ -226,28 +226,28 @@ sudo rm -rf /etc/hyper2kvm
 The RPM installs:
 
 ### Systemd Units
-- `/usr/lib/systemd/system/hyper2kvm.service` - Default service
-- `/usr/lib/systemd/system/hyper2kvm@.service` - Template service
-- `/usr/lib/systemd/system/hyper2kvm.target` - Service target
+- `/usr/lib/systemd/system/h2kvm.service` - Default service
+- `/usr/lib/systemd/system/h2kvm@.service` - Template service
+- `/usr/lib/systemd/system/h2kvm.target` - Service target
 
 ### Configuration
-- `/etc/hyper2kvm/hyper2kvm.conf.example` - Default config
-- `/etc/hyper2kvm/hyper2kvm-vsphere.conf.example` - vSphere config
-- `/etc/hyper2kvm/hyper2kvm-aws.conf.example` - AWS config
+- `/etc/h2kvm/h2kvm.conf.example` - Default config
+- `/etc/h2kvm/h2kvm-vsphere.conf.example` - vSphere config
+- `/etc/h2kvm/h2kvm-aws.conf.example` - AWS config
 
 ### Directories
-- `/var/lib/hyper2kvm/queue` - Watch directory
-- `/var/lib/hyper2kvm/output` - Output directory
-- `/var/log/hyper2kvm` - Log directory
-- `/var/cache/hyper2kvm` - Cache directory
+- `/var/lib/h2kvm/queue` - Watch directory
+- `/var/lib/h2kvm/output` - Output directory
+- `/var/log/h2kvm` - Log directory
+- `/var/cache/h2kvm` - Cache directory
 
 ### Documentation
-- `/usr/share/doc/hyper2kvm-daemon/README.md`
-- `/usr/share/doc/hyper2kvm-daemon/SYSTEMD_DAEMON_INTEGRATION.md`
+- `/usr/share/doc/h2kvm-daemon/README.md`
+- `/usr/share/doc/h2kvm-daemon/SYSTEMD_DAEMON_INTEGRATION.md`
 
 ### System User
-- User: `hyper2kvm`
-- Group: `hyper2kvm`
+- User: `h2kvm`
+- Group: `h2kvm`
 - Additional groups: `kvm`, `libvirt` (if they exist)
 
 ## Building for Different Distributions
@@ -285,7 +285,7 @@ To distribute the RPM via a YUM repository:
 mkdir -p ~/yum-repo/el9/x86_64
 
 # 2. Copy RPM to repository
-cp ~/rpmbuild/RPMS/noarch/hyper2kvm-daemon-*.rpm ~/yum-repo/el9/x86_64/
+cp ~/rpmbuild/RPMS/noarch/h2kvm-daemon-*.rpm ~/yum-repo/el9/x86_64/
 
 # 3. Create repository metadata
 createrepo ~/yum-repo/el9/x86_64
@@ -295,16 +295,16 @@ cd ~/yum-repo
 python3 -m http.server 8080
 
 # 5. Configure client to use repository
-sudo tee /etc/yum.repos.d/hyper2kvm.repo << EOF
-[hyper2kvm]
-name=hyper2kvm Repository
+sudo tee /etc/yum.repos.d/h2kvm.repo << EOF
+[h2kvm]
+name=h2kvm Repository
 baseurl=http://your-server:8080/el9/x86_64
 enabled=1
 gpgcheck=0
 EOF
 
 # 6. Install from repository
-sudo dnf install hyper2kvm-daemon
+sudo dnf install h2kvm-daemon
 ```
 
 ## Troubleshooting
@@ -313,7 +313,7 @@ sudo dnf install hyper2kvm-daemon
 
 ```bash
 # Install missing build dependencies
-sudo yum-builddep ~/rpmbuild/SPECS/hyper2kvm-daemon.spec
+sudo yum-builddep ~/rpmbuild/SPECS/h2kvm-daemon.spec
 ```
 
 ### RPM Build Error - Bad Source
@@ -327,21 +327,21 @@ sudo yum-builddep ~/rpmbuild/SPECS/hyper2kvm-daemon.spec
 
 ```bash
 # Check for conflicting packages
-rpm -qa | grep hyper2kvm
+rpm -qa | grep h2kvm
 
 # Force reinstall
-sudo rpm -e hyper2kvm-daemon --nodeps
-sudo rpm -ivh --force ~/rpmbuild/RPMS/noarch/hyper2kvm-daemon-*.rpm
+sudo rpm -e h2kvm-daemon --nodeps
+sudo rpm -ivh --force ~/rpmbuild/RPMS/noarch/h2kvm-daemon-*.rpm
 ```
 
 ### Service Won't Start After Install
 
 ```bash
-# Check if hyper2kvm binary exists
-which hyper2kvm
+# Check if h2kvm binary exists
+which h2kvm
 
 # Note: This package only installs systemd units
-# You must install the hyper2kvm binary separately
+# You must install the h2kvm binary separately
 ```
 
 ## Development
@@ -350,18 +350,18 @@ which hyper2kvm
 
 ```bash
 # Check spec file syntax
-rpmlint ~/rpmbuild/SPECS/hyper2kvm-daemon.spec
+rpmlint ~/rpmbuild/SPECS/h2kvm-daemon.spec
 
 # Check built RPM
-rpmlint ~/rpmbuild/RPMS/noarch/hyper2kvm-daemon-*.rpm
+rpmlint ~/rpmbuild/RPMS/noarch/h2kvm-daemon-*.rpm
 
 # Test installation in mock (clean room)
-mock -r fedora-39-x86_64 ~/rpmbuild/SRPMS/hyper2kvm-daemon-*.src.rpm
+mock -r fedora-39-x86_64 ~/rpmbuild/SRPMS/h2kvm-daemon-*.src.rpm
 ```
 
 ### Modifying the Spec File
 
-After modifying `hyper2kvm-daemon.spec`:
+After modifying `h2kvm-daemon.spec`:
 
 1. Update the `%changelog` section
 2. Increment `Release` or `Version` as appropriate

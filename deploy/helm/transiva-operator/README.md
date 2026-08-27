@@ -38,7 +38,7 @@ helm install transiva-operator transiva/transiva-operator \
 
 ```bash
 # Clone repository
-git clone https://github.com/ssahani/transiva.git
+git clone https://github.com/zyvorai/transiva.git
 cd transiva/deploy/helm
 
 # Install chart
@@ -386,9 +386,9 @@ helm repo index .
 
 ## Support
 
-- **Documentation**: [https://github.com/ssahani/transiva/tree/main/docs](https://github.com/ssahani/transiva/tree/main/docs)
-- **Examples**: [https://github.com/ssahani/transiva/tree/main/deploy/examples](https://github.com/ssahani/transiva/tree/main/deploy/examples)
-- **Issues**: [https://github.com/ssahani/transiva/issues](https://github.com/ssahani/transiva/issues)
+- **Documentation**: [https://github.com/zyvorai/transiva/tree/main/docs](https://github.com/zyvorai/transiva/tree/main/docs)
+- **Examples**: [https://github.com/zyvorai/transiva/tree/main/deploy/examples](https://github.com/zyvorai/transiva/tree/main/deploy/examples)
+- **Issues**: [https://github.com/zyvorai/transiva/issues](https://github.com/zyvorai/transiva/issues)
 
 ## License
 

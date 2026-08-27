@@ -13,16 +13,16 @@ import (
 	"strings"
 )
 
-// validHyper2KVMVMName restricts VM names passed to the hyper2kvm subprocess
+// validH2KVMVMName restricts VM names passed to the h2kvm subprocess
 // to a safe character set.
-var validHyper2KVMVMName = regexp.MustCompile(`^[A-Za-z0-9_.-]{1,255}$`)
+var validH2KVMVMName = regexp.MustCompile(`^[A-Za-z0-9_.-]{1,255}$`)
 
-// validHyper2KVMArg rejects values that could be interpreted as extra CLI
-// flags by the hyper2kvm subprocess, attempt path traversal, or contain
+// validH2KVMArg rejects values that could be interpreted as extra CLI
+// flags by the h2kvm subprocess, attempt path traversal, or contain
 // control characters. All of these values may originate from the daemon's
 // HTTP API request bodies/query parameters, so they must be validated
 // before being used as argv for exec.Command.
-func validHyper2KVMArg(field, value string) error {
+func validH2KVMArg(field, value string) error {
 	if value == "" {
 		return nil
 	}
@@ -40,8 +40,8 @@ func validHyper2KVMArg(field, value string) error {
 	return nil
 }
 
-// Hyper2KVMBinaryConfig represents hyper2kvm tool configuration
-type Hyper2KVMBinaryConfig struct {
+// H2KVMBinaryConfig represents h2kvm tool configuration
+type H2KVMBinaryConfig struct {
 	BinaryPath string
 	PythonPath string
 	ConfigPath string
@@ -78,7 +78,7 @@ type ConversionResponse struct {
 	Message    string `json:"message"`
 }
 
-// handleConvertVM converts a VM using hyper2kvm
+// handleConvertVM converts a VM using h2kvm
 func (s *Server) handleConvertVM(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -97,7 +97,7 @@ func (s *Server) handleConvertVM(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate all fields that will be passed to the hyper2kvm subprocess as
+	// Validate all fields that will be passed to the h2kvm subprocess as
 	// argv, since this handler is reachable over the daemon's HTTP API.
 	for field, value := range map[string]string{
 		"source_path": req.SourcePath,
@@ -105,7 +105,7 @@ func (s *Server) handleConvertVM(w http.ResponseWriter, r *http.Request) {
 		"format":      req.Format,
 		"compression": req.Compression,
 	} {
-		if err := validHyper2KVMArg(field, value); err != nil {
+		if err := validH2KVMArg(field, value); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -116,15 +116,15 @@ func (s *Server) handleConvertVM(w http.ResponseWriter, r *http.Request) {
 			"vcenter_creds.username": req.VCenterCreds.Username,
 			"vcenter_creds.password": req.VCenterCreds.Password,
 		} {
-			if err := validHyper2KVMArg(field, value); err != nil {
+			if err := validH2KVMArg(field, value); err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
 		}
 	}
 
-	// Call hyper2kvm conversion
-	result, err := s.executeHyper2KVMConversion(req)
+	// Call h2kvm conversion
+	result, err := s.executeH2KVMConversion(req)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("conversion failed: %v", err), http.StatusInternalServerError)
 		return
@@ -153,23 +153,23 @@ func (s *Server) handleImportToKVM(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate all fields that will be passed to the hyper2kvm subprocess as
+	// Validate all fields that will be passed to the h2kvm subprocess as
 	// argv, since this handler is reachable over the daemon's HTTP API.
-	if err := validHyper2KVMArg("image_path", req.ImagePath); err != nil {
+	if err := validH2KVMArg("image_path", req.ImagePath); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if req.VMName != "" && !validHyper2KVMVMName.MatchString(req.VMName) {
+	if req.VMName != "" && !validH2KVMVMName.MatchString(req.VMName) {
 		http.Error(w, "vm_name contains invalid characters", http.StatusBadRequest)
 		return
 	}
-	if err := validHyper2KVMArg("network", req.Network); err != nil {
+	if err := validH2KVMArg("network", req.Network); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Call hyper2kvm import
-	result, err := s.executeHyper2KVMImport(req.ImagePath, req.VMName, req.Memory, req.CPUs, req.Network)
+	// Call h2kvm import
+	result, err := s.executeH2KVMImport(req.ImagePath, req.VMName, req.Memory, req.CPUs, req.Network)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("import failed: %v", err), http.StatusInternalServerError)
 		return
@@ -178,7 +178,7 @@ func (s *Server) handleImportToKVM(w http.ResponseWriter, r *http.Request) {
 	s.jsonResponse(w, http.StatusOK, result)
 }
 
-// handleVMDKParser parses VMDK files using hyper2kvm
+// handleVMDKParser parses VMDK files using h2kvm
 func (s *Server) handleVMDKParser(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -190,12 +190,12 @@ func (s *Server) handleVMDKParser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "path parameter required", http.StatusBadRequest)
 		return
 	}
-	if err := validHyper2KVMArg("path", vmdkPath); err != nil {
+	if err := validH2KVMArg("path", vmdkPath); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Parse VMDK using hyper2kvm parser
+	// Parse VMDK using h2kvm parser
 	info, err := s.parseVMDK(vmdkPath)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("VMDK parsing failed: %v", err), http.StatusInternalServerError)
@@ -205,9 +205,13 @@ func (s *Server) handleVMDKParser(w http.ResponseWriter, r *http.Request) {
 	s.jsonResponse(w, http.StatusOK, info)
 }
 
-// executeHyper2KVMConversion executes hyper2kvm conversion
-func (s *Server) executeHyper2KVMConversion(req ConversionRequest) (*ConversionResponse, error) {
-	// Build hyper2kvm command
+// executeH2KVMConversion executes h2kvm conversion
+func (s *Server) executeH2KVMConversion(req ConversionRequest) (*ConversionResponse, error) {
+	// Build h2kvm command. NOTE: this shells out to the "hyper2kvm" Python
+	// module with its pre-rename CLI flags (--input/--output/--vcenter-*).
+	// The upstream project (github.com/zyvorai/h2kvm) now ships an
+	// "h2kvmctl" CLI with a different flag surface; this legacy path hasn't
+	// been re-verified against it and may need updating.
 	args := []string{"-m", "hyper2kvm"}
 
 	// Add source
@@ -248,11 +252,11 @@ func (s *Server) executeHyper2KVMConversion(req ConversionRequest) (*ConversionR
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
-	s.logger.Info("executing hyper2kvm conversion", "args", strings.Join(args, " "))
+	s.logger.Info("executing h2kvm conversion", "args", strings.Join(args, " "))
 
 	err := cmd.Run()
 	if err != nil {
-		s.logger.Error("hyper2kvm conversion failed",
+		s.logger.Error("h2kvm conversion failed",
 			"error", err,
 			"stderr", stderr.String())
 		return nil, fmt.Errorf("conversion failed: %v - %s", err, stderr.String())
@@ -269,9 +273,9 @@ func (s *Server) executeHyper2KVMConversion(req ConversionRequest) (*ConversionR
 	}, nil
 }
 
-// executeHyper2KVMImport imports VM to KVM using hyper2kvm
-func (s *Server) executeHyper2KVMImport(imagePath, vmName string, memory, cpus int, network string) (*ConversionResponse, error) {
-	// Build hyper2kvm import command
+// executeH2KVMImport imports VM to KVM using h2kvm
+func (s *Server) executeH2KVMImport(imagePath, vmName string, memory, cpus int, network string) (*ConversionResponse, error) {
+	// Build h2kvm import command
 	args := []string{"-m", "hyper2kvm", "import"}
 
 	args = append(args, "--image", imagePath)
@@ -291,11 +295,11 @@ func (s *Server) executeHyper2KVMImport(imagePath, vmName string, memory, cpus i
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
-	s.logger.Info("executing hyper2kvm import", "args", strings.Join(args, " "))
+	s.logger.Info("executing h2kvm import", "args", strings.Join(args, " "))
 
 	err := cmd.Run()
 	if err != nil {
-		s.logger.Error("hyper2kvm import failed",
+		s.logger.Error("h2kvm import failed",
 			"error", err,
 			"stderr", stderr.String())
 		return nil, fmt.Errorf("import failed: %v - %s", err, stderr.String())
@@ -310,7 +314,7 @@ func (s *Server) executeHyper2KVMImport(imagePath, vmName string, memory, cpus i
 
 // parseVMDK parses VMDK file information
 func (s *Server) parseVMDK(vmdkPath string) (map[string]interface{}, error) {
-	// Call hyper2kvm VMDK parser
+	// Call h2kvm VMDK parser
 	args := []string{"-m", "hyper2kvm.vmware.utils.vmdk_parser", vmdkPath}
 
 	// vmdkPath is validated by handleVMDKParser (the sole caller) before this

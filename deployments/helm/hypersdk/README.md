@@ -63,7 +63,7 @@ helm install my-transiva transiva/transiva \
 
 ```bash
 # Clone repository
-git clone https://github.com/ssahani/transiva.git
+git clone https://github.com/zyvorai/transiva.git
 cd transiva
 
 # Install from local path

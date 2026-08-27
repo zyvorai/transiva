@@ -14,7 +14,7 @@ Python client library for the HyperSDK VM migration and export platform.
   - Schedule management
   - Webhook configuration
   - Libvirt integration
-  - Hyper2KVM conversion
+  - H2KVM conversion
   - **Carbon-aware scheduling** (NEW in v2.0)
 
 ## Installation
@@ -211,7 +211,7 @@ for snapshot in snapshots:
     print(f"Snapshot: {snapshot['name']}")
 ```
 
-### Hyper2KVM Conversion
+### H2KVM Conversion
 
 ```python
 # Convert a VM
@@ -397,7 +397,7 @@ job_def = JobDefinition(
         parallel_downloads=8,  # Download 8 files in parallel
         remove_cdrom=True,  # Remove CD-ROM devices
         show_individual_progress=True,
-        enable_pipeline=True,  # Enable hyper2kvm pipeline
+        enable_pipeline=True,  # Enable h2kvm pipeline
         pipeline_convert=True,
         pipeline_validate=True,
         libvirt_integration=True,
@@ -502,7 +502,7 @@ except APIError as e:
 - `list_snapshots(domain)` - List snapshots
 - `create_snapshot(domain, name, description)` - Create snapshot
 
-#### Hyper2KVM Integration
+#### H2KVM Integration
 - `convert_vm(source_path, output_path)` - Convert VM
 - `get_conversion_status(conversion_id)` - Get conversion status
 
@@ -544,5 +544,5 @@ Apache-2.0
 
 ## Support
 
-- **Issues**: https://github.com/ssahani/transiva/issues
-- **Documentation**: https://github.com/ssahani/transiva
+- **Issues**: https://github.com/zyvorai/transiva/issues
+- **Documentation**: https://github.com/zyvorai/transiva

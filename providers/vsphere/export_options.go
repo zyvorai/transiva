@@ -24,14 +24,14 @@ type ExportOptions struct {
 	GenerateManifest        bool   // Generate Artifact Manifest v1.0
 	VerifyManifest          bool   // Verify manifest after generation
 	ManifestComputeChecksum bool   // Compute SHA-256 checksums for all disks
-	ManifestTargetFormat    string // Target format for hyper2kvm conversion (e.g., "qcow2")
+	ManifestTargetFormat    string // Target format for h2kvm conversion (e.g., "qcow2")
 
 	// Pipeline integration options
-	EnablePipeline         bool          // Enable hyper2kvm pipeline after export
-	Hyper2KVMPath          string        // Path to hyper2kvm binary (auto-detect if empty)
+	EnablePipeline         bool          // Enable h2kvm pipeline after export
+	H2KVMPath          string        // Path to h2kvm binary (auto-detect if empty)
 	PipelineTimeout        time.Duration // Timeout for pipeline process
-	StreamPipelineOutput   bool          // Stream hyper2kvm output to console
-	PipelineDryRun         bool          // Run hyper2kvm in dry-run mode
+	StreamPipelineOutput   bool          // Stream h2kvm output to console
+	PipelineDryRun         bool          // Run h2kvm in dry-run mode
 
 	// Pipeline stage configuration
 	PipelineInspect        bool          // Enable INSPECT stage (collect guest info)
@@ -41,7 +41,7 @@ type ExportOptions struct {
 	PipelineCompress       bool          // Enable qcow2 compression
 	PipelineCompressLevel  int           // Compression level 1-9 (default 6)
 
-	// EnableRDP enables Windows RDP in hyper2kvm firstboot (nil = auto: true for Windows guests).
+	// EnableRDP enables Windows RDP in h2kvm firstboot (nil = auto: true for Windows guests).
 	EnableRDP *bool
 
 	// Libvirt integration options
@@ -51,13 +51,13 @@ type ExportOptions struct {
 	LibvirtNetworkBridge   string        // Network bridge (default: virbr0)
 	LibvirtStoragePool     string        // Storage pool (default: default)
 
-	// hyper2kvm daemon options
-	Hyper2KVMDaemon        bool          // Use systemd daemon instead of direct execution
-	Hyper2KVMInstance      string        // Systemd instance name (e.g., "vsphere-prod")
-	Hyper2KVMWatchDir      string        // Watch directory for daemon mode (default: /var/lib/hyper2kvm/queue)
-	Hyper2KVMOutputDir     string        // Output directory for daemon mode (default: /var/lib/hyper2kvm/output)
-	Hyper2KVMPollInterval  int           // Poll interval in seconds (default: 5)
-	Hyper2KVMDaemonTimeout int           // Daemon timeout in minutes (default: 60)
+	// h2kvm daemon options
+	H2KVMDaemon        bool          // Use systemd daemon instead of direct execution
+	H2KVMInstance      string        // Systemd instance name (e.g., "vsphere-prod")
+	H2KVMWatchDir      string        // Watch directory for daemon mode (default: /var/lib/h2kvm/queue)
+	H2KVMOutputDir     string        // Output directory for daemon mode (default: /var/lib/h2kvm/output)
+	H2KVMPollInterval  int           // Poll interval in seconds (default: 5)
+	H2KVMDaemonTimeout int           // Daemon timeout in minutes (default: 60)
 
 	// Progress callback for TUI/API integration
 	ProgressCallback func(current, total int64, fileName string, fileIndex, totalFiles int)
@@ -98,11 +98,11 @@ func DefaultExportOptions() ExportOptions {
 		LibvirtStoragePool:     "default",
 
 		// Daemon defaults
-		Hyper2KVMDaemon:        false,
-		Hyper2KVMWatchDir:      "/var/lib/hyper2kvm/queue",
-		Hyper2KVMOutputDir:     "/var/lib/hyper2kvm/output",
-		Hyper2KVMPollInterval:  5,
-		Hyper2KVMDaemonTimeout: 60,
+		H2KVMDaemon:        false,
+		H2KVMWatchDir:      "/var/lib/h2kvm/queue",
+		H2KVMOutputDir:     "/var/lib/h2kvm/output",
+		H2KVMPollInterval:  5,
+		H2KVMDaemonTimeout: 60,
 	}
 }
 

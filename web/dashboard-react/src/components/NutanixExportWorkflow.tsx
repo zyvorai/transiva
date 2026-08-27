@@ -268,7 +268,7 @@ const NutanixExportWorkflow: React.FC = () => {
           required
         />
         <label style={styles.checkbox}><input type="checkbox" checked={exportOptions.resolveContainers} onChange={(e) => setExportOptions({ ...exportOptions, resolveContainers: e.target.checked })} /> Resolve container names</label>
-        <label style={styles.checkbox}><input type="checkbox" checked={exportOptions.enablePipeline} onChange={(e) => setExportOptions({ ...exportOptions, enablePipeline: e.target.checked })} /> Run hyper2kvm pipeline after export</label>
+        <label style={styles.checkbox}><input type="checkbox" checked={exportOptions.enablePipeline} onChange={(e) => setExportOptions({ ...exportOptions, enablePipeline: e.target.checked })} /> Run h2kvm pipeline after export</label>
         <button style={styles.button} disabled={loading}>{loading ? 'Submitting...' : 'Submit Export Job'}</button>
       </form>
     </div>

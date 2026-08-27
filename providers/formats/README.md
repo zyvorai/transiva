@@ -272,7 +272,7 @@ for _, file := range result.Files {
 }
 ```
 
-### With Hyper2KVM
+### With H2KVM
 
 ```go
 // Export then convert for KVM

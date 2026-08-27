@@ -14,7 +14,7 @@ info:
   version: 2.0.0
   contact:
     name: HyperSDK
-    url: https://github.com/ssahani/transiva
+    url: https://github.com/zyvorai/transiva
   license:
     name: Apache-2.0
     url: https://www.apache.org/licenses/LICENSE-2.0
@@ -48,8 +48,8 @@ tags:
     description: Libvirt domain, volume, and network management
   - name: Console
     description: VM console access (VNC, serial)
-  - name: Hyper2KVM
-    description: Hyper2KVM integration and conversion
+  - name: H2KVM
+    description: H2KVM integration and conversion
   - name: vSphere
     description: VMware vSphere infrastructure management
   - name: Carbon
@@ -896,8 +896,8 @@ paths:
   /convert/vm:
     post:
       summary: Convert VM
-      description: Convert VM using hyper2kvm
-      tags: [Hyper2KVM]
+      description: Convert VM using h2kvm
+      tags: [H2KVM]
       requestBody:
         required: true
         content:
@@ -924,7 +924,7 @@ paths:
     get:
       summary: Get conversion status
       description: Get status of a VM conversion
-      tags: [Hyper2KVM]
+      tags: [H2KVM]
       parameters:
         - name: conversion_id
           in: query
@@ -1254,10 +1254,14 @@ components:
           default: false
         enable_pipeline:
           type: boolean
-          description: Enable hyper2kvm pipeline integration
+          description: Enable h2kvm pipeline integration
+        h2kvm_path:
+          type: string
+          description: Path to h2kvm executable
         hyper2kvm_path:
           type: string
-          description: Path to hyper2kvm executable
+          deprecated: true
+          description: 'Deprecated: use h2kvm_path.'
         pipeline_inspect:
           type: boolean
         pipeline_fix:

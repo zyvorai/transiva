@@ -279,7 +279,7 @@ type exportConfiguration struct {
 	parallel     int
 	parallelStr  string // for form input
 
-	// hyper2kvm daemon options
+	// h2kvm daemon options
 	useDaemon          bool
 	daemonInstance     string
 	daemonWatchDir     string
@@ -296,8 +296,8 @@ func configureExport(defaultOutputDir string, theme *huh.Theme, allowBack bool) 
 		outputDir:          defaultOutputDir,
 		parallel:           4,
 		parallelStr:        "4",
-		daemonWatchDir:     "/var/lib/hyper2kvm/queue",
-		daemonOutputDir:    "/var/lib/hyper2kvm/output",
+		daemonWatchDir:     "/var/lib/h2kvm/queue",
+		daemonOutputDir:    "/var/lib/h2kvm/output",
 		daemonPollInterval: 5,
 		daemonTimeout:      60,
 		pollIntervalStr:    "5",
@@ -373,7 +373,7 @@ func configureExport(defaultOutputDir string, theme *huh.Theme, allowBack bool) 
 		),
 		huh.NewGroup(
 			huh.NewSelect[string]().
-				Title("hyper2kvm Daemon Mode").
+				Title("h2kvm Daemon Mode").
 				Description("Use systemd daemon for VM conversion?").
 				Options(daemonOptions...).
 				Value(&useDaemonStr),
@@ -398,13 +398,13 @@ func configureExport(defaultOutputDir string, theme *huh.Theme, allowBack bool) 
 				Title("Watch Directory").
 				Description("Directory where daemon watches for jobs (press Esc to go back)").
 				Value(&config.daemonWatchDir).
-				Placeholder("/var/lib/hyper2kvm/queue"),
+				Placeholder("/var/lib/h2kvm/queue"),
 
 			huh.NewInput().
 				Title("Output Directory").
 				Description("Directory where daemon outputs converted VMs (press Esc to go back)").
 				Value(&config.daemonOutputDir).
-				Placeholder("/var/lib/hyper2kvm/output"),
+				Placeholder("/var/lib/h2kvm/output"),
 
 			huh.NewInput().
 				Title("Poll Interval (seconds)").
@@ -608,13 +608,13 @@ func confirmAndExecute(ctx context.Context, client *vsphere.VSphereClient, vms [
 			Compress:          cfg.compress,
 			CleanupOVF:        cfg.format == "ova", // Clean up OVF files after creating OVA
 
-			// hyper2kvm daemon options
-			Hyper2KVMDaemon:        cfg.useDaemon,
-			Hyper2KVMInstance:      cfg.daemonInstance,
-			Hyper2KVMWatchDir:      cfg.daemonWatchDir,
-			Hyper2KVMOutputDir:     cfg.daemonOutputDir,
-			Hyper2KVMPollInterval:  cfg.daemonPollInterval,
-			Hyper2KVMDaemonTimeout: cfg.daemonTimeout,
+			// h2kvm daemon options
+			H2KVMDaemon:        cfg.useDaemon,
+			H2KVMInstance:      cfg.daemonInstance,
+			H2KVMWatchDir:      cfg.daemonWatchDir,
+			H2KVMOutputDir:     cfg.daemonOutputDir,
+			H2KVMPollInterval:  cfg.daemonPollInterval,
+			H2KVMDaemonTimeout: cfg.daemonTimeout,
 		}
 
 		// Export the VM

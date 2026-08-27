@@ -14,24 +14,24 @@ import (
 	"github.com/zyvorai/transiva/providers/common"
 )
 
-func TestDetectHyper2KVMBinary(t *testing.T) {
-	// This test will only pass if hyper2kvm is installed
+func TestDetectH2KVMBinary(t *testing.T) {
+	// This test will only pass if h2kvm is installed
 	// Skip if not available
-	_, err := exec.LookPath("hyper2kvm")
+	_, err := exec.LookPath("h2kvm")
 	if err != nil {
-		t.Skip("hyper2kvm not available in PATH, skipping test")
+		t.Skip("h2kvm not available in PATH, skipping test")
 	}
 
-	binary, err := detectHyper2KVMBinary()
+	binary, err := detectH2KVMBinary()
 	if err != nil {
-		t.Fatalf("Failed to detect hyper2kvm: %v", err)
+		t.Fatalf("Failed to detect h2kvm: %v", err)
 	}
 
 	if binary == "" {
 		t.Error("Binary path is empty")
 	}
 
-	t.Logf("Detected hyper2kvm at: %s", binary)
+	t.Logf("Detected h2kvm at: %s", binary)
 }
 
 func TestValidateBinary(t *testing.T) {
@@ -95,7 +95,7 @@ func TestValidateBinary(t *testing.T) {
 	}
 }
 
-func TestNewHyper2KVMConverter(t *testing.T) {
+func TestNewH2KVMConverter(t *testing.T) {
 	log := logger.New("info")
 
 	// Test with explicit binary path (create mock)
@@ -105,14 +105,14 @@ func TestNewHyper2KVMConverter(t *testing.T) {
 	}
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
-	mockBinary := filepath.Join(tmpDir, "hyper2kvm")
-	if err := os.WriteFile(mockBinary, []byte("#!/bin/sh\necho 'hyper2kvm v1.0.0'"), 0755); err != nil {
+	mockBinary := filepath.Join(tmpDir, "h2kvm")
+	if err := os.WriteFile(mockBinary, []byte("#!/bin/sh\necho 'h2kvm v1.0.0'"), 0755); err != nil {
 		t.Fatalf("Failed to create mock binary: %v", err)
 	}
 
-	converter, err := NewHyper2KVMConverter(mockBinary, log)
+	converter, err := NewH2KVMConverter(mockBinary, log)
 	if err != nil {
-		t.Fatalf("NewHyper2KVMConverter() failed: %v", err)
+		t.Fatalf("NewH2KVMConverter() failed: %v", err)
 	}
 
 	if converter.binaryPath != mockBinary {
@@ -123,21 +123,21 @@ func TestNewHyper2KVMConverter(t *testing.T) {
 	t.Logf("   Binary: %s", converter.binaryPath)
 }
 
-func TestNewHyper2KVMConverter_AutoDetect(t *testing.T) {
+func TestNewH2KVMConverter_AutoDetect(t *testing.T) {
 	log := logger.New("info")
 
-	// Try auto-detection (will only work if hyper2kvm is installed)
-	converter, err := NewHyper2KVMConverter("", log)
+	// Try auto-detection (will only work if h2kvm is installed)
+	converter, err := NewH2KVMConverter("", log)
 	if err != nil {
-		// Expected if hyper2kvm is not installed
-		t.Skipf("Auto-detection failed (hyper2kvm not installed): %v", err)
+		// Expected if h2kvm is not installed
+		t.Skipf("Auto-detection failed (h2kvm not installed): %v", err)
 	}
 
 	if converter.binaryPath == "" {
 		t.Error("Binary path is empty after auto-detection")
 	}
 
-	t.Logf("✅ Auto-detected hyper2kvm at: %s", converter.binaryPath)
+	t.Logf("✅ Auto-detected h2kvm at: %s", converter.binaryPath)
 }
 
 func TestConvertOptions(t *testing.T) {
@@ -224,10 +224,10 @@ func TestParseConversionResults(t *testing.T) {
 	}
 
 	// Create mock converter
-	mockBinary := filepath.Join(tmpDir, "hyper2kvm")
+	mockBinary := filepath.Join(tmpDir, "h2kvm")
 	_ = os.WriteFile(mockBinary, []byte("#!/bin/sh\necho 'mock'"), 0755)
 
-	converter, err := NewHyper2KVMConverter(mockBinary, log)
+	converter, err := NewH2KVMConverter(mockBinary, log)
 	if err != nil {
 		t.Fatalf("Failed to create converter: %v", err)
 	}
@@ -266,17 +266,17 @@ func TestGetVersion(t *testing.T) {
 	}
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
-	mockBinary := filepath.Join(tmpDir, "hyper2kvm")
+	mockBinary := filepath.Join(tmpDir, "h2kvm")
 	mockScript := `#!/bin/sh
 if [ "$1" = "--version" ]; then
-  echo "hyper2kvm v1.0.0"
+  echo "h2kvm v1.0.0"
 fi
 `
 	if err := os.WriteFile(mockBinary, []byte(mockScript), 0755); err != nil {
 		t.Fatalf("Failed to create mock binary: %v", err)
 	}
 
-	converter, err := NewHyper2KVMConverter(mockBinary, log)
+	converter, err := NewH2KVMConverter(mockBinary, log)
 	if err != nil {
 		t.Fatalf("Failed to create converter: %v", err)
 	}
@@ -286,8 +286,8 @@ fi
 		t.Fatalf("GetVersion() failed: %v", err)
 	}
 
-	if version != "hyper2kvm v1.0.0" {
-		t.Errorf("Version = %q, want 'hyper2kvm v1.0.0'", version)
+	if version != "h2kvm v1.0.0" {
+		t.Errorf("Version = %q, want 'h2kvm v1.0.0'", version)
 	}
 
 	t.Log("✅ GetVersion test passed")
@@ -304,7 +304,7 @@ func TestConvert_ContextTimeout(t *testing.T) {
 	}
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
-	mockBinary := filepath.Join(tmpDir, "hyper2kvm")
+	mockBinary := filepath.Join(tmpDir, "h2kvm")
 	mockScript := `#!/bin/sh
 sleep 10
 `
@@ -312,7 +312,7 @@ sleep 10
 		t.Fatalf("Failed to create mock binary: %v", err)
 	}
 
-	converter, err := NewHyper2KVMConverter(mockBinary, log)
+	converter, err := NewH2KVMConverter(mockBinary, log)
 	if err != nil {
 		t.Fatalf("Failed to create converter: %v", err)
 	}

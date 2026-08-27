@@ -78,7 +78,7 @@ func ExampleBuilder() {
 				"application": "webserver",
 			},
 		).
-		// Configure hyper2kvm pipeline
+		// Configure h2kvm pipeline
 		WithPipeline(
 			true, // inspect
 			true, // fix
@@ -107,7 +107,7 @@ func ExampleBuilder() {
 	fmt.Printf("✅ Artifact Manifest v1.0 created: %s\n", manifestPath)
 	fmt.Printf("   Source: %s / %s\n", m.Source.Provider, m.Source.VMName)
 	fmt.Printf("   Disks: %d\n", len(m.Disks))
-	fmt.Printf("   Ready for hyper2kvm processing\n")
+	fmt.Printf("   Ready for h2kvm processing\n")
 }
 
 // Example_builderWithChecksums demonstrates creating a manifest with

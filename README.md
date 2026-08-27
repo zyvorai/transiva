@@ -4,17 +4,17 @@
 
 ### Enterprise Workload Mobility & Migration Control Plane
 
-Transiva is a Go control plane that discovers, inventories, and orchestrates workload exports from VMware vSphere and Nutanix AHV, handing artifacts to [hyper2kvm](https://github.com/transiva/hyper2kvm) for conversion and running fleet jobs over REST.
+Transiva is a Go control plane that discovers, inventories, and orchestrates workload exports from VMware vSphere and Nutanix AHV, handing artifacts to [h2kvm](https://github.com/zyvorai/h2kvm) for conversion and running fleet jobs over REST.
 
 **Apache-2.0** · a Zyvor AI Labs project · day-2 on **[Zeus OS](https://zyvor.dev/zeus-os)**
 
 <br/>
 
-[![CI](https://github.com/transiva/transiva/actions/workflows/ci.yml/badge.svg)](https://github.com/transiva/transiva/actions/workflows/ci.yml)
-[![Latest release](https://img.shields.io/github/v/tag/transiva/transiva?label=release&sort=semver&color=F97316)](https://github.com/transiva/transiva/tags)
-[![Go 1.24+](https://img.shields.io/badge/go-1.24+-00ADD8.svg)](https://go.dev/)
+[![CI](https://github.com/zyvorai/transiva/actions/workflows/ci.yml/badge.svg)](https://github.com/zyvorai/transiva/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/tag/zyvorai/transiva?label=release&sort=semver&color=F97316)](https://github.com/zyvorai/transiva/tags)
+[![Go 1.27+](https://img.shields.io/badge/go-1.27+-00ADD8.svg)](https://go.dev/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
-[![Stars](https://img.shields.io/github/stars/transiva/transiva?style=social)](https://github.com/transiva/transiva/stargazers)
+[![Stars](https://img.shields.io/github/stars/zyvorai/transiva?style=social)](https://github.com/zyvorai/transiva/stargazers)
 
 <br/>
 
@@ -46,11 +46,11 @@ Every hypervisor renewal buries your VMs deeper in someone else’s proprietary 
   ┌────────────────────────────────────────┐
   │  Transiva (Community)                  │──►  discover · inventory · export
   │  transivactl  (compat: hyperctl)       │──►  resumable jobs · REST
-  │  transivad    (compat: hypervisord)    │──►  artifacts for hyper2kvm
+  │  transivad    (compat: hypervisord)    │──►  artifacts for h2kvm
   └────────────────────────────────────────┘
            │
            ▼
-  hyper2kvm → GuestKit → KVM / KubeVirt → Zeus OS
+  h2kvm → GuestKit → KVM / KubeVirt → Zeus OS
 ```
 
 | | | |
@@ -58,7 +58,7 @@ Every hypervisor renewal buries your VMs deeper in someone else’s proprietary 
 | **2** source hypervisors (CE) | **1** workflow for both | **0** guest agents |
 | Apache-2.0 | CLI + REST | Offline export — source VM untouched |
 
-**Export with HyperSDK → convert with [hyper2kvm](https://github.com/transiva/hyper2kvm) → assure with [GuestKit](https://github.com/transiva/guestkit) → operate on [Zeus OS](https://zyvor.dev/zeus-os).**
+**Export with HyperSDK → convert with [h2kvm](https://github.com/zyvorai/h2kvm) → assure with [GuestKit](https://github.com/zyvorai/guestkit) → operate on [Zeus OS](https://zyvor.dev/zeus-os).**
 
 ---
 
@@ -113,7 +113,7 @@ Every hypervisor renewal buries your VMs deeper in someone else’s proprietary 
 <summary><b>VMware vSphere</b></summary>
 
 ```bash
-git clone https://github.com/transiva/transiva.git
+git clone https://github.com/zyvorai/transiva.git
 cd transiva
 ./scripts/build.sh
 
@@ -174,7 +174,7 @@ REST surface: [openapi.yaml](openapi.yaml) · containers: [deployments/docker/](
 flowchart LR
     A["vSphere"] --> H
     B["Nutanix AHV"] --> H
-    H["<b>transiva</b><br/>discover · export"] --> K["hyper2kvm<br/>convert to QCOW2"]
+    H["<b>transiva</b><br/>discover · export"] --> K["h2kvm<br/>convert to QCOW2"]
     K --> G["GuestKit<br/>inspect · repair"]
     G --> T["KVM · libvirt · KubeVirt"]
     T --> Z["Zeus OS<br/>day-2"]
@@ -188,8 +188,8 @@ flowchart LR
 | Stage | Tool | What it does |
 |---|---|---|
 | **Export** | **transiva** *(this repo)* | Discover via provider API, export disks + metadata |
-| Convert | [hyper2kvm](https://github.com/transiva/hyper2kvm) | Rewrite to QCOW2 offline, fix drivers before first boot |
-| Assure | [GuestKit](https://github.com/transiva/guestkit) | Offline doctor score + Passport before power-on |
+| Convert | [h2kvm](https://github.com/zyvorai/h2kvm) | Rewrite to QCOW2 offline, fix drivers before first boot |
+| Assure | [GuestKit](https://github.com/zyvorai/guestkit) | Offline doctor score + Passport before power-on |
 | Host | [Machina](https://zyvor.dev/machina) | Bare-metal KVM / libvirt on the hypervisor host |
 | Operate | [Zeus OS](https://zyvor.dev/zeus-os) | VMs + containers — KubeVirt lifecycle, GPU, multi-cluster |
 
@@ -209,12 +209,12 @@ CE is free forever for labs — two sources, CLI, GitHub Issues. If you are movi
 | **Sources** | vSphere, Nutanix AHV | **10–11 providers** — Hyper-V, AWS, Azure, GCP, OCI, OpenStack, Proxmox, KubeVirt, … |
 | **Interface** | CLI + REST daemon | **Dashboard** · Spotlight · noVNC · SDKs · 200–267+ routes |
 | **Incremental** | Full exports only | **CBT** + smart fallback — windows that fit change freeze |
-| **Pipeline** | Hand off to hyper2kvm yourself | Wizard · **17 readiness checks** · waves · approvals · blackouts |
-| **Deploy targets** | Local output → hyper2kvm | Glance/Nova · libvirt · **KubeVirt** · live libvirt→KubeVirt |
+| **Pipeline** | Hand off to h2kvm yourself | Wizard · **17 readiness checks** · waves · approvals · blackouts |
+| **Deploy targets** | Local output → h2kvm | Glance/Nova · libvirt · **KubeVirt** · live libvirt→KubeVirt |
 | **Security** | Config-file credentials | Vault · **SSO/OIDC/SAML** · RBAC · audit · air-gap packs |
 | **Ops** | Single-node eval | Multi-tenant CP · HA · agents · carbon/chargeback · compliance |
 | **Day-2** | Hand off to Zeus OS | Licensed **Zeus OS** suite path |
-| **Support** | [GitHub Issues](https://github.com/transiva/transiva/issues) | **SLA** · workshops · hypervisor-exit PS |
+| **Support** | [GitHub Issues](https://github.com/zyvorai/transiva/issues) | **SLA** · workshops · hypervisor-exit PS |
 
 ### Why teams upgrade
 
@@ -257,17 +257,17 @@ If it saved you a licence renewal, a ⭐ helps more people find it.
 | | |
 |---|---|
 | **Production / Platform** | [Talk to an engineer](https://zyvor.dev/schedule?utm_source=github&utm_medium=transiva) · [sales@zyvor.dev](mailto:sales@zyvor.dev) |
-| **Community** | [GitHub Issues](https://github.com/transiva/transiva/issues) |
+| **Community** | [GitHub Issues](https://github.com/zyvorai/transiva/issues) |
 | **General** | [info@zyvor.dev](mailto:info@zyvor.dev) |
 
 ## Related open-source repos
 
 | Repo | Role |
 |---|---|
-| [hyper2kvm](https://github.com/transiva/hyper2kvm) | Convert exported disks → KVM |
-| [guestkit](https://github.com/transiva/guestkit) | Offline disk doctor + Passport |
-| [netevd](https://github.com/transiva/netevd) | Real-time network event tracking |
-| [netctl](https://github.com/transiva/netctl) | Networking from the CLI |
+| [h2kvm](https://github.com/zyvorai/h2kvm) | Convert exported disks → KVM |
+| [guestkit](https://github.com/zyvorai/guestkit) | Offline disk doctor + Passport |
+| [netevd](https://github.com/zyvorai/netevd) | Real-time network event tracking |
+| [netctl](https://github.com/zyvorai/netctl) | Networking from the CLI |
 
 [Browse all open-source →](https://zyvor.dev/about#support-open-source)
 

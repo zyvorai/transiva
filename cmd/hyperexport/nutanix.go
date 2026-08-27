@@ -295,8 +295,8 @@ func applyHyperexportPipelineMetadata(meta map[string]interface{}) {
 	if *pipelineTimeout > 0 {
 		meta["pipeline_timeout"] = *pipelineTimeout
 	}
-	if *hyper2kvmPath != "" {
-		meta["hyper2kvm_path"] = *hyper2kvmPath
+	if *h2kvmPath != "" {
+		meta["h2kvm_path"] = *h2kvmPath
 	}
 	if *libvirtIntegration {
 		meta["libvirt_integration"] = true
@@ -310,23 +310,23 @@ func applyHyperexportPipelineMetadata(meta map[string]interface{}) {
 	if *pipelineDryRun {
 		meta["pipeline_dry_run"] = true
 	}
-	if *hyper2kvmDaemon {
-		meta["hyper2kvm_daemon"] = true
+	if *h2kvmDaemon {
+		meta["h2kvm_daemon"] = true
 	}
-	if *hyper2kvmInstance != "" {
-		meta["hyper2kvm_instance"] = *hyper2kvmInstance
+	if *h2kvmInstance != "" {
+		meta["h2kvm_instance"] = *h2kvmInstance
 	}
-	if *hyper2kvmWatchDir != "" {
-		meta["hyper2kvm_watch_dir"] = *hyper2kvmWatchDir
+	if *h2kvmWatchDir != "" {
+		meta["h2kvm_watch_dir"] = *h2kvmWatchDir
 	}
-	if *hyper2kvmOutputDir != "" {
-		meta["hyper2kvm_output_dir"] = *hyper2kvmOutputDir
+	if *h2kvmOutputDir != "" {
+		meta["h2kvm_output_dir"] = *h2kvmOutputDir
 	}
-	if *hyper2kvmPollInterval > 0 {
-		meta["hyper2kvm_poll_interval"] = *hyper2kvmPollInterval
+	if *h2kvmPollInterval > 0 {
+		meta["h2kvm_poll_interval"] = *h2kvmPollInterval
 	}
-	if *hyper2kvmDaemonTimeout > 0 {
-		meta["hyper2kvm_daemon_timeout"] = *hyper2kvmDaemonTimeout
+	if *h2kvmDaemonTimeout > 0 {
+		meta["h2kvm_daemon_timeout"] = *h2kvmDaemonTimeout
 	}
 }
 

@@ -3,3 +3,5 @@ build/
 coverage.out
 *.log
 .DS_Store
+__pycache__/
+*.pyc

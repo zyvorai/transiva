@@ -26,6 +26,7 @@
     "hypervisor",
     "kvm",
     "libvirt",
+    "h2kvm",
     "hyper2kvm",
     "carbon-aware",
     "sustainability",

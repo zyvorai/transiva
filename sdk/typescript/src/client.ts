@@ -625,7 +625,7 @@ export class HyperSDK {
     });
   }
 
-  // Hyper2KVM Integration
+  // H2KVM Integration
 
   async convertVM(sourcePath: string, outputPath: string): Promise<string> {
     const response = await this.request<{ conversion_id: string }>(

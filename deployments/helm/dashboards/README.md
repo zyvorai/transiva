@@ -241,8 +241,8 @@ The cost dashboard provides estimates based on resource **requests**, not actual
 
 ## Support
 
-- **Issues**: https://github.com/ssahani/transiva/issues
-- **Discussions**: https://github.com/ssahani/transiva/discussions
+- **Issues**: https://github.com/zyvorai/transiva/issues
+- **Discussions**: https://github.com/zyvorai/transiva/discussions
 - **Grafana Docs**: https://grafana.com/docs/grafana/latest/
 
 ---

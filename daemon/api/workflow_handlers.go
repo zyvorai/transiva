@@ -179,6 +179,9 @@ func (s *Server) getWorkflowStatus() WorkflowStatus {
 	}
 
 	workflowDirs := []string{
+		"/var/lib/h2kvm/workflow",
+		"/var/lib/h2kvm/manifest-workflow",
+		// Legacy (pre-rename) paths, kept for hosts with an older h2kvm install
 		"/var/lib/hyper2kvm/workflow",
 		"/var/lib/hyper2kvm/manifest-workflow",
 	}
@@ -210,9 +213,17 @@ func (s *Server) getWorkflowStatus() WorkflowStatus {
 func (s *Server) getWorkflowJobs(statusFilter string) []WorkflowJob {
 	var jobs []WorkflowJob
 
-	baseDir := "/var/lib/hyper2kvm/manifest-workflow"
-	if _, err := os.Stat("/var/lib/hyper2kvm/workflow/processing"); err == nil {
+	baseDir := "/var/lib/h2kvm/manifest-workflow"
+	switch {
+	case fileExists("/var/lib/h2kvm/workflow/processing"):
+		baseDir = "/var/lib/h2kvm/workflow"
+	case fileExists("/var/lib/h2kvm/manifest-workflow"):
+		// use default above
+	case fileExists("/var/lib/hyper2kvm/workflow/processing"):
+		// Legacy (pre-rename) path, kept for hosts with an older h2kvm install
 		baseDir = "/var/lib/hyper2kvm/workflow"
+	case fileExists("/var/lib/hyper2kvm/manifest-workflow"):
+		baseDir = "/var/lib/hyper2kvm/manifest-workflow"
 	}
 
 	var dirPath string
@@ -279,7 +290,13 @@ func (s *Server) countFilesInDir(dir string) int {
 }
 
 func (s *Server) submitManifestToWorkflow(manifest map[string]interface{}) (string, error) {
-	workflowDir := "/var/lib/hyper2kvm/manifest-workflow/to_be_processed"
+	// Submit into whichever tree already exists on this host (new name preferred),
+	// falling back to the legacy (pre-rename) path for older installs, and
+	// defaulting to the new name if neither exists yet.
+	workflowDir := "/var/lib/h2kvm/manifest-workflow/to_be_processed"
+	if !fileExists("/var/lib/h2kvm/manifest-workflow") && fileExists("/var/lib/hyper2kvm/manifest-workflow") {
+		workflowDir = "/var/lib/hyper2kvm/manifest-workflow/to_be_processed"
+	}
 
 	if err := os.MkdirAll(workflowDir, 0750); err != nil {
 		return "", fmt.Errorf("failed to create workflow directory: %v", err)

@@ -441,13 +441,13 @@ func (c *VSphereClient) ExportOVF(ctx context.Context, vmPath string, opts Expor
 		}
 	}
 
-	// Run hyper2kvm pipeline if enabled
+	// Run h2kvm pipeline if enabled
 	if opts.EnablePipeline && result.ManifestPath != "" {
-		c.logger.Info("starting hyper2kvm pipeline", "manifest", result.ManifestPath)
+		c.logger.Info("starting h2kvm pipeline", "manifest", result.ManifestPath)
 
-		pipelineConfig := &common.Hyper2KVMConfig{
+		pipelineConfig := &common.H2KVMConfig{
 			Enabled:            true,
-			Hyper2KVMPath:      opts.Hyper2KVMPath,
+			H2KVMPath:      opts.H2KVMPath,
 			ManifestPath:       result.ManifestPath,
 			LibvirtIntegration: opts.LibvirtIntegration,
 			LibvirtURI:         opts.LibvirtURI,
@@ -456,12 +456,12 @@ func (c *VSphereClient) ExportOVF(ctx context.Context, vmPath string, opts Expor
 			DryRun:             opts.PipelineDryRun,
 
 			// Daemon options
-			UseDaemon:          opts.Hyper2KVMDaemon,
-			DaemonInstance:     opts.Hyper2KVMInstance,
-			DaemonWatchDir:     opts.Hyper2KVMWatchDir,
-			DaemonOutputDir:    opts.Hyper2KVMOutputDir,
-			DaemonPollInterval: opts.Hyper2KVMPollInterval,
-			DaemonTimeout:      opts.Hyper2KVMDaemonTimeout,
+			UseDaemon:          opts.H2KVMDaemon,
+			DaemonInstance:     opts.H2KVMInstance,
+			DaemonWatchDir:     opts.H2KVMWatchDir,
+			DaemonOutputDir:    opts.H2KVMOutputDir,
+			DaemonPollInterval: opts.H2KVMPollInterval,
+			DaemonTimeout:      opts.H2KVMDaemonTimeout,
 		}
 
 		executor := common.NewPipelineExecutor(pipelineConfig, c.logger)
@@ -1022,7 +1022,7 @@ func (c *VSphereClient) generateArtifactManifest(
 		},
 	)
 
-	// Configure hyper2kvm pipeline with user settings
+	// Configure h2kvm pipeline with user settings
 	builder.WithPipeline(
 		opts.PipelineInspect,  // inspect
 		opts.PipelineFix,      // fix
@@ -1035,7 +1035,7 @@ func (c *VSphereClient) generateArtifactManifest(
 		enableRDP = *opts.EnableRDP
 	}
 	builder.WithFixEnableRDP(enableRDP)
-	c.logger.Info("manifest: enable_rdp for hyper2kvm firstboot", "enable_rdp", enableRDP, "os_hint", osHint)
+	c.logger.Info("manifest: enable_rdp for h2kvm firstboot", "enable_rdp", enableRDP, "os_hint", osHint)
 
 	// Set pipeline options if enabled
 	if opts.EnablePipeline {

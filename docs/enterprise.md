@@ -1,6 +1,6 @@
 # Enterprise & HyperSDK Platform
 
-Community Edition lives in this public repo ([github.com/transiva/transiva](https://github.com/transiva/transiva)).  
+Community Edition lives in this public repo ([github.com/zyvorai/transiva](https://github.com/zyvorai/transiva)).  
 **HyperSDK Platform (Enterprise)** is what you buy to run a **hypervisor-exit program**.
 
 CE is free forever for labs. Buy Platform when CBT, waves, SSO, multi-provider export, and a named owner on cutover night matter. Day-2 lands on **Zeus OS**.

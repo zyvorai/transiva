@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// Converter defines the interface for VM conversion tools (e.g., hyper2kvm)
+// Converter defines the interface for VM conversion tools (e.g., h2kvm)
 // This interface is provider-agnostic and can be used with vSphere, AWS, Azure, GCP, etc.
 type Converter interface {
 	// Convert runs the conversion process on the given manifest

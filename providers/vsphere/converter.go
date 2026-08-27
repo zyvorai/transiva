@@ -18,41 +18,41 @@ import (
 	"github.com/zyvorai/transiva/providers/common"
 )
 
-// Hyper2KVMConverter handles automatic conversion of exported VMs using hyper2kvm
-type Hyper2KVMConverter struct {
+// H2KVMConverter handles automatic conversion of exported VMs using h2kvm
+type H2KVMConverter struct {
 	binaryPath string
 	logger     logger.Logger
 }
 
-// NewHyper2KVMConverter creates a new converter instance
-func NewHyper2KVMConverter(binaryPath string, log logger.Logger) (*Hyper2KVMConverter, error) {
-	// Auto-detect hyper2kvm binary if not provided
+// NewH2KVMConverter creates a new converter instance
+func NewH2KVMConverter(binaryPath string, log logger.Logger) (*H2KVMConverter, error) {
+	// Auto-detect h2kvm binary if not provided
 	if binaryPath == "" {
-		detected, err := detectHyper2KVMBinary()
+		detected, err := detectH2KVMBinary()
 		if err != nil {
-			return nil, fmt.Errorf("hyper2kvm not found: %w (install with: pip install hyper2kvm)", err)
+			return nil, fmt.Errorf("h2kvm not found: %w (install with: pip install h2kvm)", err)
 		}
 		binaryPath = detected
 	}
 
 	// Validate binary exists and is executable
 	if err := validateBinary(binaryPath); err != nil {
-		return nil, fmt.Errorf("invalid hyper2kvm binary: %w", err)
+		return nil, fmt.Errorf("invalid h2kvm binary: %w", err)
 	}
 
-	log.Info("hyper2kvm binary detected", "path", binaryPath)
+	log.Info("h2kvm binary detected", "path", binaryPath)
 
-	return &Hyper2KVMConverter{
+	return &H2KVMConverter{
 		binaryPath: binaryPath,
 		logger:     log,
 	}, nil
 }
 
-// Convert runs hyper2kvm conversion on the manifest
-func (c *Hyper2KVMConverter) Convert(ctx context.Context, manifestPath string, opts common.ConvertOptions) (*common.ConversionResult, error) {
+// Convert runs h2kvm conversion on the manifest
+func (c *H2KVMConverter) Convert(ctx context.Context, manifestPath string, opts common.ConvertOptions) (*common.ConversionResult, error) {
 	startTime := time.Now()
 
-	c.logger.Info("starting hyper2kvm conversion", "manifest", manifestPath)
+	c.logger.Info("starting h2kvm conversion", "manifest", manifestPath)
 
 	// Build command
 	args := []string{"--manifest", manifestPath}
@@ -84,7 +84,7 @@ func (c *Hyper2KVMConverter) Convert(ctx context.Context, manifestPath string, o
 
 	// Start command
 	if err := cmd.Start(); err != nil {
-		return nil, fmt.Errorf("start hyper2kvm: %w", err)
+		return nil, fmt.Errorf("start h2kvm: %w", err)
 	}
 
 	// Stream output
@@ -107,7 +107,7 @@ func (c *Hyper2KVMConverter) Convert(ctx context.Context, manifestPath string, o
 				if opts.StreamOutput {
 					fmt.Println(line)
 				}
-				c.logger.Debug("hyper2kvm output", "line", line)
+				c.logger.Debug("h2kvm output", "line", line)
 
 			case line, ok := <-errorChan:
 				if !ok {
@@ -116,7 +116,7 @@ func (c *Hyper2KVMConverter) Convert(ctx context.Context, manifestPath string, o
 				if opts.StreamOutput {
 					fmt.Fprintf(os.Stderr, "%s\n", line)
 				}
-				c.logger.Warn("hyper2kvm error", "line", line)
+				c.logger.Warn("h2kvm error", "line", line)
 			}
 		}
 	}()
@@ -131,7 +131,7 @@ func (c *Hyper2KVMConverter) Convert(ctx context.Context, manifestPath string, o
 	select {
 	case <-ctx.Done():
 		if killErr := cmd.Process.Kill(); killErr != nil {
-			c.logger.Warn("failed to kill hyper2kvm process after timeout", "error", killErr)
+			c.logger.Warn("failed to kill h2kvm process after timeout", "error", killErr)
 		}
 		return nil, fmt.Errorf("conversion timeout: %w", ctx.Err())
 	case cmdErr = <-waitChan:
@@ -146,7 +146,7 @@ func (c *Hyper2KVMConverter) Convert(ctx context.Context, manifestPath string, o
 			Success:  false,
 			Duration: duration,
 			Error:    cmdErr.Error(),
-		}, fmt.Errorf("hyper2kvm failed: %w", cmdErr)
+		}, fmt.Errorf("h2kvm failed: %w", cmdErr)
 	}
 
 	// Parse conversion results
@@ -162,7 +162,7 @@ func (c *Hyper2KVMConverter) Convert(ctx context.Context, manifestPath string, o
 		result.Duration = duration
 	}
 
-	c.logger.Info("hyper2kvm conversion completed",
+	c.logger.Info("h2kvm conversion completed",
 		"duration", duration,
 		"success", result.Success,
 		"converted_files", len(result.ConvertedFiles))
@@ -170,14 +170,24 @@ func (c *Hyper2KVMConverter) Convert(ctx context.Context, manifestPath string, o
 	return result, nil
 }
 
-// detectHyper2KVMBinary attempts to find hyper2kvm binary in PATH
-func detectHyper2KVMBinary() (string, error) {
-	// Try common locations
+// detectH2KVMBinary attempts to find the h2kvm binary in PATH, falling back
+// to the legacy "hyper2kvm" name for hosts that have not upgraded yet.
+func detectH2KVMBinary() (string, error) {
+	// Try common locations, new name first
 	candidates := []string{
-		"hyper2kvm",                // In PATH
-		"/usr/local/bin/hyper2kvm", // System install
-		"/usr/bin/hyper2kvm",       // Package manager
-		filepath.Join(os.Getenv("HOME"), ".local/bin/hyper2kvm"), // User install
+		"h2kvmctl",                // In PATH
+		"h2kvm",                   // In PATH
+		"/usr/local/bin/h2kvmctl", // System install
+		"/usr/local/bin/h2kvm",    // System install
+		"/usr/bin/h2kvmctl",       // Package manager
+		"/usr/bin/h2kvm",          // Package manager
+		filepath.Join(os.Getenv("HOME"), ".local/bin/h2kvmctl"), // User install
+		filepath.Join(os.Getenv("HOME"), ".local/bin/h2kvm"),    // User install
+		// Legacy (pre-rename) locations, kept for backward compatibility
+		"hyper2kvm",
+		"/usr/local/bin/hyper2kvm",
+		"/usr/bin/hyper2kvm",
+		filepath.Join(os.Getenv("HOME"), ".local/bin/hyper2kvm"),
 	}
 
 	for _, candidate := range candidates {
@@ -187,7 +197,7 @@ func detectHyper2KVMBinary() (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("hyper2kvm binary not found in PATH or common locations")
+	return "", fmt.Errorf("h2kvm binary not found in PATH or common locations")
 }
 
 // validateBinary checks if the binary exists and is executable
@@ -220,7 +230,7 @@ func streamOutput(pipe io.ReadCloser, output chan<- string) {
 }
 
 // parseConversionResults reads the conversion report and extracts results
-func (c *Hyper2KVMConverter) parseConversionResults(outputDir string) (*common.ConversionResult, error) {
+func (c *H2KVMConverter) parseConversionResults(outputDir string) (*common.ConversionResult, error) {
 	reportPath := filepath.Join(outputDir, "report.json")
 
 	// Check if report exists
@@ -271,12 +281,12 @@ func (c *Hyper2KVMConverter) parseConversionResults(outputDir string) (*common.C
 }
 
 // Validate checks if the converter is properly configured
-func (c *Hyper2KVMConverter) Validate() error {
+func (c *H2KVMConverter) Validate() error {
 	return validateBinary(c.binaryPath)
 }
 
-// GetVersion returns the hyper2kvm version
-func (c *Hyper2KVMConverter) GetVersion() (string, error) {
+// GetVersion returns the h2kvm version
+func (c *H2KVMConverter) GetVersion() (string, error) {
 	// #nosec G204 -- binaryPath is validated (validateBinary) and set via local operator config/auto-detection, not remote input.
 	cmd := exec.Command(c.binaryPath, "--version")
 	output, err := cmd.CombinedOutput()

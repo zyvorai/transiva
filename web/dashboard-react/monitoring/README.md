@@ -778,7 +778,7 @@ transiva:job_duration_avg
 ## Support
 
 For issues or questions:
-- GitHub Issues: https://github.com/transiva/transiva/issues
+- GitHub Issues: https://github.com/zyvorai/transiva/issues
 - Documentation: https://transiva.dev/docs/monitoring
 
 ---

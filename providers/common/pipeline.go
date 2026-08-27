@@ -16,14 +16,14 @@ import (
 	"github.com/zyvorai/transiva/manifest"
 )
 
-// Hyper2KVMConfig contains configuration for the hyper2kvm pipeline
-type Hyper2KVMConfig struct {
+// H2KVMConfig contains configuration for the h2kvm pipeline
+type H2KVMConfig struct {
 	// Enabled controls whether the pipeline runs after export
 	Enabled bool
 
-	// Hyper2KVMPath is the path to the hyper2kvm executable
-	// Default: searches PATH for "hyper2kvm"
-	Hyper2KVMPath string
+	// H2KVMPath is the path to the h2kvm executable
+	// Default: searches PATH for "h2kvmctl" (falls back to legacy "hyper2kvm")
+	H2KVMPath string
 
 	// ManifestPath is the path to the manifest file
 	// This is set automatically by the export process
@@ -39,25 +39,25 @@ type Hyper2KVMConfig struct {
 	// AutoStart enables VM auto-start in libvirt
 	AutoStart bool
 
-	// Verbose enables verbose output from hyper2kvm
+	// Verbose enables verbose output from h2kvm
 	Verbose bool
 
-	// DryRun runs hyper2kvm in dry-run mode (no modifications)
+	// DryRun runs h2kvm in dry-run mode (no modifications)
 	DryRun bool
 
 	// UseDaemon uses systemd daemon instead of direct execution
 	UseDaemon bool
 
 	// DaemonInstance is the systemd instance name (e.g., "vsphere-prod")
-	// Used with hyper2kvm@{instance}.service
+	// Used with h2kvm@{instance}.service
 	DaemonInstance string
 
 	// DaemonWatchDir is the watch directory for daemon mode
-	// Default: /var/lib/hyper2kvm/queue
+	// Default: /var/lib/h2kvm/queue
 	DaemonWatchDir string
 
 	// DaemonOutputDir is the output directory for daemon mode
-	// Default: /var/lib/hyper2kvm/output
+	// Default: /var/lib/h2kvm/output
 	DaemonOutputDir string
 
 	// DaemonPollInterval is the poll interval in seconds
@@ -90,9 +90,9 @@ type PipelineResult struct {
 	Output []string
 }
 
-// PipelineExecutor executes the hyper2kvm pipeline
+// PipelineExecutor executes the h2kvm pipeline
 type PipelineExecutor struct {
-	config *Hyper2KVMConfig
+	config *H2KVMConfig
 	logger Logger
 }
 
@@ -105,11 +105,11 @@ type Logger interface {
 }
 
 // NewPipelineExecutor creates a new pipeline executor
-func NewPipelineExecutor(config *Hyper2KVMConfig, logger Logger) *PipelineExecutor {
+func NewPipelineExecutor(config *H2KVMConfig, logger Logger) *PipelineExecutor {
 	// Set defaults
-	if config.Hyper2KVMPath == "" {
-		// Try to find hyper2kvm in PATH or common locations
-		config.Hyper2KVMPath = findHyper2KVM()
+	if config.H2KVMPath == "" {
+		// Try to find h2kvm in PATH or common locations
+		config.H2KVMPath = findH2KVM()
 	}
 	if config.LibvirtURI == "" {
 		config.LibvirtURI = "qemu:///system"
@@ -121,7 +121,7 @@ func NewPipelineExecutor(config *Hyper2KVMConfig, logger Logger) *PipelineExecut
 	}
 }
 
-// detectDaemonMode checks if hyper2kvm daemon is available
+// detectDaemonMode checks if the h2kvm daemon is available
 func (e *PipelineExecutor) detectDaemonMode() (bool, string) {
 	// If daemon mode explicitly disabled, return false
 	if !e.config.UseDaemon {
@@ -129,23 +129,31 @@ func (e *PipelineExecutor) detectDaemonMode() (bool, string) {
 	}
 
 	// Check if specific instance requested
-	serviceName := "hyper2kvm.service"
+	serviceName := "h2kvm.service"
 	if e.config.DaemonInstance != "" {
-		serviceName = fmt.Sprintf("hyper2kvm@%s.service", e.config.DaemonInstance)
+		serviceName = fmt.Sprintf("h2kvm@%s.service", e.config.DaemonInstance)
 	}
 
-	// Check if systemd service is running
-	cmd := exec.Command("systemctl", "is-active", serviceName)
-	if err := cmd.Run(); err == nil {
+	// Check if the current-name systemd service is running
+	if cmd := exec.Command("systemctl", "is-active", serviceName); cmd.Run() == nil {
 		return true, serviceName
 	}
 
+	// Fall back to the legacy (pre-rename) service name for older installs
+	legacyServiceName := "hyper2kvm.service"
+	if e.config.DaemonInstance != "" {
+		legacyServiceName = fmt.Sprintf("hyper2kvm@%s.service", e.config.DaemonInstance)
+	}
+	if cmd := exec.Command("systemctl", "is-active", legacyServiceName); cmd.Run() == nil {
+		return true, legacyServiceName
+	}
+
 	// Daemon not available, fall back to direct
-	e.logger.Warn("hyper2kvm daemon not running, using direct execution", "service", serviceName)
+	e.logger.Warn("h2kvm daemon not running, using direct execution", "service", serviceName)
 	return false, "direct"
 }
 
-// Execute runs the hyper2kvm pipeline
+// Execute runs the h2kvm pipeline
 func (e *PipelineExecutor) Execute(ctx context.Context) (*PipelineResult, error) {
 	if !e.config.Enabled {
 		return &PipelineResult{
@@ -158,17 +166,17 @@ func (e *PipelineExecutor) Execute(ctx context.Context) (*PipelineResult, error)
 	if e.config.UseDaemon {
 		isDaemon, serviceName := e.detectDaemonMode()
 		if isDaemon {
-			e.logger.Info("using hyper2kvm daemon", "service", serviceName)
+			e.logger.Info("using h2kvm daemon", "service", serviceName)
 			return e.ExecuteViaDaemon(ctx)
 		}
 	}
 
 	// Use direct execution
-	e.logger.Info("using direct hyper2kvm execution")
+	e.logger.Info("using direct h2kvm execution")
 	return e.ExecuteDirect(ctx)
 }
 
-// ExecuteDirect runs hyper2kvm directly (original implementation)
+// ExecuteDirect runs h2kvm directly (original implementation)
 func (e *PipelineExecutor) ExecuteDirect(ctx context.Context) (*PipelineResult, error) {
 	// Check if context is already cancelled
 	if err := ctx.Err(); err != nil {
@@ -181,11 +189,11 @@ func (e *PipelineExecutor) ExecuteDirect(ctx context.Context) (*PipelineResult, 
 		Output:  []string{},
 	}
 
-	e.logger.Info("starting hyper2kvm pipeline", "manifest", e.config.ManifestPath)
+	e.logger.Info("starting h2kvm pipeline", "manifest", e.config.ManifestPath)
 
-	// Verify hyper2kvm exists
-	if _, err := os.Stat(e.config.Hyper2KVMPath); err != nil {
-		result.Error = fmt.Errorf("hyper2kvm not found at %s: %w", e.config.Hyper2KVMPath, err)
+	// Verify h2kvm exists
+	if _, err := os.Stat(e.config.H2KVMPath); err != nil {
+		result.Error = fmt.Errorf("h2kvm not found at %s: %w", e.config.H2KVMPath, err)
 		return result, result.Error
 	}
 
@@ -195,7 +203,7 @@ func (e *PipelineExecutor) ExecuteDirect(ctx context.Context) (*PipelineResult, 
 		return result, result.Error
 	}
 
-	// Build hyper2kvm command
+	// Build h2kvm command
 	args := []string{e.config.ManifestPath}
 	if e.config.Verbose {
 		args = append(args, "-v")
@@ -204,8 +212,8 @@ func (e *PipelineExecutor) ExecuteDirect(ctx context.Context) (*PipelineResult, 
 		args = append(args, "--dry-run")
 	}
 
-	// #nosec G204 -- Hyper2KVMPath and ManifestPath are supplied via local CLI/config (not remote/API input); args are built from validated flags above
-	cmd := exec.CommandContext(ctx, e.config.Hyper2KVMPath, args...)
+	// #nosec G204 -- H2KVMPath and ManifestPath are supplied via local CLI/config (not remote/API input); args are built from validated flags above
+	cmd := exec.CommandContext(ctx, e.config.H2KVMPath, args...)
 
 	// Set up output capturing
 	stdoutPipe, err := cmd.StdoutPipe()
@@ -220,9 +228,9 @@ func (e *PipelineExecutor) ExecuteDirect(ctx context.Context) (*PipelineResult, 
 	}
 
 	// Start the command
-	e.logger.Info("executing hyper2kvm", "cmd", cmd.String())
+	e.logger.Info("executing h2kvm", "cmd", cmd.String())
 	if err := cmd.Start(); err != nil {
-		result.Error = fmt.Errorf("start hyper2kvm: %w", err)
+		result.Error = fmt.Errorf("start h2kvm: %w", err)
 		return result, result.Error
 	}
 
@@ -235,20 +243,20 @@ func (e *PipelineExecutor) ExecuteDirect(ctx context.Context) (*PipelineResult, 
 	go func() {
 		for line := range outputChan {
 			result.Output = append(result.Output, line)
-			e.logger.Info("hyper2kvm", "output", line)
+			e.logger.Info("h2kvm", "output", line)
 		}
 	}()
 
 	// Wait for completion
 	if err := cmd.Wait(); err != nil {
 		result.Duration = time.Since(startTime)
-		result.Error = fmt.Errorf("hyper2kvm failed: %w", err)
-		e.logger.Error("hyper2kvm failed", "duration", result.Duration, "error", err)
+		result.Error = fmt.Errorf("h2kvm failed: %w", err)
+		e.logger.Error("h2kvm failed", "duration", result.Duration, "error", err)
 		return result, result.Error
 	}
 
 	result.Duration = time.Since(startTime)
-	e.logger.Info("hyper2kvm completed successfully", "duration", result.Duration)
+	e.logger.Info("h2kvm completed successfully", "duration", result.Duration)
 
 	// Parse output to find converted disk path
 	result.OutputPath = e.findOutputPath(result.Output)
@@ -266,7 +274,7 @@ func (e *PipelineExecutor) ExecuteDirect(ctx context.Context) (*PipelineResult, 
 	return result, nil
 }
 
-// ExecuteViaDaemon submits work to hyper2kvm daemon and waits for completion
+// ExecuteViaDaemon submits work to the h2kvm daemon and waits for completion
 func (e *PipelineExecutor) ExecuteViaDaemon(ctx context.Context) (*PipelineResult, error) {
 	startTime := time.Now()
 	result := &PipelineResult{
@@ -277,12 +285,12 @@ func (e *PipelineExecutor) ExecuteViaDaemon(ctx context.Context) (*PipelineResul
 	// Set defaults for daemon configuration
 	watchDir := e.config.DaemonWatchDir
 	if watchDir == "" {
-		watchDir = "/var/lib/hyper2kvm/queue"
+		watchDir = "/var/lib/h2kvm/queue"
 	}
 
 	outputDir := e.config.DaemonOutputDir
 	if outputDir == "" {
-		outputDir = "/var/lib/hyper2kvm/output"
+		outputDir = "/var/lib/h2kvm/output"
 	}
 
 	pollInterval := e.config.DaemonPollInterval
@@ -295,22 +303,41 @@ func (e *PipelineExecutor) ExecuteViaDaemon(ctx context.Context) (*PipelineResul
 		timeout = 60 // 60 minutes
 	}
 
-	e.logger.Info("submitting to hyper2kvm daemon",
+	e.logger.Info("submitting to h2kvm daemon",
 		"watchDir", watchDir,
 		"outputDir", outputDir,
 		"pollInterval", pollInterval,
 		"timeout", timeout)
 
-	// Verify watch directory exists
+	// Verify watch directory exists; fall back to the legacy (pre-rename) path
+	// for hosts that still have the daemon installed under its old name.
 	if _, err := os.Stat(watchDir); err != nil {
-		result.Error = fmt.Errorf("daemon watch directory not found: %s: %w", watchDir, err)
-		return result, result.Error
+		if e.config.DaemonWatchDir == "" {
+			if legacy := "/var/lib/hyper2kvm/queue"; func() bool { _, statErr := os.Stat(legacy); return statErr == nil }() {
+				watchDir = legacy
+			} else {
+				result.Error = fmt.Errorf("daemon watch directory not found: %s: %w", watchDir, err)
+				return result, result.Error
+			}
+		} else {
+			result.Error = fmt.Errorf("daemon watch directory not found: %s: %w", watchDir, err)
+			return result, result.Error
+		}
 	}
 
-	// Verify output directory exists
+	// Verify output directory exists; same legacy fallback as above.
 	if _, err := os.Stat(outputDir); err != nil {
-		result.Error = fmt.Errorf("daemon output directory not found: %s: %w", outputDir, err)
-		return result, result.Error
+		if e.config.DaemonOutputDir == "" {
+			if legacy := "/var/lib/hyper2kvm/output"; func() bool { _, statErr := os.Stat(legacy); return statErr == nil }() {
+				outputDir = legacy
+			} else {
+				result.Error = fmt.Errorf("daemon output directory not found: %s: %w", outputDir, err)
+				return result, result.Error
+			}
+		} else {
+			result.Error = fmt.Errorf("daemon output directory not found: %s: %w", outputDir, err)
+			return result, result.Error
+		}
 	}
 
 	// Load manifest to get VM name
@@ -409,9 +436,9 @@ func (e *PipelineExecutor) ExecuteViaDaemon(ctx context.Context) (*PipelineResul
 	}
 }
 
-// findOutputPath parses hyper2kvm output to find the converted disk path
+// findOutputPath parses h2kvm output to find the converted disk path
 func (e *PipelineExecutor) findOutputPath(output []string) string {
-	// Look for output path in hyper2kvm output
+	// Look for output path in h2kvm output
 	// Expected format: "Output: /path/to/converted.qcow2"
 	for _, line := range output {
 		if strings.HasPrefix(line, "Output:") {
@@ -476,10 +503,21 @@ func streamOutput(reader io.Reader, output chan<- string) {
 	}
 }
 
-// findHyper2KVM searches for hyper2kvm executable
-func findHyper2KVM() string {
-	// Common locations to check
+// findH2KVM searches for the h2kvm executable, falling back to the legacy
+// "hyper2kvm" name for hosts that have not upgraded the CLI yet.
+func findH2KVM() string {
+	// Common locations to check, new name first
 	locations := []string{
+		"/home/tt/h2kvm/h2kvmctl",
+		"/home/tt/h2kvm",
+		"/usr/local/bin/h2kvmctl",
+		"/usr/local/bin/h2kvm",
+		"/usr/bin/h2kvmctl",
+		"/usr/bin/h2kvm",
+		"./h2kvmctl",
+		"./h2kvm",
+		"../h2kvm/h2kvmctl",
+		// Legacy (pre-rename) locations, kept for backward compatibility
 		"/home/tt/hyper2kvm/hyper2kvm",
 		"/home/tt/hyper2kvm",
 		"/usr/local/bin/hyper2kvm",
@@ -495,11 +533,17 @@ func findHyper2KVM() string {
 		}
 	}
 
-	// Try PATH
+	// Try PATH, new name first, then legacy name
+	if path, err := exec.LookPath("h2kvmctl"); err == nil {
+		return path
+	}
+	if path, err := exec.LookPath("h2kvm"); err == nil {
+		return path
+	}
 	if path, err := exec.LookPath("hyper2kvm"); err == nil {
 		return path
 	}
 
 	// Default fallback
-	return "/home/tt/hyper2kvm/hyper2kvm"
+	return "/home/tt/h2kvm/h2kvmctl"
 }

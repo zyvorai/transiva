@@ -70,6 +70,8 @@ type ExportOptions struct {
 
 	// Pipeline integration options
 	EnablePipeline      bool   `json:"enable_pipeline,omitempty" yaml:"enable_pipeline,omitempty"`
+	H2KVMPath           string `json:"h2kvm_path,omitempty" yaml:"h2kvm_path,omitempty"`
+	// Deprecated: use H2KVMPath. Kept for configs written before the h2kvm rename.
 	Hyper2KVMPath       string `json:"hyper2kvm_path,omitempty" yaml:"hyper2kvm_path,omitempty"`
 	PipelineInspect     bool   `json:"pipeline_inspect,omitempty" yaml:"pipeline_inspect,omitempty"`
 	PipelineFix         bool   `json:"pipeline_fix,omitempty" yaml:"pipeline_fix,omitempty"`
@@ -86,13 +88,49 @@ type ExportOptions struct {
 	LibvirtBridge      string `json:"libvirt_bridge,omitempty" yaml:"libvirt_bridge,omitempty"`
 	LibvirtPool        string `json:"libvirt_pool,omitempty" yaml:"libvirt_pool,omitempty"`
 
-	// hyper2kvm daemon options
+	// h2kvm daemon options
+	H2KVMDaemon        bool   `json:"h2kvm_daemon,omitempty" yaml:"h2kvm_daemon,omitempty"`
+	H2KVMInstance      string `json:"h2kvm_instance,omitempty" yaml:"h2kvm_instance,omitempty"`
+	H2KVMWatchDir      string `json:"h2kvm_watch_dir,omitempty" yaml:"h2kvm_watch_dir,omitempty"`
+	H2KVMOutputDir     string `json:"h2kvm_output_dir,omitempty" yaml:"h2kvm_output_dir,omitempty"`
+	H2KVMPollInterval  int    `json:"h2kvm_poll_interval,omitempty" yaml:"h2kvm_poll_interval,omitempty"`
+	H2KVMDaemonTimeout int    `json:"h2kvm_daemon_timeout,omitempty" yaml:"h2kvm_daemon_timeout,omitempty"`
+
+	// Deprecated: use the H2KVM* fields above. Kept so configs/API requests
+	// written before the h2kvm rename keep working for one release.
 	Hyper2KVMDaemon        bool   `json:"hyper2kvm_daemon,omitempty" yaml:"hyper2kvm_daemon,omitempty"`
 	Hyper2KVMInstance      string `json:"hyper2kvm_instance,omitempty" yaml:"hyper2kvm_instance,omitempty"`
 	Hyper2KVMWatchDir      string `json:"hyper2kvm_watch_dir,omitempty" yaml:"hyper2kvm_watch_dir,omitempty"`
 	Hyper2KVMOutputDir     string `json:"hyper2kvm_output_dir,omitempty" yaml:"hyper2kvm_output_dir,omitempty"`
 	Hyper2KVMPollInterval  int    `json:"hyper2kvm_poll_interval,omitempty" yaml:"hyper2kvm_poll_interval,omitempty"`
 	Hyper2KVMDaemonTimeout int    `json:"hyper2kvm_daemon_timeout,omitempty" yaml:"hyper2kvm_daemon_timeout,omitempty"`
+}
+
+// ApplyH2KVMCompat copies any legacy hyper2kvm_* values into their h2kvm_*
+// replacements when the new field was left unset. Call this after decoding
+// an ExportOptions from JSON/YAML written before the h2kvm rename.
+func (o *ExportOptions) ApplyH2KVMCompat() {
+	if o.H2KVMPath == "" {
+		o.H2KVMPath = o.Hyper2KVMPath
+	}
+	if !o.H2KVMDaemon {
+		o.H2KVMDaemon = o.Hyper2KVMDaemon
+	}
+	if o.H2KVMInstance == "" {
+		o.H2KVMInstance = o.Hyper2KVMInstance
+	}
+	if o.H2KVMWatchDir == "" {
+		o.H2KVMWatchDir = o.Hyper2KVMWatchDir
+	}
+	if o.H2KVMOutputDir == "" {
+		o.H2KVMOutputDir = o.Hyper2KVMOutputDir
+	}
+	if o.H2KVMPollInterval == 0 {
+		o.H2KVMPollInterval = o.Hyper2KVMPollInterval
+	}
+	if o.H2KVMDaemonTimeout == 0 {
+		o.H2KVMDaemonTimeout = o.Hyper2KVMDaemonTimeout
+	}
 }
 
 // Job represents an active or completed export job

@@ -1,39 +1,39 @@
 [Unit]
-Description=hyper2kvm VM Conversion Daemon (%i instance)
-Documentation=https://github.com/ssahani/hyper2kvm
+Description=h2kvm VM Conversion Daemon (%i instance)
+Documentation=https://github.com/zyvorai/h2kvm
 After=network.target
-PartOf=hyper2kvm.target
+PartOf=h2kvm.target
 
 [Service]
 Type=simple
-User=hyper2kvm
-Group=hyper2kvm
+User=h2kvm
+Group=h2kvm
 
 # Environment configuration (instance-specific)
-EnvironmentFile=-/etc/hyper2kvm/hyper2kvm.conf
-EnvironmentFile=-/etc/hyper2kvm/hyper2kvm-%i.conf
+EnvironmentFile=-/etc/h2kvm/h2kvm.conf
+EnvironmentFile=-/etc/h2kvm/h2kvm-%i.conf
 
 # Working directories
-WorkingDirectory=/var/lib/hyper2kvm/%i
-StateDirectory=hyper2kvm/%i
+WorkingDirectory=/var/lib/h2kvm/%i
+StateDirectory=h2kvm/%i
 StateDirectoryMode=0755
-CacheDirectory=hyper2kvm/%i
+CacheDirectory=h2kvm/%i
 CacheDirectoryMode=0755
-LogsDirectory=hyper2kvm/%i
+LogsDirectory=h2kvm/%i
 LogsDirectoryMode=0755
 
 # Runtime directories
-RuntimeDirectory=hyper2kvm-%i
+RuntimeDirectory=h2kvm-%i
 RuntimeDirectoryMode=0755
 
 # Watch and output directories (instance-specific)
-Environment="WATCH_DIR=/var/lib/hyper2kvm/%i/queue"
-Environment="OUTPUT_DIR=/var/lib/hyper2kvm/%i/output"
+Environment="WATCH_DIR=/var/lib/h2kvm/%i/queue"
+Environment="OUTPUT_DIR=/var/lib/h2kvm/%i/output"
 Environment="LOG_LEVEL=info"
 Environment="INSTANCE_NAME=%i"
 
 # Binary path (update this to match your installation)
-ExecStart=/usr/local/bin/hyper2kvm daemon \
+ExecStart=/usr/local/bin/h2kvm daemon \
     --instance=%i \
     --watch-dir=${WATCH_DIR} \
     --output-dir=${OUTPUT_DIR} \
@@ -57,7 +57,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/var/lib/hyper2kvm/%i /var/log/hyper2kvm/%i
+ReadWritePaths=/var/lib/h2kvm/%i /var/log/h2kvm/%i
 ProtectKernelTunables=true
 ProtectKernelModules=true
 ProtectControlGroups=true
@@ -74,4 +74,7 @@ AmbientCapabilities=CAP_DAC_OVERRIDE CAP_FOWNER
 
 [Install]
 WantedBy=multi-user.target
-WantedBy=hyper2kvm.target
+WantedBy=h2kvm.target
+# Compat: "systemctl enable" also creates a hyper2kvm@.service symlink so
+# tooling/scripts written against the pre-rename unit name keep working.
+Alias=hyper2kvm@%i.service

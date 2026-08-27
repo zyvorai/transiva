@@ -151,5 +151,5 @@ oc create secret generic vsphere-credentials \
 ## Support
 
 For issues or questions:
-- **GitHub Issues**: https://github.com/ssahani/transiva/issues
-- **Documentation**: https://github.com/ssahani/transiva
+- **GitHub Issues**: https://github.com/zyvorai/transiva/issues
+- **Documentation**: https://github.com/zyvorai/transiva

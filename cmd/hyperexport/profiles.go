@@ -56,9 +56,12 @@ type ExportProfile struct {
 	ManifestTargetFormat string `json:"manifest_target_format"` // Target format for conversion
 
 	// Automatic conversion (Phase 2)
-	AutoConvert      bool   `json:"auto_convert"`      // Automatically convert with hyper2kvm
-	Hyper2KVMBinary  string `json:"hyper2kvm_binary"`  // Path to hyper2kvm binary
+	AutoConvert      bool   `json:"auto_convert"`      // Automatically convert with h2kvm
+	H2KVMBinary      string `json:"h2kvm_binary"`      // Path to h2kvm binary
 	StreamConversion bool   `json:"stream_conversion"` // Stream conversion output
+
+	// Deprecated: use H2KVMBinary. Kept for profiles saved before the h2kvm rename.
+	Hyper2KVMBinary string `json:"hyper2kvm_binary,omitempty"`
 
 	// Retention
 	RetentionDays  int `json:"retention_days"`  // Keep exports for N days
@@ -153,6 +156,10 @@ func (pm *ProfileManager) LoadProfile(name string) (*ExportProfile, error) {
 	decoder := json.NewDecoder(file)
 	if err := decoder.Decode(&profile); err != nil {
 		return nil, fmt.Errorf("decode profile: %w", err)
+	}
+	// Accept profiles saved before the h2kvm rename.
+	if profile.H2KVMBinary == "" {
+		profile.H2KVMBinary = profile.Hyper2KVMBinary
 	}
 
 	pm.log.Debug("profile loaded", "name", name)

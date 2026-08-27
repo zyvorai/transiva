@@ -6,7 +6,7 @@ Prism Central v4 provider for VM discovery and offline NFS pickup export.
 
 - **Discovery**: Paginated `ListVms` + concurrent `GetVmById` for disk/container metadata
 - **Export formats**: `qcow2`, `raw` (local NFS pickup only)
-- **Pipeline**: Optional hyper2kvm integration after manifest generation
+- **Pipeline**: Optional h2kvm integration after manifest generation
 
 ## Quick start
 
@@ -27,7 +27,7 @@ Full guide: [docs/nutanix.md](../../docs/nutanix.md)
 | `pickup.go` | Pickup plan JSON generation |
 | `executor.go` | NFS path resolution + qemu-img convert |
 | `export.go` | `Provider.ExportVM` implementation |
-| `manifest.go` | hyper2kvm Artifact Manifest v1.0 builder |
+| `manifest.go` | h2kvm Artifact Manifest v1.0 builder |
 | `progress.go` | qemu-img progress parsing |
 
 ## Tests

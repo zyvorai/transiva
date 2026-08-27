@@ -167,7 +167,7 @@ type NutanixConfig struct {
 	ExportFormat      string            `yaml:"export_format"`      // qcow2 or raw (default: qcow2)
 	Mounts            map[string]string `yaml:"mounts"`             // Container name/UUID -> NFS mount path
 	ResolveContainers bool              `yaml:"resolve_containers"` // Resolve container UUIDs to names for mount lookup
-	EnablePipeline    bool              `yaml:"enable_pipeline"`    // Run hyper2kvm after export
+	EnablePipeline    bool              `yaml:"enable_pipeline"`    // Run h2kvm after export
 	PipelineTimeout   time.Duration     `yaml:"pipeline_timeout"`   // Pipeline execution timeout
 	Enabled           bool              `yaml:"enabled"`
 }

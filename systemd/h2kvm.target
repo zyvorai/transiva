@@ -1,0 +1,10 @@
+[Unit]
+Description=h2kvm VM Conversion Services
+Documentation=https://github.com/zyvorai/h2kvm
+After=network.target
+
+[Install]
+WantedBy=multi-user.target
+# Compat: "systemctl enable" also creates a hyper2kvm.target symlink so
+# tooling/scripts written against the pre-rename unit name keep working.
+Alias=hyper2kvm.target
