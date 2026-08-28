@@ -1,3 +1,6 @@
+// Copyright 2026 Zyvor AI Labs
+// SPDX-License-Identifier: Apache-2.0
+
 // manifest.js - Handles manifest converter functionality
 
 // Tab switching

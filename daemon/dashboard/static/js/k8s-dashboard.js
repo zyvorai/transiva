@@ -1,3 +1,6 @@
+// Copyright 2026 Zyvor AI Labs
+// SPDX-License-Identifier: Apache-2.0
+
 // HyperSDK Kubernetes Dashboard JavaScript
 
 // Store original data for filtering
