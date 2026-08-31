@@ -57,7 +57,7 @@ jobs:
           fi
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set version from input or tag
         id: version
@@ -149,7 +149,7 @@ jobs:
         run: dnf install -y rpmlint git
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Run rpmlint on spec file
         run: |
@@ -167,7 +167,7 @@ jobs:
         run: dnf install -y rpm-build rpmdevtools git systemd-rpm-macros
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Test build script help
         run: |
@@ -190,7 +190,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Run ShellCheck on build script
         uses: ludeeus/action-shellcheck@master
@@ -221,7 +221,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Check for required documentation
         run: |
