@@ -16,7 +16,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     - name: Set up Go
       uses: actions/setup-go@v6
@@ -65,7 +65,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     - name: Set up Go
       uses: actions/setup-go@v6
@@ -84,7 +84,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     - name: Set up Go
       uses: actions/setup-go@v6
@@ -120,7 +120,7 @@ jobs:
         dnf install -y rpm-build rpmdevtools golang git
 
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     # transiva.spec's %build invokes `go build` directly; Fedora's dnf-packaged
     # golang can lag behind go.mod's `go` directive, so install a matching
@@ -166,7 +166,7 @@ jobs:
         dnf install -y rpm-build rpmdevtools git systemd-rpm-macros
 
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     - name: Build daemon RPM
       run: |
@@ -204,7 +204,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     - name: Download binaries
       uses: actions/download-artifact@v4
@@ -228,7 +228,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     - name: Run Gosec Security Scanner
       uses: securego/gosec@master

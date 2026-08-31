@@ -28,7 +28,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     - name: Set up Go
       uses: actions/setup-go@v6
@@ -73,7 +73,7 @@ jobs:
       GOTOOLCHAIN: auto
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     - name: Set up Go
       uses: actions/setup-go@v6
@@ -117,7 +117,7 @@ jobs:
         dnf install -y rpm-build rpmdevtools golang git tar gzip
 
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     # transiva.spec's %build invokes `go build` directly; Fedora's dnf-packaged
     # golang can lag behind go.mod's `go` directive, so install a matching
@@ -190,7 +190,7 @@ jobs:
         fi
 
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     - name: Get version from tag
       id: get_version
@@ -221,7 +221,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     - name: Get version from tag
       id: get_version
