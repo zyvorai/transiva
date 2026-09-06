@@ -1,6 +1,6 @@
 #!/bin/bash
+# Copyright 2026 Zyvor AI Labs · https://zyvor.dev
 # SPDX-License-Identifier: Apache-2.0
-
 # HyperSDK Pre-Commit Quality Checks
 # Run this before committing to ensure code quality
 

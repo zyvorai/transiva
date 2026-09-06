@@ -1,5 +1,5 @@
+# Copyright 2026 Zyvor AI Labs · https://zyvor.dev
 # SPDX-License-Identifier: Apache-2.0
-
 """Setup script for transiva Python package."""
 
 from setuptools import setup, find_packages

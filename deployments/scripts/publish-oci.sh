@@ -1,6 +1,6 @@
 #!/bin/bash
+# Copyright 2026 Zyvor AI Labs · https://zyvor.dev
 # SPDX-License-Identifier: Apache-2.0
-
 
 # HyperSDK Helm Chart OCI Registry Publishing Script
 # Publishes Helm charts to OCI-compliant registries (ghcr.io, Docker Hub, ECR, ACR, etc.)

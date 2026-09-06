@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
+# Copyright 2026 Zyvor AI Labs · https://zyvor.dev
 # SPDX-License-Identifier: Apache-2.0
-
 # Build HyperSDK and assemble customer tarball (local / GitHub Actions).
 # Usage: ./scripts/package-binary-release.sh [--build] [--skip-dashboard] [--out-dir DIR]
 

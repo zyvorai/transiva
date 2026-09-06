@@ -1,3 +1,5 @@
+# Copyright 2026 Zyvor AI Labs · https://zyvor.dev
+# SPDX-License-Identifier: Apache-2.0
 # Multi-stage Dockerfile for HyperSDK hyperexport CLI tool
 # Standalone VM export tool for interactive and scriptable use
 

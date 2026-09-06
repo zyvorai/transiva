@@ -1,6 +1,5 @@
-# Copyright 2026 Zyvor AI Labs
+# Copyright 2026 Zyvor AI Labs · https://zyvor.dev
 # SPDX-License-Identifier: Apache-2.0
-
 # Build stage
 FROM golang:1.21-alpine AS builder
 

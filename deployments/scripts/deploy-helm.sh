@@ -1,6 +1,6 @@
 #!/bin/bash
+# Copyright 2026 Zyvor AI Labs · https://zyvor.dev
 # SPDX-License-Identifier: Apache-2.0
-
 
 # HyperSDK Helm Deployment Script
 # Quick deployment to various Kubernetes environments

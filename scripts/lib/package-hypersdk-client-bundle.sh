@@ -1,5 +1,5 @@
+# Copyright 2026 Zyvor AI Labs · https://zyvor.dev
 # SPDX-License-Identifier: Apache-2.0
-
 # shellcheck shell=bash
 # Assemble HyperSDK customer tarball (shared by remote pack and GitHub release).
 #

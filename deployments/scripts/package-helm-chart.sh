@@ -1,6 +1,6 @@
 #!/bin/bash
+# Copyright 2026 Zyvor AI Labs · https://zyvor.dev
 # SPDX-License-Identifier: Apache-2.0
-
 
 # HyperSDK Helm Chart Packaging Script
 # Packages the Helm chart and optionally publishes to a repository

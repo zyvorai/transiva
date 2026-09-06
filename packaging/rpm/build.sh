@@ -1,6 +1,6 @@
 #!/bin/bash
+# Copyright 2026 Zyvor AI Labs · https://zyvor.dev
 # SPDX-License-Identifier: Apache-2.0
-#
 # RPM Build Script for h2kvm-daemon
 #
 # This script builds RPM packages for the h2kvm systemd daemon.
