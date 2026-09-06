@@ -116,7 +116,7 @@ else
     pkg_ok "build/ ready"
 fi
 
-pkg_remote_phase "Assemble customer bundle"
+pkg_remote_phase "Assemble user bundle"
 pkg_remote_kv "Output" "${OUT_DIR}/${ARTIFACT}"
 ssh "${REMOTE}" bash -s <<REMOTE_PACK
 set -euo pipefail

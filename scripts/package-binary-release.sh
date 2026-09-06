@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Copyright 2026 Zyvor AI Labs · https://zyvor.dev
 # SPDX-License-Identifier: Apache-2.0
-# Build HyperSDK and assemble customer tarball (local / GitHub Actions).
+# Build HyperSDK and assemble user tarball (local / GitHub Actions).
 # Usage: ./scripts/package-binary-release.sh [--build] [--skip-dashboard] [--out-dir DIR]
 
 set -euo pipefail
@@ -49,7 +49,7 @@ fi
 source "${SCRIPT_DIR}/lib/package-transiva-client-bundle.sh"
 
 STAGE="${OUT_DIR}/${ARTIFACT}"
-echo "Assemble customer bundle → ${OUT_DIR}/${ARTIFACT}.tar.gz"
+echo "Assemble user bundle → ${OUT_DIR}/${ARTIFACT}.tar.gz"
 package_hypersdk_client_bundle "${STAGE}" "${REPO_DIR}" "${VERSION}"
 package_hypersdk_client_tarball "${OUT_DIR}" "${ARTIFACT}" "${STAGE}"
 ls -lh "${OUT_DIR}/${ARTIFACT}.tar.gz"

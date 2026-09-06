@@ -1,7 +1,7 @@
 # Copyright 2026 Zyvor AI Labs · https://zyvor.dev
 # SPDX-License-Identifier: Apache-2.0
 # shellcheck shell=bash
-# Assemble HyperSDK customer tarball (shared by remote pack and GitHub release).
+# Assemble HyperSDK user tarball (shared by remote pack and GitHub release).
 #
 # Usage: package_hypersdk_client_bundle STAGE BUILD_DIR VERSION
 
@@ -48,8 +48,8 @@ ENV_EOF
     cp "${lib}/package-uninstall.sh" "${stage}/uninstall.sh"
     chmod +x "${stage}/install.sh" "${stage}/install-client-deps.sh" "${stage}/test-package.sh" \
         "${stage}/install-everything.sh" "${stage}/uninstall.sh"
-    chmod +x "${lib}/write-customer-help.sh"
-    "${lib}/write-customer-help.sh" "${stage}" "HyperSDK" platform
+    chmod +x "${lib}/write-user-help.sh"
+    "${lib}/write-user-help.sh" "${stage}" "HyperSDK" platform
     cp "${lib}/START_HERE.txt" "${stage}/"
 
     cat > "${stage}/.package-lib/product.meta" <<'META'
@@ -102,7 +102,7 @@ WHAT IS IN THIS ARCHIVE
 
 REQUIREMENTS: Linux x86_64 KVM host, vCenter or supported source
 
-CUSTOMER INSTALL
+USER INSTALL
   tar xzf transiva-*-linux-amd64.tar.gz
   cd transiva-*-linux-amd64
   ./install.sh
@@ -127,10 +127,10 @@ README_EOF
     chmod +x "${lib}/verify-bundle-script-paths.sh"
     "${lib}/verify-bundle-script-paths.sh" "${stage}" || return 1
 
-    chmod +x "${lib}/finalize-customer-bundle.sh"
-    "${lib}/finalize-customer-bundle.sh" "${stage}" "${build_dir}" "HyperSDK" "${version}" || return 1
+    chmod +x "${lib}/finalize-user-bundle.sh"
+    "${lib}/finalize-user-bundle.sh" "${stage}" "${build_dir}" "HyperSDK" "${version}" || return 1
 
-    echo "Customer bundle OK"
+    echo "User bundle OK"
 }
 
 package_hypersdk_client_tarball() {

@@ -66,8 +66,8 @@ jobs:
           hyperexport-*
           hypervisord-*
 
-  build-customer-bundle:
-    name: Build Customer Bundle (linux-amd64)
+  build-user-bundle:
+    name: Build User Bundle (linux-amd64)
     runs-on: ubuntu-latest
     env:
       GOTOOLCHAIN: auto
@@ -90,7 +90,7 @@ jobs:
       id: get_version
       run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
-    - name: Build and package customer bundle
+    - name: Build and package user bundle
       env:
         GOTOOLCHAIN: auto
         HYPERSDK_PACKAGE_VERSION: ${{ steps.get_version.outputs.VERSION }}
@@ -98,10 +98,10 @@ jobs:
         chmod +x scripts/package-binary-release.sh
         ./scripts/package-binary-release.sh --build --out-dir dist
 
-    - name: Upload customer bundle
+    - name: Upload user bundle
       uses: actions/upload-artifact@v4
       with:
-        name: customer-bundle-linux-amd64
+        name: user-bundle-linux-amd64
         path: |
           dist/transiva-${{ steps.get_version.outputs.VERSION }}-linux-amd64.tar.gz
           dist/transiva-${{ steps.get_version.outputs.VERSION }}-linux-amd64.tar.gz.sha256
@@ -216,7 +216,7 @@ jobs:
         if-no-files-found: ignore
   create-release:
     name: Create GitHub Release
-    needs: [build-binaries, build-customer-bundle]
+    needs: [build-binaries, build-user-bundle]
     runs-on: ubuntu-latest
 
     steps:
@@ -227,10 +227,10 @@ jobs:
       id: get_version
       run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
-    - name: Download customer bundle
+    - name: Download user bundle
       uses: actions/download-artifact@v4
       with:
-        name: customer-bundle-linux-amd64
+        name: user-bundle-linux-amd64
         path: release
 
     - name: Download release binaries
@@ -253,7 +253,7 @@ jobs:
         VERSION=${{ steps.get_version.outputs.VERSION }}
         echo "## transiva ${VERSION}" > release-notes.md
         echo "" >> release-notes.md
-        echo "Customer install bundle, release binaries, and RPM packages (when available)." >> release-notes.md
+        echo "User install bundle, release binaries, and RPM packages (when available)." >> release-notes.md
 
     - name: Create Release
       uses: softprops/action-gh-release@v3
