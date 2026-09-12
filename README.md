@@ -273,10 +273,13 @@ If it saved you a licence renewal, a ⭐ helps more people find it.
 
 ## License
 
-Apache License, Version 2.0. Copyright © 2026 Zyvor AI Labs Private Limited.
+### Open source (Apache-2.0)
 
-This repository is **HyperSDK Community Edition** only. Platform and other Zyvor offerings may use different terms. [Licensing →](https://zyvor.dev/docs/licensing?utm_source=github&utm_medium=transiva)
+This repository is licensed under the [Apache License, Version 2.0](LICENSE).
+You may use, modify, and run it for personal, lab, and commercial production
+use at no charge, subject to Apache-2.0 (preserve notices / NOTICE where required).
 
-<div align="center">
-<sub>Built by <a href="https://zyvor.dev?utm_source=github&utm_medium=transiva&utm_campaign=readme_colophon">Zyvor AI Labs</a> · Open infrastructure for the long term</sub>
-</div>
+### Enterprise
+
+Production support, SLAs, and Zyvor Enterprise products are licensed separately.
+Contact [sales@zyvor.dev](mailto:sales@zyvor.dev) or see [zyvor.dev](https://zyvor.dev).
