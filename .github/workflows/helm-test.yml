@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Helm
         uses: azure/setup-helm@v4
@@ -75,7 +75,7 @@ jobs:
     needs: lint-and-template
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Helm
         uses: azure/setup-helm@v4
@@ -159,7 +159,7 @@ jobs:
     needs: lint-and-template
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Helm
         uses: azure/setup-helm@v4
@@ -236,7 +236,7 @@ jobs:
         cloud: [gke, eks, aks]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Helm
         uses: azure/setup-helm@v4
