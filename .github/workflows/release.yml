@@ -228,13 +228,13 @@ jobs:
       run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
     - name: Download user bundle
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: user-bundle-linux-amd64
         path: release
 
     - name: Download release binaries
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         pattern: binaries-*
         path: release
@@ -242,7 +242,7 @@ jobs:
 
     - name: Download RPM packages
       continue-on-error: true
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         pattern: rpm-packages
         path: release
