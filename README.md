@@ -33,14 +33,10 @@ Every hypervisor renewal buries your VMs deeper in someone else’s proprietary 
 |:---:|:---:|:---:|
 | Apache-2.0 | CLI + REST | Offline export — source VM untouched |
 
-<div align="center">
-
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/social/migration-1200x630-dark.png">
   <img src="docs/social/migration-1200x630.png" alt="VMware to KubeVirt, four tools one path: Transiva exports, h2kvm converts and deploys, GuestKit assures, Zorvia operates, each with Community and Enterprise tiers." width="820">
 </picture>
-
-</div>
 
 **Export with Transiva → convert with [hyper2kvm](https://github.com/zyvorai/h2kvm) → assure with [GuestKit](https://github.com/zyvorai/guestkit) → operate on [Zeus OS](https://zyvor.dev/zeus-os) or the open-source [Zorvia](https://github.com/zyvorai/zorvia/blob/main/docs/leave-openshift.md).** Each is a separate tool; Zorvia's own importer is Experimental.
 
