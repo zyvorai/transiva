@@ -1,13 +1,13 @@
-# Community Edition vs HyperSDK Platform (Enterprise)
+# Community Edition vs Transiva Platform (Enterprise)
 
 **Community Edition (this repo) proves export in a lab.**  
-**HyperSDK Platform is what you buy to run a hypervisor-exit program.**
+**Transiva Platform is what you buy to run a hypervisor-exit program.**
 
 CE is free forever for PoC. The moment you need CBT cutover windows, waves, SSO, the full provider matrix, or a named owner when the bridge is live — that is Platform. Day-2 lands on **Zeus OS**. One slipped estate wave usually costs more than the license.
 
-Canonical Enterprise tree: commercial HyperSDK Platform builds (private). Product: [zyvor.dev/transiva](https://zyvor.dev/transiva?utm_source=github&utm_medium=transiva) · [Book a Platform demo](https://zyvor.dev/contact?intent=demo) · [30-day PoC](https://zyvor.dev/poc) · [sales@zyvor.dev](mailto:sales@zyvor.dev)
+Canonical Enterprise tree: commercial Transiva Platform builds (private). Product: [zyvor.dev/transiva](https://zyvor.dev/transiva?utm_source=github&utm_medium=transiva&utm_campaign=readme_edition) · [Book a demo](https://zyvor.dev/schedule?utm_source=github&utm_medium=transiva&utm_campaign=readme_edition) · [30-day PoC](https://zyvor.dev/poc?utm_source=github&utm_medium=transiva&utm_campaign=readme_edition) · [sales@zyvor.dev](mailto:sales@zyvor.dev)
 
-Pipeline: **HyperSDK → [h2kvm](https://github.com/zyvorai/h2kvm) → [GuestKit](https://github.com/zyvorai/guestkit) → [Zeus OS](https://zyvor.dev/zeus-os)**
+Pipeline: **Transiva** (export, Apache-2.0) → **[h2kvm](https://github.com/zyvorai/h2kvm)** (convert and deploy) → **[GuestKit](https://github.com/zyvorai/guestkit)** (assure, Apache-2.0) → **[Zeus OS](https://zyvor.dev/zeus-os?utm_source=github&utm_medium=transiva&utm_campaign=readme_suite)** or **[Zorvia](https://github.com/zyvorai/zorvia)** (operate)
 
 ---
 
@@ -15,7 +15,7 @@ Pipeline: **HyperSDK → [h2kvm](https://github.com/zyvorai/h2kvm) → [GuestKit
 
 ### Positioning
 
-| Capability | Community Edition (this repo) | HyperSDK Platform (Enterprise) |
+| Capability | Community Edition (this repo) | Transiva Platform (Enterprise) |
 | --- | --- | --- |
 | What you get | Export / discover control plane for eval | Full migration **operating system** for fleets |
 | Who it is for | Labs, PoC, single-host exports | Platform / SRE leads · **50–10,000+ VMs** |
@@ -94,7 +94,7 @@ Pipeline: **HyperSDK → [h2kvm](https://github.com/zyvorai/h2kvm) → [GuestKit
 
 | Capability | Community | Enterprise |
 | --- | --- | --- |
-| Day-2 on **Zeus OS** | Hand off | ✅ Licensed suite path |
+| Day-2 on **Zeus OS** or **Zorvia** | Hand off | ✅ Licensed suite path |
 | GuestKit assurance gate | Pair yourself | ✅ Integrated playbooks |
 | Contractual hypervisor exit PS | — | ✅ |
 
@@ -110,4 +110,4 @@ Pipeline: **HyperSDK → [h2kvm](https://github.com/zyvorai/h2kvm) → [GuestKit
 
 **CE is free forever for labs. Buy Platform when the estate must move.**
 
-**→ [Book a Platform demo](https://zyvor.dev/contact?intent=demo)** · **[30-day PoC](https://zyvor.dev/poc)** · **[Pricing](https://zyvor.dev/pricing)** · **[transiva product](https://zyvor.dev/transiva)**
+**→ [Book a demo](https://zyvor.dev/schedule?utm_source=github&utm_medium=transiva&utm_campaign=readme_edition)** · **[30-day PoC](https://zyvor.dev/poc?utm_source=github&utm_medium=transiva&utm_campaign=readme_edition)** · **[Pricing](https://zyvor.dev/pricing?utm_source=github&utm_medium=transiva&utm_campaign=readme_edition)** · **[transiva product](https://zyvor.dev/transiva?utm_source=github&utm_medium=transiva&utm_campaign=readme_edition)**

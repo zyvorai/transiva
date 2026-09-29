@@ -31,7 +31,7 @@ Every hypervisor renewal buries your VMs deeper in someone else’s proprietary 
 | **2** source hypervisors (CE) | **1** workflow for both | **0** guest agents |
 | Apache-2.0 | CLI + REST | Offline export — source VM untouched |
 
-**Export with Transiva → convert with [hyper2kvm](https://github.com/zyvorai/h2kvm) → assure with [GuestKit](https://github.com/zyvorai/guestkit) → operate on [Zeus OS](https://zyvor.dev/zeus-os).**
+**Export with Transiva → convert with [h2kvm](https://github.com/zyvorai/h2kvm) → assure with [GuestKit](https://github.com/zyvorai/guestkit) → operate on [Zeus OS](https://zyvor.dev/zeus-os?utm_source=github&utm_medium=transiva&utm_campaign=readme_suite).**
 
 > **Maturity (honest):** CE covers **two sources** and **full exports** (no CBT, no multi-provider dashboard). Ten-plus providers, waves, SSO, and cutover-night support are **Transiva Platform** — [feature matrix](ce-vs-enterprise.md).
 

@@ -23,7 +23,7 @@ If it saved you a licence renewal, a ⭐ helps more people find it.
 
 | | |
 |---|---|
-| **Production / Platform** | [Talk to an engineer](https://zyvor.dev/schedule?utm_source=github&utm_medium=transiva) · [sales@zyvor.dev](mailto:sales@zyvor.dev) |
+| **Production / Platform** | [Book a demo](https://zyvor.dev/schedule?utm_source=github&utm_medium=transiva&utm_campaign=readme_footer) · [30-day PoC](https://zyvor.dev/poc?utm_source=github&utm_medium=transiva&utm_campaign=readme_footer) · [sales@zyvor.dev](mailto:sales@zyvor.dev) |
 | **Community** | [GitHub Issues](https://github.com/zyvorai/transiva/issues) |
 | **General** | [info@zyvor.dev](mailto:info@zyvor.dev) |
 
@@ -38,4 +38,4 @@ Social assets: [docs/social/](social/).
 | [chimera](https://github.com/zyvorai/chimera) | Infrastructure simulation for export CI |
 | [netevd](https://github.com/zyvorai/netevd) | Real-time network event tracking |
 
-[Browse all open-source →](https://zyvor.dev/about#support-open-source)
+[Browse all open-source →](https://zyvor.dev/about?utm_source=github&utm_medium=transiva&utm_campaign=readme_footer#support-open-source)
