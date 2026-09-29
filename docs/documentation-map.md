@@ -15,9 +15,9 @@ Every page in this repository's `docs/` folder. Back to the [README](../README.m
 
 | Page | What it covers |
 |---|---|
-| [community-vs-platform.md](community-vs-platform.md) | Community Edition vs Transiva Platform, and why teams upgrade |
-| [ce-vs-enterprise.md](ce-vs-enterprise.md) | The full feature matrix |
-| [enterprise.md](enterprise.md) | Enterprise offering |
+| [community-vs-platform.md](community-vs-platform.md) | Stub pointing to the canonical matrix |
+| [ce-vs-enterprise.md](ce-vs-enterprise.md) | Canonical Community vs Transiva Platform matrix |
+| [enterprise.md](enterprise.md) | Stub pointing to the canonical matrix |
 
 ## Project
 

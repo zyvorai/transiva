@@ -9,7 +9,7 @@
 
 ### Enterprise workload mobility starts with honest offline export.
 
-Transiva Community Edition is a Go control plane that discovers, inventories, and orchestrates workload exports from VMware vSphere and Nutanix AHV, handing artifacts to [hyper2kvm](https://github.com/zyvorai/h2kvm) for conversion.<br>
+Transiva Community Edition is a Go control plane that discovers, inventories, and orchestrates workload exports from VMware vSphere and Nutanix AHV, handing artifacts to [h2kvm](https://github.com/zyvorai/h2kvm) for conversion.<br>
 Fleet jobs run over REST and CLI — **Apache-2.0**, no guest agent, source VM untouched until cutover.
 
 [![CI](https://github.com/zyvorai/transiva/actions/workflows/ci.yml/badge.svg)](https://github.com/zyvorai/transiva/actions/workflows/ci.yml)
@@ -17,7 +17,7 @@ Fleet jobs run over REST and CLI — **Apache-2.0**, no guest agent, source VM u
 [![Go 1.27+](https://img.shields.io/badge/go-1.27+-0071e3?style=flat-square&labelColor=1d1d1f)](https://go.dev/)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache_2.0-0071e3?style=flat-square&labelColor=1d1d1f)](https://www.apache.org/licenses/LICENSE-2.0)
 
-[**Quick start**](#60-second-quick-start) · [**Platform docs**](https://zyvor.dev/docs/transiva-platform?utm_source=github&utm_medium=transiva) · [**Nutanix guide**](docs/nutanix.md) · [**OpenAPI**](openapi.yaml) · [**Community vs Platform**](#community-edition-vs-transiva-platform) · [**Talk to an engineer**](https://zyvor.dev/schedule?utm_source=github&utm_medium=transiva&utm_campaign=readme_hero)
+[**Quick start**](#60-second-quick-start) · [**Platform docs**](https://zyvor.dev/docs/transiva-platform?utm_source=github&utm_medium=transiva&utm_campaign=readme_hero) · [**Nutanix guide**](docs/nutanix.md) · [**OpenAPI**](openapi.yaml) · [**Community vs Platform**](#community-edition-vs-transiva-platform) · [**Book a demo**](https://zyvor.dev/schedule?utm_source=github&utm_medium=transiva&utm_campaign=readme_hero) · [**30-day PoC**](https://zyvor.dev/poc?utm_source=github&utm_medium=transiva&utm_campaign=readme_hero)
 
 </div>
 
@@ -38,7 +38,7 @@ Every hypervisor renewal buries your VMs deeper in someone else’s proprietary 
   <img src="docs/social/migration-1200x630.png" alt="VMware to KubeVirt, four tools one path: Transiva exports, h2kvm converts and deploys, GuestKit assures, Zorvia operates, each with Community and Enterprise tiers." width="820">
 </picture>
 
-**Export with Transiva → convert with [hyper2kvm](https://github.com/zyvorai/h2kvm) → assure with [GuestKit](https://github.com/zyvorai/guestkit) → operate on [Zeus OS](https://zyvor.dev/zeus-os) or the open-source [Zorvia](https://github.com/zyvorai/zorvia/blob/main/docs/leave-openshift.md).** Each is a separate tool; Zorvia's own importer is Experimental.
+**Export with Transiva → convert with [h2kvm](https://github.com/zyvorai/h2kvm) → assure with [GuestKit](https://github.com/zyvorai/guestkit) → operate on [Zeus OS](https://zyvor.dev/zeus-os?utm_source=github&utm_medium=transiva&utm_campaign=readme_suite) or the open-source [Zorvia](https://github.com/zyvorai/zorvia/blob/main/docs/leave-openshift.md).** Each is a separate tool; Zorvia's own importer is Experimental.
 
 </div>
 
@@ -105,7 +105,7 @@ Nutanix AHV, the daemon and REST API, and the binaries table are in **[docs/quic
 
 ## Where this fits: the Zyvor suite
 
-**transiva** (discover · export) → **[h2kvm](https://github.com/zyvorai/h2kvm)** (convert to QCOW2) → **[GuestKit](https://github.com/zyvorai/guestkit)** (inspect · repair) → KVM · libvirt · KubeVirt → **[Zeus OS](https://zyvor.dev/zeus-os)** (day-2).
+**transiva** (discover · export) → **[h2kvm](https://github.com/zyvorai/h2kvm)** (convert to QCOW2) → **[GuestKit](https://github.com/zyvorai/guestkit)** (inspect · repair) → KVM · libvirt · KubeVirt → **[Zeus OS](https://zyvor.dev/zeus-os?utm_source=github&utm_medium=transiva&utm_campaign=readme_suite)** (day-2).
 
 Methodology: **Discover → Assess → Convert → Deploy → Operate → Optimize.** This repo covers discover + export in CE. [Full hypervisor-exit route →](https://zyvor.dev/hypervisor-exit?utm_source=github&utm_medium=transiva&utm_campaign=readme_suite) · The diagram and stage table: [docs/suite-fit.md](docs/suite-fit.md).
 
@@ -117,7 +117,7 @@ Methodology: **Discover → Assess → Convert → Deploy → Operate → Optimi
 
 CE is free forever for labs — two sources, CLI, GitHub Issues. If you are moving an estate: no CBT, no waves, no SSO, no named owner on cutover night. **Buy Platform.**
 
-| | **Community Edition** *(this repo)* | **[Transiva Platform](https://zyvor.dev/transiva?utm_source=github&utm_medium=transiva&utm_campaign=readme_table)** |
+| | **Community Edition** *(this repo)* | **[Transiva Platform](https://zyvor.dev/transiva?utm_source=github&utm_medium=transiva&utm_campaign=readme_edition)** |
 |---|---|---|
 | **Who it is for** | Labs · PoC · single-host | Platform / SRE leads · **50–10,000+ VMs** |
 | **Sources** | vSphere, Nutanix AHV | **10–11 providers** — Hyper-V, AWS, Azure, GCP, OCI, OpenStack, Proxmox, KubeVirt, … |
@@ -125,7 +125,7 @@ CE is free forever for labs — two sources, CLI, GitHub Issues. If you are movi
 | **Security** | Config-file credentials | Vault · **SSO/OIDC/SAML** · RBAC · audit · air-gap packs |
 | **Support** | [GitHub Issues](https://github.com/zyvorai/transiva/issues) | **SLA** · workshops · hypervisor-exit PS |
 
-<a id="why-teams-upgrade"></a>**[Full feature matrix →](docs/ce-vs-enterprise.md)** · [enterprise.md](docs/enterprise.md) · The whole table and why teams upgrade: [docs/community-vs-platform.md](docs/community-vs-platform.md)
+<a id="why-teams-upgrade"></a>**[Full feature matrix →](docs/ce-vs-enterprise.md)**
 
 **Bring us your worst estate.** [30-day PoC](https://zyvor.dev/poc?utm_source=github&utm_medium=transiva&utm_campaign=readme_footer) · [Platform demo](https://zyvor.dev/contact?intent=demo&utm_source=github&utm_medium=transiva&utm_campaign=readme_footer) · [Pricing](https://zyvor.dev/pricing?utm_source=github&utm_medium=transiva&utm_campaign=readme_footer)
 
@@ -142,11 +142,11 @@ PRs welcome. Security reports → [SECURITY.md](SECURITY.md).
 
 ## Support the project
 
-Transiva Community Edition is free and open source, maintained by **Susant Sahani** at [Zyvor AI Labs](https://zyvor.dev?utm_source=github&utm_medium=transiva&utm_campaign=readme_support).
+Transiva Community Edition is free and open source, maintained by **Susant Sahani** at [Zyvor AI Labs](https://zyvor.dev?utm_source=github&utm_medium=transiva&utm_campaign=readme_footer).
 
 | | |
 |---|---|
-| **Production / Platform** | [Talk to an engineer](https://zyvor.dev/schedule?utm_source=github&utm_medium=transiva) · [sales@zyvor.dev](mailto:sales@zyvor.dev) |
+| **Production / Platform** | [Book a demo](https://zyvor.dev/schedule?utm_source=github&utm_medium=transiva&utm_campaign=readme_footer) · [30-day PoC](https://zyvor.dev/poc?utm_source=github&utm_medium=transiva&utm_campaign=readme_footer) · [sales@zyvor.dev](mailto:sales@zyvor.dev) |
 | **Community** | [GitHub Issues](https://github.com/zyvorai/transiva/issues) |
 | **General** | [info@zyvor.dev](mailto:info@zyvor.dev) |
 
@@ -160,7 +160,7 @@ Transiva Community Edition is free and open source, maintained by **Susant Sahan
 | Quick start, binaries, Nutanix | [docs/quick-start.md](docs/quick-start.md) · [docs/nutanix.md](docs/nutanix.md) |
 | The renewal trap and why teams start here | [docs/renewal-trap.md](docs/renewal-trap.md) |
 | Where Transiva fits in the Zyvor suite | [docs/suite-fit.md](docs/suite-fit.md) |
-| Community Edition vs Platform | [docs/community-vs-platform.md](docs/community-vs-platform.md) · [docs/ce-vs-enterprise.md](docs/ce-vs-enterprise.md) · [docs/enterprise.md](docs/enterprise.md) |
+| Community Edition vs Platform | [docs/ce-vs-enterprise.md](docs/ce-vs-enterprise.md) (canonical matrix) |
 | REST API | [openapi.yaml](openapi.yaml) |
 
 ## License
@@ -174,4 +174,4 @@ use at no charge, subject to Apache-2.0 (preserve notices / NOTICE where require
 ### Enterprise
 
 Production support, SLAs, and Zyvor Enterprise products are licensed separately.
-Contact [sales@zyvor.dev](mailto:sales@zyvor.dev) or see [zyvor.dev](https://zyvor.dev).
+Contact [sales@zyvor.dev](mailto:sales@zyvor.dev) or see [zyvor.dev](https://zyvor.dev?utm_source=github&utm_medium=transiva&utm_campaign=readme_footer).
