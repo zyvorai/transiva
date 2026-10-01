@@ -1,5 +1,8 @@
 # Community Edition vs Transiva Platform (Enterprise)
 
+> **Note:** Zyvor is moving to an enterprise subscription model for new quotes: an annual subscription that includes updates and the stated support level, with open-source and non-production terms unchanged. See `docs/SUBSCRIPTION-MODEL.md` in this repository. Rates below apply to existing agreements; contact [sales@zyvor.dev](mailto:sales@zyvor.dev) for current rates.
+
+
 **Community Edition (this repo) proves export in a lab.**  
 **Transiva Platform is what you buy to run a hypervisor-exit program.**
 
