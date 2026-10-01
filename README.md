@@ -165,6 +165,8 @@ Transiva Community Edition is free and open source, maintained by **Susant Sahan
 
 ## License
 
+Commercial subscriptions and support: see [docs/SUBSCRIPTION-MODEL.md](docs/SUBSCRIPTION-MODEL.md).
+
 ### Open source (Apache-2.0)
 
 This repository is licensed under the [Apache License, Version 2.0](LICENSE).
